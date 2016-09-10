@@ -6,10 +6,10 @@ import scala.reflect.runtime.universe.{ Type, typeOf }
 
 object OptionTypeAdapter extends TypeAdapterFactory {
 
-  override def typeAdapter(tpe: Type, context: Context): Option[TypeAdapter[_]] =
+  override def typeAdapter(tpe: Type, context: Context, superParamTypes: List[Type]): Option[TypeAdapter[_]] =
     if (tpe <:< typeOf[Option[_]]) {
       val valueType = tpe.typeArgs.head
-      val valueTypeAdapter = context.typeAdapter(valueType)
+      val valueTypeAdapter = context.typeAdapter(valueType, valueType.typeArgs)
 
       Some(OptionTypeAdapter(valueTypeAdapter))
     } else {
@@ -24,7 +24,10 @@ case class OptionTypeAdapter[T](valueTypeAdapter: TypeAdapter[T]) extends TypeAd
     if (reader.peek == TokenType.Nothing) {
       None
     } else {
-      Some(valueTypeAdapter.read(reader))
+      valueTypeAdapter.read(reader) match {
+        case null ⇒ null
+        case v    ⇒ Some(v)
+      }
     }
 
   override def write(optionalValue: Option[T], writer: Writer): Unit =

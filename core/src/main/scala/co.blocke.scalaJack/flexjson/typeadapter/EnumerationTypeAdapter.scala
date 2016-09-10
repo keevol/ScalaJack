@@ -5,7 +5,7 @@ import scala.reflect.runtime.universe.{ ClassSymbol, Type, typeOf }
 
 object EnumerationTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
 
-  override def typeAdapter(tpe: Type, classSymbol: ClassSymbol, context: Context): Option[TypeAdapter[_]] =
+  override def typeAdapter(tpe: Type, classSymbol: ClassSymbol, context: Context, superParamTypes: List[Type]): Option[TypeAdapter[_]] =
     if (tpe.typeSymbol.fullName == "scala.Enumeration.Value") { // Can't use tpe <:< because Enumeration has no companion object
       val erasedEnumClassName = tpe.toString match {
         case raw if (raw.endsWith(".Value")) ⇒ raw.replace(".Value", "$")

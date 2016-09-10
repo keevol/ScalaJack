@@ -1,7 +1,8 @@
 package co.blocke.scalajack.flexjson.typeadapter
 
 import co.blocke.scalajack.flexjson.FlexJsonFlavor.MemberName
-import co.blocke.scalajack.flexjson.typeadapter.CaseClassTypeAdapter.Parameter
+
+import co.blocke.scalajack.flexjson.typeadapter.CaseClassTypeAdapter.Member
 import co.blocke.scalajack.flexjson.{ Context, EmptyReader, Reader, TokenType, TypeAdapter, TypeAdapterFactory, Writer }
 
 import scala.collection.mutable
@@ -11,7 +12,7 @@ import scala.reflect.runtime.universe.{ ClassSymbol, MethodMirror, MethodSymbol,
 
 object CaseClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
 
-  case class Parameter[T](
+  case class Member[T](
       index:              Int,
       name:               String,
       valueTypeAdapter:   TypeAdapter[T],
@@ -29,10 +30,9 @@ object CaseClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
 
   }
 
-  override def typeAdapter(tpe: Type, classSymbol: ClassSymbol, context: Context): Option[TypeAdapter[_]] =
+  override def typeAdapter(tpe: Type, classSymbol: ClassSymbol, context: Context, superParamTypes: List[Type] = List.empty[Type]): Option[TypeAdapter[_]] =
     if (classSymbol.isCaseClass) {
       val constructorSymbol = classSymbol.primaryConstructor.asMethod
-      println("HERE: " + constructorSymbol.infoIn(tpe))
 
       val constructorMirror = currentMirror.reflectClass(classSymbol).reflectConstructor(constructorSymbol)
 
@@ -43,16 +43,46 @@ object CaseClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
       val typeBeforeSubstitution = constructorSymbol.infoIn(tpe)
 
       val typeAfterSubstitution =
-        if (tpe.typeArgs.isEmpty) {
-          typeBeforeSubstitution.typeConstructor.substituteTypes(tpe.typeParams, tpe.typeParams.map(_ ⇒ typeOf[Any]))
+        if (superParamTypes.isEmpty) {
+          // tpe
+          // typeBeforeSubstitution.substituteTypes(tpe.typeConstructor.typeParams, superParamTypes)
+          typeBeforeSubstitution.substituteTypes(tpe.typeParams, tpe.typeParams.map(_ => typeOf[Any]))
         } else {
-          typeBeforeSubstitution.typeConstructor.substituteTypes(tpe.typeConstructor.typeParams, tpe.typeArgs)
+          typeBeforeSubstitution.substituteTypes(tpe.typeConstructor.typeParams, superParamTypes)
         }
 
-      val parameters = typeAfterSubstitution.paramLists.flatten.zipWithIndex.map({
-        case (param, index) ⇒
-          val parameterName = param.name.encodedName.toString
-          val accessor = tpe.member(TermName(parameterName)).asMethod
+      val memberNameTypeAdapter = context.typeAdapterOf[MemberName]
+
+      Some(CaseClassTypeAdapter(typeAfterSubstitution, constructorMirror, tpe, context, companionType, companionMirror, memberNameTypeAdapter))
+    } else {
+      None
+    }
+
+}
+
+case class CaseClassTypeAdapter[T](
+    caseClassType:         Type,
+    constructorMirror:     MethodMirror,
+    tpe:                   Type,
+    context:               Context,
+    companionType:         Type,
+    companionMirror:       reflect.runtime.universe.InstanceMirror,
+    memberNameTypeAdapter: TypeAdapter[MemberName]
+) extends TypeAdapter[T] {
+
+  var ccMembers: Option[List[Member[_]]] = None
+  def members = ccMembers.getOrElse(unpackMembers())
+
+  // This code is here, not in the CaseClassTypeAdapter object, because we need to return the adapter immediately,
+  // incase there are other threads trying to descend the members of this class, or self-references within the class.
+  // This adapter, in turn, lazily reflects its members, which this time will find the CaseClassTypeAdapter, and populate
+  // the member details.
+  def unpackMembers(): List[Member[_]] = {
+    if (ccMembers.isEmpty) {
+      ccMembers = Some(caseClassType.paramLists.flatten.zipWithIndex.map({
+        case (member, index) ⇒
+          val memberName = member.name.encodedName.toString
+          val accessor = tpe.member(TermName(memberName)).asMethod
 
           val defaultValueAccessor = companionType.member(TermName("apply$default$" + (index + 1)))
           val defaultValueAccessorMirror =
@@ -62,91 +92,75 @@ object CaseClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
               None
             }
 
-          val parameterValueTypeAdapter = context.typeAdapter(param.info)
-          Parameter(index, parameterName, parameterValueTypeAdapter, accessor, defaultValueAccessorMirror)
-      })
-
-      val memberNameTypeAdapter = context.typeAdapterOf[MemberName]
-
-      Some(CaseClassTypeAdapter(tpe, constructorMirror, parameters, memberNameTypeAdapter))
-    } else {
-      None
+          Member(index, memberName, context.typeAdapter(member.info, member.info.typeArgs), accessor, defaultValueAccessorMirror)
+      }))
     }
+    ccMembers.get
+  }
 
-}
-
-case class CaseClassTypeAdapter[T >: Null](
-    caseClassType:         Type,
-    constructorMirror:     MethodMirror,
-    parameters:            List[Parameter[_]],
-    memberNameTypeAdapter: TypeAdapter[MemberName]
-) extends TypeAdapter[T] {
-
-  val parametersByName = parameters.map(parameter ⇒ parameter.name → parameter.asInstanceOf[Parameter[Any]]).toMap
+  lazy val membersByName = members.map(member ⇒ member.name → member.asInstanceOf[Member[Any]]).toMap
 
   override def read(reader: Reader): T = {
-    reader.peek match {
-      case TokenType.Null ⇒
-        reader.readNull()
+    val numberOfMembers = members.length
 
-      case TokenType.BeginObject ⇒
-        val numberOfParameters = parameters.length
+    val arguments = new Array[Any](numberOfMembers)
+    val found = new mutable.BitSet(numberOfMembers)
 
-        val arguments = new Array[Any](numberOfParameters)
-        val found = new mutable.BitSet(numberOfParameters)
+    if (reader.peek == TokenType.Null) {
+      reader.readNull().asInstanceOf[T]
+    } else {
+      reader.beginObject()
 
-        reader.beginObject()
+      while (reader.hasMoreMembers) {
+        val memberName = memberNameTypeAdapter.read(reader)
 
-        while (reader.hasMoreMembers) {
-          val memberName = memberNameTypeAdapter.read(reader)
+        val optionalMember = membersByName.get(memberName)
+        optionalMember match {
+          case Some(member) ⇒
+            arguments(member.index) = member.valueTypeAdapter.read(reader)
+            found(member.index) = true
 
-          val optionalParameter = parametersByName.get(memberName)
-          optionalParameter match {
-            case Some(parameter) ⇒
-              arguments(parameter.index) = parameter.valueTypeAdapter.read(reader)
-              found(parameter.index) = true
+          case None ⇒
+            reader.skipValue()
+        }
+      }
+
+      var index = 0
+      while (index < numberOfMembers) {
+        if (!found(index)) {
+          val member = members(index)
+          member.defaultValueMirror match {
+            case Some(mirror) ⇒
+              arguments(index) = mirror.apply()
 
             case None ⇒
-              reader.skipValue()
+              arguments(index) = member.valueTypeAdapter.read(EmptyReader)
           }
         }
 
-        var index = 0
-        while (index < numberOfParameters) {
-          if (!found(index)) {
-            val parameter = parameters(index)
-            parameter.defaultValueMirror match {
-              case Some(mirror) ⇒
-                arguments(index) = mirror.apply()
+        index += 1
+      }
 
-              case None ⇒
-                arguments(index) = parameter.valueTypeAdapter.read(EmptyReader)
-            }
-          }
+      reader.endObject()
 
-          index += 1
-        }
-
-        reader.endObject()
-
-        constructorMirror.apply(arguments: _*).asInstanceOf[T]
+      constructorMirror.apply(arguments: _*).asInstanceOf[T]
     }
   }
 
   override def write(value: T, writer: Writer): Unit = {
-    if (value == null) {
+    if (value == null)
       writer.writeNull()
-    } else {
+    else {
       writer.beginObject()
 
-      for (parameter ← parameters) {
+      for (member ← members) {
         val classTag = ClassTag[T](value.getClass)
         val instanceMirror = currentMirror.reflect(value)(classTag)
-        val accessorMirror = instanceMirror.reflectMethod(parameter.accessor)
-        val parameterValue = accessorMirror.apply()
+        val accessorMirror = instanceMirror.reflectMethod(member.accessor)
+        val memberValue = accessorMirror.apply()
 
-        memberNameTypeAdapter.write(parameter.name, writer)
-        parameter.writeValue(parameterValue, writer)
+        memberNameTypeAdapter.write(member.name, writer)
+        member.writeValue(memberValue, writer)
       }
 
       writer.endObject()
