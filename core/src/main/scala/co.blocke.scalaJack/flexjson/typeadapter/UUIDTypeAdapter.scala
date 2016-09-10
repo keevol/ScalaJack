@@ -9,7 +9,7 @@ object UUIDTypeAdapter extends SimpleTypeAdapter[UUID] {
   override def read(reader: Reader): UUID =
     reader.peek match {
       case TokenType.Null ⇒
-        null
+        reader.readNull()
 
       case TokenType.String ⇒
         UUID.fromString(reader.readString())

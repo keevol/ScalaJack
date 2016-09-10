@@ -25,7 +25,6 @@ class TokenReader(
 
   def unescapedTokenText: String = {
     var builder: StringBuilder = null
-    var startOfUnescapedCharacters = 0
 
     val source = this.source
     val tokenOffset = this.tokenOffset
@@ -33,6 +32,8 @@ class TokenReader(
 
     var position = tokenOffset
     val maxPosition = tokenOffset + tokenLength
+
+    var startOfUnescapedCharacters = position
 
     while (position < maxPosition) {
       source(position) match {
@@ -76,7 +77,7 @@ class TokenReader(
               position += 2
 
             case 'u' ⇒
-              val hexEncoded = new String(source, position + 2, position + 6)
+              val hexEncoded = new String(source, position + 2, 4)
               val unicodeChar = Integer.parseInt(hexEncoded, 16).toChar
               builder.append(unicodeChar)
               position += 6

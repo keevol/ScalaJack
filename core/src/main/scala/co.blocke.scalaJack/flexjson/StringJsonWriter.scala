@@ -170,17 +170,29 @@ class StringJsonWriter(canonical: Boolean = true) extends Writer {
 
     for (i ← 0 until string.length) {
       string.charAt(i) match {
-        case '\t' ⇒
-          builder.append("\\t")
+        case '"' ⇒
+          builder.append("""\"""")
 
-        case '\r' ⇒
-          builder.append("\\r")
+        case '\\' ⇒
+          builder.append("""\\""")
+
+        case '/' ⇒
+          builder.append("""\/""")
+
+        case '\b' ⇒
+          builder.append("""\b""")
+
+        case '\f' ⇒
+          builder.append("""\f""")
 
         case '\n' ⇒
-          builder.append("\\n")
+          builder.append("""\n""")
 
-        case '"' ⇒
-          builder.append("\\\"")
+        case '\r' ⇒
+          builder.append("""\r""")
+
+        case '\t' ⇒
+          builder.append("""\t""")
 
         case ch ⇒
           builder.append(ch)
