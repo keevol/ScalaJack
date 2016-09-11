@@ -1,6 +1,10 @@
 package co.blocke.scalajack
 package test.v4
 
+/**
+ * Temporarilly disabled until I decide what to do about non-canonical in V5
+ */
+
 import org.scalatest.{ FunSpec, GivenWhenThen, BeforeAndAfterAll }
 import org.scalatest.Matchers._
 import scala.language.postfixOps

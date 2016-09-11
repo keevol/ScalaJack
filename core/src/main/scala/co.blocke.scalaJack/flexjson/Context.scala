@@ -4,7 +4,7 @@ import co.blocke.scalajack.flexjson.typeadapter.javaprimitives.{ JavaBooleanType
 import co.blocke.scalajack.flexjson.typeadapter.joda.JodaDateTimeTypeAdapter
 import co.blocke.scalajack.flexjson.typeadapter.{ AnyTypeAdapter, BigDecimalTypeAdapter, BooleanTypeAdapter, ByteTypeAdapter, CaseClassTypeAdapter, CharTypeAdapter, DerivedValueClassAdapter, DerivedValueClassCompanionTypeAdapter, DoubleTypeAdapter, EnumerationTypeAdapter, FloatTypeAdapter, IntTypeAdapter, ListTypeAdapter, LongTypeAdapter, MapTypeAdapter, OptionTypeAdapter, SetTypeAdapter, ShortTypeAdapter, StringTypeAdapter, TryTypeAdapter, TupleTypeAdapter, TypeTypeAdapter, UUIDTypeAdapter, _ }
 
-import scala.reflect.runtime.universe.{ Type, TypeTag }
+import scala.reflect.runtime.universe.{ Type, TypeTag, typeOf }
 
 object Context {
 
@@ -62,9 +62,13 @@ case class Context(factories: List[TypeAdapterFactory] = Nil) {
       var remainingFactories = factories
       while (optionalTypeAdapter.isEmpty && remainingFactories.nonEmpty) {
         optionalTypeAdapter = remainingFactories.head.typeAdapter(tpe, this, superParamTypes)
+        val z = typeOf[java.nio.charset.Charset]
+        if (tpe == z)
+          println("SEEK: " + tpe + " from " + remainingFactories.head + "  FOUND? " + optionalTypeAdapter.isDefined)
         remainingFactories = remainingFactories.tail
       }
 
+      println("TPE: " + tpe + "  " + (tpe == typeOf[java.nio.charset.Charset]))
       val typeAdapter = optionalTypeAdapter.getOrElse(throw new IllegalArgumentException(s"Cannot find a type adapter for $tpe"))
 
       // println(">> Saved: " + tpe.typeSymbol.fullName + superParamTypes.map(_.typeSymbol.fullName).mkString("(", ",", ")"))
