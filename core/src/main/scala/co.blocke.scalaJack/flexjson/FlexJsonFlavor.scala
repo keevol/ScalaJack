@@ -33,6 +33,8 @@ object FlexJsonFlavor extends FlavorKind[String] with ScalaJack[String] with Jac
 
         val defaultHintFieldName: String = vc.hintMap.getOrElse("default", "_hint")
 
+        val customHandlerTypeAdapterFactories = vc.customAdapters
+        /*
         val customHandlerTypeAdapterFactories = vc.customHandlers map {
           case (fullName, customHandler) ⇒
             new TypeAdapterFactory {
@@ -58,6 +60,7 @@ object FlexJsonFlavor extends FlavorKind[String] with ScalaJack[String] with Jac
                 }
             }
         }
+        */
 
         val polymorphicTypeAdapterFactories = polymorphicFullNames map { polymorphicFullName ⇒
           val polymorphicType = fullNameToType(polymorphicFullName)

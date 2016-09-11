@@ -30,7 +30,6 @@ object Context {
     .withFactory(DerivedValueClassCompanionTypeAdapter)
     .withFactory(DerivedValueClassAdapter)
     .withFactory(EnumerationTypeAdapter)
-    // FIXME    .withFactory(PolymorphicTypeAdapter)
     .withFactory(JavaBooleanTypeAdapter)
     .withFactory(JavaByteTypeAdapter)
     .withFactory(JavaCharacterTypeAdapter)

@@ -4,6 +4,11 @@ import co.blocke.scalajack.flexjson.{ Context, TypeAdapter, TypeAdapterFactory }
 
 import scala.reflect.runtime.universe.{ Type, TypeTag }
 
+/**
+ * __DO NOT__ EXTEND THIS CLASS FOR TypeAdapter OVERRIDES FOR PRIMITIVE TYPES (e.g. in VisitorContext)!
+ *
+ * See note in BasicTypeAdapter for details.
+ */
 abstract class SimpleTypeAdapter[T](implicit valueTypeTag: TypeTag[T]) extends TypeAdapterFactory with TypeAdapter[T] {
 
   val valueType = valueTypeTag.tpe
