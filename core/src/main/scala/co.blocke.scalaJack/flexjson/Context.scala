@@ -2,9 +2,11 @@ package co.blocke.scalajack.flexjson
 
 import co.blocke.scalajack.flexjson.typeadapter.javaprimitives.{ JavaBooleanTypeAdapter, JavaByteTypeAdapter, JavaCharacterTypeAdapter, JavaDoubleTypeAdapter, JavaFloatTypeAdapter, JavaIntegerTypeAdapter, JavaLongTypeAdapter, JavaShortTypeAdapter }
 import co.blocke.scalajack.flexjson.typeadapter.joda.JodaDateTimeTypeAdapter
-import co.blocke.scalajack.flexjson.typeadapter.{ AnyTypeAdapter, BigDecimalTypeAdapter, BooleanTypeAdapter, ByteTypeAdapter, CaseClassTypeAdapter, CharTypeAdapter, DerivedValueClassAdapter, DerivedValueClassCompanionTypeAdapter, DoubleTypeAdapter, EnumerationTypeAdapter, FloatTypeAdapter, IntTypeAdapter, ListTypeAdapter, LongTypeAdapter, MapTypeAdapter, OptionTypeAdapter, SetTypeAdapter, ShortTypeAdapter, StringTypeAdapter, TryTypeAdapter, TupleTypeAdapter, TypeTypeAdapter, UUIDTypeAdapter, _ }
+import co.blocke.scalajack.flexjson.typeadapter.{ AnyTypeAdapter, BigDecimalTypeAdapter, BooleanTypeAdapter, ByteTypeAdapter, CaseClassTypeAdapter, CharTypeAdapter, DerivedValueClassAdapter, DerivedValueClassCompanionTypeAdapter, DoubleTypeAdapter, EnumerationTypeAdapter, FloatTypeAdapter, IntTypeAdapter, ListTypeAdapter, LongTypeAdapter, MapTypeAdapter, OptionTypeAdapter, SetTypeAdapter, ShortTypeAdapter, StringTypeAdapter, TryTypeAdapter, TupleTypeAdapter, TypeTypeAdapter, UUIDTypeAdapter }
 
+import scala.language.existentials
 import scala.reflect.runtime.universe.{ Type, TypeTag }
+import scala.util.{ Success, Try }
 
 object Context {
 
@@ -44,52 +46,41 @@ object Context {
     .withFactory(JodaDateTimeTypeAdapter)
 }
 
+case class TypeAndTypeArgs(tpe: Type, typeArgs: List[Type])
+
 case class Context(factories: List[TypeAdapterFactory] = Nil) {
 
-  var resolvedTypeAdapters = Map[Type, TypeAdapter[_]]()
+  var resolvedTypeAdapterAttempts = Map[TypeAndTypeArgs, Try[TypeAdapter[_]]]()
 
   def withFactory(factory: TypeAdapterFactory): Context =
     copy(factories = factories :+ factory)
 
   def typeAdapter(tpe: Type, superParamTypes: List[Type] = List.empty[Type]): TypeAdapter[_] = {
-    val tsym = tpe.typeSymbol.asType.typeParams
-    val args = tpe.typeArgs
+    val typeAndTypeArgs = TypeAndTypeArgs(tpe, superParamTypes)
 
-    // if (resolvedTypeAdapters.contains(tpe)) println("FOUND: " + tpe)
+    resolvedTypeAdapterAttempts.get(typeAndTypeArgs) match {
+      case Some(typeAdapterAttempt) ⇒
+        typeAdapterAttempt.get
 
-    resolvedTypeAdapters.getOrElse(tpe, {
-      var optionalTypeAdapter: Option[TypeAdapter[_]] = None
+      case None ⇒
+        resolvedTypeAdapterAttempts += typeAndTypeArgs → Success(LazyTypeAdapter(this, typeAndTypeArgs.tpe, typeAndTypeArgs.typeArgs))
 
-      var remainingFactories = factories
-      while (optionalTypeAdapter.isEmpty && remainingFactories.nonEmpty) {
-        optionalTypeAdapter = remainingFactories.head.typeAdapter(tpe, this, superParamTypes)
-        remainingFactories = remainingFactories.tail
-      }
+        val typeAdapterAttempt = Try {
+          var optionalTypeAdapter: Option[TypeAdapter[_]] = None
 
-      val typeAdapter = optionalTypeAdapter.getOrElse(throw new IllegalArgumentException(s"Cannot find a type adapter for $tpe"))
+          var remainingFactories = factories
+          while (optionalTypeAdapter.isEmpty && remainingFactories.nonEmpty) {
+            optionalTypeAdapter = remainingFactories.head.typeAdapter(tpe, this, superParamTypes)
+            remainingFactories = remainingFactories.tail
+          }
 
-      // println(">> Saved: " + tpe.typeSymbol.fullName + superParamTypes.map(_.typeSymbol.fullName).mkString("(", ",", ")"))
+          optionalTypeAdapter.getOrElse(throw new IllegalArgumentException(s"Cannot find a type adapter for $tpe"))
+        }
 
-      // For types that do substitution, we need to make sure the tpe that has type substitution done is the one used as
-      // the key, otherwise the general tpe (pre-substitution) will be used--that's bad.  It'll store tpe for Foo[A], so
-      // Foo[String] and Foo[Boolean] are both found!  Clearly not what we want.  Post-substitution the specific versions are
-      // used as the key.
-      //
-      // NOTE/TODO: We may need a similar thing done for other parameterized types, e.g. collections.  To clean up code smell
-      // we may want to subtype TypeAdapter, i.e. ParameterizedTypeAdapter or something
-      //
+        resolvedTypeAdapterAttempts += typeAndTypeArgs → typeAdapterAttempt
 
-      typeAdapter match {
-        case ta: CaseClassTypeAdapter[_] =>
-          resolvedTypeAdapters += ta.caseClassType → ta
-        case ta: PolymorphicTypeAdapter[_] =>
-          resolvedTypeAdapters += ta.polyType → ta
-        case _ =>
-          resolvedTypeAdapters += tpe → typeAdapter
-      }
-
-      typeAdapter
-    })
+        typeAdapterAttempt.get
+    }
   }
 
   def typeAdapterOf[T](implicit valueTypeTag: TypeTag[T]): TypeAdapter[T] =

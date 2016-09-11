@@ -2,7 +2,7 @@ package co.blocke.scalajack.flexjson
 
 import scala.reflect.runtime.universe.Type
 
-case class LazyTypeAdapter[T](context: Context, tpe: Type) extends TypeAdapter[T] {
+case class LazyTypeAdapter[T](context: Context, tpe: Type, typeArgs: List[Type]) extends TypeAdapter[T] {
 
   var resolvedTypeAdapter: TypeAdapter[T] = _
 
@@ -10,7 +10,7 @@ case class LazyTypeAdapter[T](context: Context, tpe: Type) extends TypeAdapter[T
     var typeAdapter = resolvedTypeAdapter
 
     if (typeAdapter == null) {
-      typeAdapter = context.typeAdapter(tpe, tpe.typeArgs).asInstanceOf[TypeAdapter[T]]
+      typeAdapter = context.typeAdapter(tpe, typeArgs).asInstanceOf[TypeAdapter[T]]
       if (typeAdapter.isInstanceOf[LazyTypeAdapter[_]]) {
         println("Looking for " + tpe)
         throw new IllegalStateException(s"Type adapter for $tpe is still being built")

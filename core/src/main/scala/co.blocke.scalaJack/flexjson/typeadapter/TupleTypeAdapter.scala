@@ -1,26 +1,29 @@
 package co.blocke.scalajack.flexjson.typeadapter
 
-import co.blocke.scalajack.flexjson.typeadapter.TupleTypeAdapter.TupleField
-import co.blocke.scalajack.flexjson.{ Context, Reader, TypeAdapter, TypeAdapterFactory, Writer }
+import java.lang.reflect.Method
+
+import co.blocke.scalajack.flexjson.typeadapter.TupleTypeAdapter.Field
+import co.blocke.scalajack.flexjson.{Context, Reader, Reflection, TokenType, TypeAdapter, TypeAdapterFactory, Writer}
 
 import scala.language.existentials
-import scala.reflect.ClassTag
 import scala.reflect.runtime.currentMirror
-import scala.reflect.runtime.universe.{ ClassSymbol, MethodMirror, MethodSymbol, TermName, Type }
+import scala.reflect.runtime.universe.{ClassSymbol, MethodMirror, MethodSymbol, TermName, Type}
 
 object TupleTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
 
-  case class TupleField(
-      fieldValueTypeAdapter:    TypeAdapter[_],
-      fieldValueAccessorSymbol: MethodSymbol
+  case class Field[T](
+      index:                     Int,
+      valueTypeAdapter:          TypeAdapter[T],
+      valueAccessorMethodSymbol: MethodSymbol,
+      valueAccessorMethod:       Method
   ) {
 
     def read(reader: Reader): Any = {
-      fieldValueTypeAdapter.read(reader)
+      valueTypeAdapter.read(reader)
     }
 
     def write(fieldValue: Any, writer: Writer): Unit = {
-      fieldValueTypeAdapter.asInstanceOf[TypeAdapter[Any]].write(fieldValue, writer)
+      valueTypeAdapter.asInstanceOf[TypeAdapter[Any]].write(fieldValue, writer)
     }
 
   }
@@ -36,8 +39,9 @@ object TupleTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
         val fields = for (i ← 0 until numberOfFields) yield {
           val fieldType = fieldTypes(i)
           val fieldTypeAdapter = context.typeAdapter(fieldType, fieldType.typeArgs)
-          val fieldAccessorSymbol = tpe.member(TermName(s"_${i + 1}")).asMethod
-          TupleField(fieldTypeAdapter, fieldAccessorSymbol)
+          val valueAccessorMethodSymbol = tpe.member(TermName(s"_${i + 1}")).asMethod
+          val valueAccessorMethod = Reflection.methodToJava(valueAccessorMethodSymbol)
+          Field(i, fieldTypeAdapter, valueAccessorMethodSymbol, valueAccessorMethod)
         }
 
         val classMirror = currentMirror.reflectClass(classSymbol)
@@ -51,42 +55,45 @@ object TupleTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
 
 }
 
-case class TupleTypeAdapter[T](
-    fields:            List[TupleField],
-    constructorMirror: MethodMirror
+case class TupleTypeAdapter[T >: Null](
+                                fields:            List[Field[_]],
+                                constructorMirror: MethodMirror
 ) extends TypeAdapter[T] {
 
-  override def read(reader: Reader): T = {
-    reader.beginArray()
+  override def read(reader: Reader): T =
+    reader.peek match {
+      case TokenType.Null ⇒
+        reader.readNull()
 
-    val numberOfFields = fields.length
+      case TokenType.BeginArray ⇒
+        reader.beginArray()
 
-    val fieldValues = new Array[Any](numberOfFields)
+        val numberOfFields = fields.length
 
-    var i = 0
-    for (field ← fields) {
-      val fieldValue = field.read(reader)
-      fieldValues(i) = fieldValue
-      i += 1
+        val fieldValues = new Array[Any](numberOfFields)
+
+        for (field ← fields) {
+          val fieldValue = field.read(reader)
+          fieldValues(field.index) = fieldValue
+        }
+
+        reader.endArray()
+
+        constructorMirror.apply(fieldValues: _*).asInstanceOf[T]
     }
 
-    reader.endArray()
+  override def write(tuple: T, writer: Writer): Unit =
+    if (tuple == null) {
+      writer.writeNull()
+    } else {
+      writer.beginArray()
 
-    constructorMirror.apply(fieldValues: _*).asInstanceOf[T]
-  }
+      for (field ← fields) {
+        val fieldValue = field.valueAccessorMethod.invoke(tuple)
+        field.write(fieldValue, writer)
+      }
 
-  override def write(tuple: T, writer: Writer): Unit = {
-    writer.beginArray()
-
-    val tupleMirror = currentMirror.reflect(tuple)(ClassTag(tuple.getClass))
-
-    for (field ← fields) {
-      val fieldValueAccessorMirror = tupleMirror.reflectMethod(field.fieldValueAccessorSymbol)
-      val fieldValue = fieldValueAccessorMirror.apply()
-      field.write(fieldValue, writer)
+      writer.endArray()
     }
-
-    writer.endArray()
-  }
 
 }

@@ -1,8 +1,9 @@
 package co.blocke.scalajack.flexjson.typeadapter
 
-import co.blocke.scalajack.flexjson.{ Context, Reader, TypeAdapter, TypeAdapterFactory, Writer }
+import java.lang.reflect.Method
 
-import scala.reflect.ClassTag
+import co.blocke.scalajack.flexjson.{ Context, Reader, Reflection, TypeAdapter, TypeAdapterFactory, Writer }
+
 import scala.reflect.runtime.currentMirror
 import scala.reflect.runtime.universe.{ ClassSymbol, MethodMirror, MethodSymbol, TermName, Type }
 
@@ -15,12 +16,13 @@ object DerivedValueClassAdapter extends TypeAdapterFactory.FromClassSymbol {
 
       val parameter = constructorSymbol.paramLists.head.head
       val parameterName = parameter.name.encodedName.toString
-      val accessor = tpe.member(TermName(parameterName)).asMethod
+      val accessorMethodSymbol = tpe.member(TermName(parameterName)).asMethod
+      val accessorMethod = Reflection.methodToJava(accessorMethodSymbol)
 
       val valueType = parameter.infoIn(tpe).substituteTypes(tpe.typeConstructor.typeParams, tpe.typeArgs)
       val valueTypeAdapter = context.typeAdapter(valueType, valueType.typeArgs)
 
-      Some(DerivedValueClassAdapter(constructorMirror, accessor, valueTypeAdapter))
+      Some(DerivedValueClassAdapter(constructorMirror, accessorMethodSymbol, accessorMethod, valueTypeAdapter))
     } else {
       None
     }
@@ -28,9 +30,10 @@ object DerivedValueClassAdapter extends TypeAdapterFactory.FromClassSymbol {
 }
 
 case class DerivedValueClassAdapter[DerivedValueClass, Value](
-    constructorMirror: MethodMirror,
-    accessor:          MethodSymbol,
-    valueTypeAdapter:  TypeAdapter[Value]
+    constructorMirror:    MethodMirror,
+    accessorMethodSymbol: MethodSymbol,
+    accessorMethod:       Method,
+    valueTypeAdapter:     TypeAdapter[Value]
 ) extends TypeAdapter[DerivedValueClass] {
 
   override def read(reader: Reader): DerivedValueClass = {
@@ -39,7 +42,7 @@ case class DerivedValueClassAdapter[DerivedValueClass, Value](
   }
 
   override def write(value: DerivedValueClass, writer: Writer): Unit = {
-    val wrappedValue = currentMirror.reflect(value)(ClassTag(value.getClass)).reflectMethod(accessor).apply().asInstanceOf[Value]
+    val wrappedValue = accessorMethod.invoke(value).asInstanceOf[Value]
     valueTypeAdapter.write(wrappedValue, writer)
   }
 
