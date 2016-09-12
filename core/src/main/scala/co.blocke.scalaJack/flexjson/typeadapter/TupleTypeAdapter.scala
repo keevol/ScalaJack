@@ -3,11 +3,11 @@ package co.blocke.scalajack.flexjson.typeadapter
 import java.lang.reflect.Method
 
 import co.blocke.scalajack.flexjson.typeadapter.TupleTypeAdapter.Field
-import co.blocke.scalajack.flexjson.{Context, Reader, Reflection, TokenType, TypeAdapter, TypeAdapterFactory, Writer}
+import co.blocke.scalajack.flexjson.{ Context, Reader, Reflection, TokenType, TypeAdapter, TypeAdapterFactory, Writer }
 
 import scala.language.existentials
 import scala.reflect.runtime.currentMirror
-import scala.reflect.runtime.universe.{ClassSymbol, MethodMirror, MethodSymbol, TermName, Type}
+import scala.reflect.runtime.universe.{ ClassSymbol, MethodMirror, MethodSymbol, TermName, Type }
 
 object TupleTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
 
@@ -56,8 +56,8 @@ object TupleTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
 }
 
 case class TupleTypeAdapter[T >: Null](
-                                fields:            List[Field[_]],
-                                constructorMirror: MethodMirror
+    fields:            List[Field[_]],
+    constructorMirror: MethodMirror
 ) extends TypeAdapter[T] {
 
   override def read(reader: Reader): T =

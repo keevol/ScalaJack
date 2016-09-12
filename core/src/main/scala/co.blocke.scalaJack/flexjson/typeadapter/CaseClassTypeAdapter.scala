@@ -8,19 +8,39 @@ import co.blocke.scalajack.flexjson.{ Context, EmptyReader, Reader, Reflection, 
 
 import scala.collection.mutable
 import scala.language.reflectiveCalls
+import scala.language.existentials
 import scala.reflect.runtime.currentMirror
 import scala.reflect.runtime.universe.{ ClassSymbol, MethodMirror, MethodSymbol, TermName, Type, typeOf }
 
 object CaseClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
 
   case class Member[T](
-      index:                     Int,
-      name:                      String,
-      valueTypeAdapter:          TypeAdapter[T],
-      valueAccessorMethodSymbol: MethodSymbol,
-      valueAccessorMethod:       Method,
-      defaultValueMirror:        Option[MethodMirror]
+      index:                              Int,
+      name:                               String,
+      valueTypeAdapter:                   TypeAdapter[T],
+      valueAccessorMethodSymbol:          MethodSymbol,
+      valueAccessorMethod:                Method,
+      derivedValueClassConstructorMirror: Option[MethodMirror],
+      defaultValueMirror:                 Option[MethodMirror],
+      outerClass:                         java.lang.Class[_],
+      innerClass:                         Option[java.lang.Class[_]]
   ) {
+
+    def valueIn(instance: Any): T = {
+      val value = valueAccessorMethod.invoke(instance)
+
+      if (outerClass.isInstance(value)) {
+        value.asInstanceOf[T]
+      } else {
+        derivedValueClassConstructorMirror match {
+          case Some(methodMirror) ⇒
+            methodMirror.apply(value).asInstanceOf[T]
+
+          case None ⇒
+            value.asInstanceOf[T]
+        }
+      }
+    }
 
     def writeValue(parameterValue: Any, writer: Writer): Unit = {
       valueTypeAdapter.asInstanceOf[TypeAdapter[Any]].write(parameterValue, writer)
@@ -62,6 +82,19 @@ object CaseClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
           val accessorMethodSymbol = tpe.member(TermName(memberName)).asMethod
           val accessorMethod = Reflection.methodToJava(accessorMethodSymbol)
 
+          val memberClassSymbol = member.info.typeSymbol.asClass
+          val memberClass = currentMirror.runtimeClass(memberClassSymbol)
+
+          val (derivedValueClassConstructorMirror, innerClass) =
+            if (memberClassSymbol.isDerivedValueClass) {
+              // The accessor will actually return the "inner" value, not the value class.
+              val constructorMethodSymbol = memberClassSymbol.primaryConstructor.asMethod
+              //              val innerClass = currentMirror.runtimeClass(constructorMethodSymbol.paramLists.flatten.head.info.typeSymbol.asClass)
+              (Some(currentMirror.reflectClass(memberClassSymbol).reflectConstructor(constructorMethodSymbol)), None)
+            } else {
+              (None, None)
+            }
+
           val defaultValueAccessor = companionType.member(TermName("apply$default$" + (index + 1)))
           val defaultValueAccessorMirror =
             if (defaultValueAccessor.isMethod) {
@@ -70,7 +103,7 @@ object CaseClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
               None
             }
 
-          Member(index, memberName, context.typeAdapter(member.info, member.info.typeArgs), accessorMethodSymbol, accessorMethod, defaultValueAccessorMirror)
+          Member(index, memberName, context.typeAdapter(member.info, member.info.typeArgs), accessorMethodSymbol, accessorMethod, derivedValueClassConstructorMirror, defaultValueAccessorMirror, memberClass, innerClass)
       })
 
       Some(CaseClassTypeAdapter(typeAfterSubstitution, constructorMirror, tpe, memberNameTypeAdapter, members))
@@ -151,7 +184,7 @@ case class CaseClassTypeAdapter[T >: Null](
       writer.beginObject()
 
       for (member ← members) {
-        val memberValue = member.valueAccessorMethod.invoke(value)
+        val memberValue = member.valueIn(value)
 
         memberNameTypeAdapter.write(member.name, writer)
         member.writeValue(memberValue, writer)

@@ -9,8 +9,6 @@ object EmptyReader extends Reader {
 
   override def readString(): String = ???
 
-  override def readIdentifier(): String = ???
-
   override def tokenText: String = ???
 
   override var position: Int = _

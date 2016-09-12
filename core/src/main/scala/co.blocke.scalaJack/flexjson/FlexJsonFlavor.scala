@@ -83,7 +83,8 @@ object FlexJsonFlavor extends FlavorKind[String] with ScalaJack[String] with Jac
 
             override def typeAdapter(tpe: Type, context: Context, superParamTypes: List[Type] = List.empty[Type]): Option[TypeAdapter[_]] = {
               // FIXME              if (tpe =:= polymorphicType) {
-              if (tpe =:= polymorphicType) {
+              //              if (tpe =:= polymorphicType) {
+              if (tpe.typeSymbol == polymorphicType.typeSymbol) {
                 // print("NAME: " + tpe.typeSymbol.fullName + "  -->  " + polymorphicFullName)
                 // if (tpe.typeSymbol.fullName == polymorphicFullName) {
                 val stringTypeAdapter = context.typeAdapterOf[String]

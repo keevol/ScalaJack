@@ -43,7 +43,7 @@ case class DerivedValueClassAdapter[DerivedValueClass, Value](
 
   override def write(value: DerivedValueClass, writer: Writer): Unit = {
     val wrappedValue = accessorMethod.invoke(value).asInstanceOf[Value]
-    valueTypeAdapter.write(wrappedValue, writer)
+    valueTypeAdapter.write(wrappedValue.asInstanceOf[Value], writer)
   }
 
 }

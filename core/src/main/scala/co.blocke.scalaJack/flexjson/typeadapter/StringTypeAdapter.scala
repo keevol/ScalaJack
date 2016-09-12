@@ -1,6 +1,5 @@
 package co.blocke.scalajack.flexjson.typeadapter
 
-import co.blocke.scalajack.Unicode
 import co.blocke.scalajack.flexjson.{ Reader, TokenType, Writer }
 
 object StringTypeAdapter extends SimpleTypeAdapter[String] {
@@ -9,9 +8,6 @@ object StringTypeAdapter extends SimpleTypeAdapter[String] {
     reader.peek match {
       case TokenType.String ⇒
         reader.readString()
-
-      case TokenType.Identifier ⇒
-        reader.readIdentifier()
 
       case TokenType.Null ⇒
         reader.readNull()

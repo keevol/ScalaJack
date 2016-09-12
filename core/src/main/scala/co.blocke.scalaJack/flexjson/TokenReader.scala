@@ -103,11 +103,6 @@ class TokenReader(
     unescapedTokenText
   }
 
-  override def readIdentifier(): String = {
-    read(expected = TokenType.Identifier)
-    unescapedTokenText
-  }
-
   override def tokenText: String =
     new String(source, tokenOffsets(position), tokenLengths(position))
 

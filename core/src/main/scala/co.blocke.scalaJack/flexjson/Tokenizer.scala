@@ -4,9 +4,6 @@ import co.blocke.scalajack.flexjson.TokenType.TokenType
 
 class Tokenizer(val capacity: Int = 1024) {
 
-  @inline final val ObjectStructureType: Byte = 1
-  @inline final val ArrayStructureType: Byte = 2
-
   def tokenize(source: Array[Char], offset: Int, length: Int, capacity: Int = 1024): TokenReader = {
     val maxPosition = offset + length
     var position = offset
@@ -16,10 +13,6 @@ class Tokenizer(val capacity: Int = 1024) {
     val tokenLengths = new Array[Int](capacity)
 
     var numberOfTokens = 0
-    var isIdentifier = false
-
-    val structureTypeStack = new Array[Byte](256)
-    var indexOfTopStructure = -1
 
     @inline def appendToken(tokenType: TokenType, tokenOffset: Int, tokenLength: Int): Unit = {
       val i = numberOfTokens
@@ -95,25 +88,18 @@ class Tokenizer(val capacity: Int = 1024) {
     while (position < maxPosition) {
       source(position) match {
         case '{' ⇒
-          indexOfTopStructure += 1 // stack push
-          structureTypeStack(indexOfTopStructure) = ObjectStructureType
           appendToken(TokenType.BeginObject, position, 1)
           position += 1
-          isIdentifier = true
 
         case '}' ⇒
-          indexOfTopStructure -= 1 // stack pop
           appendToken(TokenType.EndObject, position, 1)
           position += 1
 
         case '[' ⇒
-          indexOfTopStructure += 1 // stack push
-          structureTypeStack(indexOfTopStructure) = ArrayStructureType
           appendToken(TokenType.BeginArray, position, 1)
           position += 1
 
         case ']' ⇒
-          indexOfTopStructure -= 1 // stack pop
           appendToken(TokenType.EndArray, position, 1)
           position += 1
 
@@ -122,10 +108,11 @@ class Tokenizer(val capacity: Int = 1024) {
 
         case ',' ⇒
           position += 1
-          if (structureTypeStack(indexOfTopStructure) == ObjectStructureType) // , inside object is a field separator... identifier expected
-            isIdentifier = true
 
         case ' ' ⇒ // skip whitespace
+          position += 1
+
+        case '\r' ⇒ // skip whitespace
           position += 1
 
         case '\n' ⇒ // skip whitespace
@@ -142,30 +129,13 @@ class Tokenizer(val capacity: Int = 1024) {
           while (source(position) != '"') {
             if (source(position) == '\\') {
               position += 2
-            } else
+            } else {
               position += 1
+            }
           }
 
-          if (isIdentifier) {
-            appendToken(TokenType.Identifier, start, position - start)
-            isIdentifier = false
-          } else {
-            appendToken(TokenType.String, start, position - start)
-          }
-
+          appendToken(TokenType.String, start, position - start)
           position += 1 // Skip the trailing double-quote
-
-        case 'n' ⇒ // HUGE assumption this is null, but checking would slow us down too much
-          appendToken(TokenType.Null, position, 4)
-          position += 4
-
-        case 't' ⇒ // HUGE assumption this is true, but checking would slow us down too much
-          appendToken(TokenType.True, position, 4)
-          position += 4
-
-        case 'f' ⇒ // HUGE assumption this is false, but checking would slow us down too much
-          appendToken(TokenType.False, position, 5)
-          position += 5
 
         case ch ⇒
           // Integer
@@ -188,7 +158,28 @@ class Tokenizer(val capacity: Int = 1024) {
 
             val literalNameLength = position - literalNameOffset
 
-            appendToken(TokenType.LiteralName, literalNameOffset, literalNameLength)
+            if (literalNameLength == 4
+              && source(literalNameOffset + 0) == 'n'
+              && source(literalNameOffset + 1) == 'u'
+              && source(literalNameOffset + 2) == 'l'
+              && source(literalNameOffset + 3) == 'l') {
+              appendToken(TokenType.Null, literalNameOffset, literalNameLength)
+            } else if (literalNameLength == 4
+              && source(literalNameOffset + 0) == 't'
+              && source(literalNameOffset + 1) == 'r'
+              && source(literalNameOffset + 2) == 'u'
+              && source(literalNameOffset + 3) == 'e') {
+              appendToken(TokenType.True, literalNameOffset, literalNameLength)
+            } else if (literalNameLength == 5
+              && source(literalNameOffset + 0) == 'f'
+              && source(literalNameOffset + 1) == 'a'
+              && source(literalNameOffset + 2) == 'l'
+              && source(literalNameOffset + 3) == 's'
+              && source(literalNameOffset + 4) == 'e') {
+              appendToken(TokenType.False, literalNameOffset, literalNameLength)
+            } else {
+              appendToken(TokenType.UnknownLiteralName, literalNameOffset, literalNameLength)
+            }
           } else if (isSign(ch)) {
 
           } else if (isDigit(ch)) {
