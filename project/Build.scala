@@ -106,7 +106,7 @@ object Dependencies {
 	val mongo_scala     = "org.mongodb.scala"       %% "mongo-scala-driver" % "1.1.0"
 	val joda 			= "joda-time"				% "joda-time"			% "2.3"
 	val joda_convert    = "org.joda"				% "joda-convert"		% "1.7"
-	val scalatest 		= "org.scalatest" 			%% "scalatest"			% "2.2.1"
+	val scalatest 		= "org.scalatest" 			%% "scalatest"			% "3.0.0"
 	val slf4j_simple 	= "org.slf4j" 				% "slf4j-simple" 		% "1.7.7"
 	// val mysql_jdbc  	= "mysql" 					% "mysql-connector-java" % "5.1.33"
 }

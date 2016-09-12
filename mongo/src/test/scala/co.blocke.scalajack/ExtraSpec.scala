@@ -180,13 +180,15 @@ class ExtraSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
       }
       it("Handles null values - Double") {
         val js = """{"a":5.1,"b":null}"""
-        val o = ScalaJack().read[Map[String, Double]](js)
-        o should contain allOf (("a" -> 5.1), ("b" -> null))
+        assertThrows[IllegalStateException] {
+          ScalaJack().read[Map[String, Double]](js)
+        }
       }
       it("Handles null values - Boolean") {
         val js = """{"a":true,"b":null}"""
-        val o = ScalaJack().read[Map[String, Boolean]](js)
-        o should contain allOf (("a" -> true), ("b" -> null))
+        assertThrows[IllegalStateException] {
+          ScalaJack().read[Map[String, Boolean]](js)
+        }
       }
       it("Handles null values - String") {
         val js = """{"a":"wow","b":null}"""
@@ -195,13 +197,15 @@ class ExtraSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
       }
       it("Handles null values - Int") {
         val js = """{"a":5,"b":null}"""
-        val o = ScalaJack().read[Map[String, Int]](js)
-        o should contain allOf (("a" -> 5), ("b" -> null))
+        assertThrows[IllegalStateException] {
+          ScalaJack().read[Map[String, Int]](js)
+        }
       }
       it("Handles null values - Long") {
         val js = """{"a":5,"b":null}"""
-        val o = ScalaJack().read[Map[String, Long]](js)
-        o should contain allOf (("a" -> 5L), ("b" -> null))
+        assertThrows[IllegalStateException] {
+          ScalaJack().read[Map[String, Long]](js)
+        }
       }
       it("Handles null values - UUID") {
         val js = """{"a":"1e6c2b31-4dfe-4bf6-a0a0-882caaff0e9c","b":null}"""
