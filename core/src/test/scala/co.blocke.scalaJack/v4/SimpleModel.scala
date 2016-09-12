@@ -33,17 +33,17 @@ trait Excite[T, U] {
   val a: U
   val b: T
 }
-trait Excite2[T, U] {
+trait PairOfValues[T, U] {
   val a: T
   val b: U
 }
-trait Sleep[Y] {
-  val x: Y
+trait Meal[D] {
+  val drink: D
 }
 case class Ex1(a: String, b: Int) extends Excite[Int, String]
-case class Slp[Z](x: Z) extends Sleep[Z]
-case class Ex2[Z, X](a: Sleep[Z], b: Sleep[X]) extends Excite2[Sleep[Z], Sleep[X]]
-case class Ex3[R](a: String, b: R) extends Excite2[String, R]
+case class Lunch[Z](drink: Z) extends Meal[Z]
+case class PairOfMeals[Z, X](a: Meal[Z], b: Meal[X]) extends PairOfValues[Meal[Z], Meal[X]]
+case class Ex3[R](a: String, b: R) extends PairOfValues[String, R]
 
 case class All(
   a: Int,

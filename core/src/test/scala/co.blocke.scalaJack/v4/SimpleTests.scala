@@ -201,14 +201,14 @@ class SimpleTestSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         (sjJS.read[Excite[Int, String]](jsT1) == t1) should be(true)
       }
       it("Must read parameterized classes - Nested parameterized trait") {
-        val t2 = Ex2(Slp('a'), Slp(false))
-        val jsT2 = """{"_hint":"co.blocke.scalajack.test.v4.Ex2","a":{"_hint":"co.blocke.scalajack.test.v4.Slp","x":"a"},"b":{"_hint":"co.blocke.scalajack.test.v4.Slp","x":false}}"""
-        (sjJS.read[Excite2[Sleep[Char], Sleep[Boolean]]](jsT2) == t2) should be(true)
+        val t2 = PairOfMeals(Lunch('a'), Lunch(false))
+        val jsT2 = """{"_hint":"co.blocke.scalajack.test.v4.PairOfMeals","a":{"_hint":"co.blocke.scalajack.test.v4.Lunch","drink":"a"},"b":{"_hint":"co.blocke.scalajack.test.v4.Lunch","drink":false}}"""
+        (sjJS.read[PairOfValues[Meal[Char], Meal[Boolean]]](jsT2) == t2) should be(true)
       }
       it("Must read parameterized classes - Nested parameterized trait, partially applied") {
         val t3 = Ex3("wow", false)
         val jsT3 = """{"_hint":"co.blocke.scalajack.test.v4.Ex3","a":"wow","b":false}"""
-        (sjJS.read[Excite2[String, Boolean]](jsT3) == t3) should be(true)
+        (sjJS.read[PairOfValues[String, Boolean]](jsT3) == t3) should be(true)
       }
       it("Must read Enumerations") {
         val js = """{"a":"Red","b":"JSON"}"""

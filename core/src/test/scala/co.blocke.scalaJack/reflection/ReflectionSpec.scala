@@ -1,10 +1,10 @@
 package co.blocke.scalajack.reflection
 
 import co.blocke.scalajack.ScalaJack
-import org.scalatest.{FunSpec, Matchers}
+import org.scalatest.{ FunSpec, Matchers }
 
 import scala.reflect.runtime.currentMirror
-import scala.reflect.runtime.universe.{ClassSymbol, InstanceMirror, TypeName, typeOf}
+import scala.reflect.runtime.universe.{ ClassSymbol, InstanceMirror, TypeName, typeOf }
 
 trait Drink
 case class OrangeJuice(pulp: Boolean) extends Drink
