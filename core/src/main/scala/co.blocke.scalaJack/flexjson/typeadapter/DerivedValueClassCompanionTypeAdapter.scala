@@ -1,10 +1,11 @@
 package co.blocke.scalajack.flexjson.typeadapter
 
+import java.lang.reflect.Method
+
 import co.blocke.scalajack.ValueClassCustom
-import co.blocke.scalajack.flexjson.{ Context, Reader, TypeAdapter, TypeAdapterFactory, Writer }
+import co.blocke.scalajack.flexjson.{ Context, Reader, Reflection, TypeAdapter, TypeAdapterFactory, Writer }
 import co.blocke.scalajack.json.JsonKind
 
-import scala.reflect.ClassTag
 import scala.reflect.runtime.currentMirror
 import scala.reflect.runtime.universe.{ ClassSymbol, MethodMirror, MethodSymbol, TermName, Type, typeOf }
 
@@ -22,11 +23,12 @@ object DerivedValueClassCompanionTypeAdapter extends TypeAdapterFactory.FromClas
 
           val parameter = constructorSymbol.paramLists.head.head
           val parameterName = parameter.name.encodedName.toString
-          val accessor = tpe.member(TermName(parameterName)).asMethod
+          val accessorMethodSymbol = tpe.member(TermName(parameterName)).asMethod
+          val accessorMethod = Reflection.methodToJava(accessorMethodSymbol)
 
           val anyTypeAdapter = context.typeAdapterOf[Any]
 
-          Some(DerivedValueClassCompanionTypeAdapter(constructorMirror, accessor, valueClassCustom, anyTypeAdapter))
+          Some(DerivedValueClassCompanionTypeAdapter(constructorMirror, accessorMethodSymbol, accessorMethod, valueClassCustom, anyTypeAdapter))
 
         case _ ⇒
           None
@@ -39,10 +41,11 @@ object DerivedValueClassCompanionTypeAdapter extends TypeAdapterFactory.FromClas
 }
 
 case class DerivedValueClassCompanionTypeAdapter[DerivedValueClass, Value](
-    constructorMirror: MethodMirror,
-    valueAccessor:     MethodSymbol,
-    valueClassCustom:  ValueClassCustom,
-    anyTypeAdapter:    TypeAdapter[Any]
+    constructorMirror:         MethodMirror,
+    valueAccessorMethodSymbol: MethodSymbol,
+    valueAccessorMethod:       Method,
+    valueClassCustom:          ValueClassCustom,
+    anyTypeAdapter:            TypeAdapter[Any]
 ) extends TypeAdapter[DerivedValueClass] {
 
   override def read(reader: Reader): DerivedValueClass = {
@@ -52,7 +55,7 @@ case class DerivedValueClassCompanionTypeAdapter[DerivedValueClass, Value](
   }
 
   override def write(value: DerivedValueClass, writer: Writer): Unit = {
-    val wrappedValue = currentMirror.reflect(value)(ClassTag(value.getClass)).reflectMethod(valueAccessor).apply()
+    val wrappedValue = valueAccessorMethod.invoke(value)
     val rawJson = valueClassCustom.render((JsonKind(), wrappedValue)).toString.toCharArray
     writer.writeRawValue(rawJson, 0, rawJson.length)
   }

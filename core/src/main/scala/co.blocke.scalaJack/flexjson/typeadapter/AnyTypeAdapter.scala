@@ -10,7 +10,7 @@ object AnyTypeAdapter extends TypeAdapterFactory {
 
   override def typeAdapter(tpe: Type, context: Context, superParamTypes: List[Type]): Option[TypeAdapter[_]] =
     if (tpe =:= typeOf[Any]) {
-      val mapTypeAdapter = context.typeAdapterOf[Map[String, Any]]
+      val mapTypeAdapter = context.typeAdapterOf[Map[Any, Any]]
       val listTypeAdapter = context.typeAdapterOf[List[Any]]
       val stringTypeAdapter = context.typeAdapterOf[String]
       val booleanTypeAdapter = context.typeAdapterOf[Boolean]
@@ -24,7 +24,7 @@ object AnyTypeAdapter extends TypeAdapterFactory {
 }
 
 case class AnyTypeAdapter(
-    mapTypeAdapter:        TypeAdapter[Map[String, Any]],
+    mapTypeAdapter:        TypeAdapter[Map[Any, Any]],
     listTypeAdapter:       TypeAdapter[List[Any]],
     stringTypeAdapter:     TypeAdapter[String],
     booleanTypeAdapter:    TypeAdapter[Boolean],
@@ -59,8 +59,17 @@ case class AnyTypeAdapter(
     // TODO come up with a better way to obtain the value's type
 
     value match {
+      case null ⇒
+        writer.writeNull()
+
       case string: String ⇒
-        context.typeAdapterOf[String].write(string, writer)
+        stringTypeAdapter.write(string, writer)
+
+      case list: List[_] ⇒
+        listTypeAdapter.write(list, writer)
+
+      case map: Map[_, _] ⇒
+        mapTypeAdapter.write(map.asInstanceOf[Map[Any, Any]], writer)
 
       case _ ⇒
         val valueType = currentMirror.staticClass(value.getClass.getName).info

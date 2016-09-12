@@ -14,6 +14,11 @@ object BigDecimalTypeAdapter extends SimpleTypeAdapter[BigDecimal] {
         BigDecimal(reader.tokenText)
     }
 
-  override def write(value: BigDecimal, writer: Writer): Unit = ???
+  override def write(value: BigDecimal, writer: Writer): Unit =
+    if (value == null) {
+      writer.writeNull()
+    } else {
+      writer.writeRawValue(value.toString)
+    }
 
 }

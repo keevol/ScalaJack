@@ -5,7 +5,7 @@ import co.blocke.scalajack.flexjson.{ Context, ForwardingWriter, Reader, TokenTy
 
 import scala.reflect.runtime.currentMirror
 import scala.reflect.runtime.universe.{ ClassSymbol, Type }
-import scala.collection.mutable.{ Map => MMap }
+import scala.collection.mutable.{ Map ⇒ MMap }
 
 case class PolymorphicTypeAdapterFactory(hintFieldName: String) extends TypeAdapterFactory.FromClassSymbol {
 
@@ -63,7 +63,7 @@ case class PolymorphicTypeAdapter[T](
     PolymorphicTypeAdapter.resolved.getOrElse((childType, polyType.typeArgs), {
       // Find the "with" mixin for this polytype in the kid (there may be multiple mixin traits).
       // Then get it's type arguments, e.g. [String,P].  It's the 'P' we're interested in.
-      val childTypeArgs = childType.baseClasses.find(_ == polyType.typeSymbol).map(f => childType.baseType(f)).map(_.typeArgs).getOrElse(List.empty[Type])
+      val childTypeArgs = childType.baseClasses.find(_ == polyType.typeSymbol).map(f ⇒ childType.baseType(f)).map(_.typeArgs).getOrElse(List.empty[Type])
 
       // Match 'em up with dad's (this polytype) type aguments, e.g. [String,Int]
       val argPairs = polyType.typeArgs zip childTypeArgs
@@ -75,12 +75,12 @@ case class PolymorphicTypeAdapter[T](
 
       // Now pull out the ones that don't match--that need subsititution in the kid (the 'P')
       val forSubstitution = argPairs.collect {
-        case (fromDad, fromKid) if (fromDad != fromKid) => (fromDad, kidsParamOrder.indexOf(fromKid.typeSymbol))
-      }.toList
+        case (fromDad, fromKid) if (fromDad != fromKid) ⇒ (fromDad, kidsParamOrder.indexOf(fromKid.typeSymbol))
+      }
 
       // Return sorted list
-      val typeList = forSubstitution.sortWith { (a, b) => a._2 < b._2 }.map(_._1)
-      PolymorphicTypeAdapter.resolved += (childType, polyType.typeArgs) -> typeList
+      val typeList = forSubstitution.sortWith { (a, b) ⇒ a._2 < b._2 }.map(_._1)
+      PolymorphicTypeAdapter.resolved += (childType, polyType.typeArgs) → typeList
       typeList
     })
   }

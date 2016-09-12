@@ -3,7 +3,7 @@ package co.blocke.scalajack.flexjson.typeadapter.javaprimitives
 import co.blocke.scalajack.flexjson.typeadapter.SimpleTypeAdapter
 import co.blocke.scalajack.flexjson.{ Reader, TokenType, Writer }
 
-object JavaIntegerTypeAdapter extends SimpleTypeAdapter[java.lang.Integer] {
+object JavaIntegerTypeAdapter extends SimpleTypeAdapter.ForTypeSymbolOf[java.lang.Integer] {
 
   override def read(reader: Reader): java.lang.Integer =
     reader.peek match {

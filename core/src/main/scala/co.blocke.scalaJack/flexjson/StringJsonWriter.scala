@@ -7,7 +7,7 @@ object StructureType extends Enumeration {
 
 object ValueType extends Enumeration {
   type ValueType = Value
-  val String, Number, Boolean, Identifier, Object, Array, Unreadable, Raw, Nothing = Value
+  val String, Number, LiteralName, Object, Array, Unreadable, Raw, Nothing = Value
 }
 
 object MemberPart extends Enumeration {
@@ -26,11 +26,13 @@ class StringJsonWriter(canonical: Boolean = true) extends Writer {
 
     val structureType: StructureType
 
-    def beginNestedValue(nestedValueType: ValueType): Unit
+    def parent: Structure
 
-    def endNestedValue(nestedValueType: ValueType): Unit
+    def beginChildValue(nestedValueType: ValueType): Unit
 
-    def endStructure(expectedStructureType: StructureType): Unit = {
+    def endChildValue(nestedValueType: ValueType): Unit
+
+    def end(expectedStructureType: StructureType): Unit = {
       val actualStructureType = structureType
       if (expectedStructureType != actualStructureType) {
         throw new RuntimeException(s"Attempting to end an $actualStructureType structure when a $expectedStructureType is currently open")
@@ -39,7 +41,19 @@ class StringJsonWriter(canonical: Boolean = true) extends Writer {
 
   }
 
-  class ObjectStructure extends Structure {
+  object RootStructure extends Structure {
+
+    override val structureType: StructureType = null
+
+    override def parent: Structure = ???
+
+    override def beginChildValue(nestedValueType: ValueType): Unit = {}
+
+    override def endChildValue(nestedValueType: ValueType): Unit = {}
+
+  }
+
+  class ObjectStructure(override val parent: Structure) extends Structure {
 
     var numberOfMembersWrittenSoFar: Int = 0
     var nextMemberPartToBeWritten: MemberPart = MemberPart.MemberName
@@ -48,12 +62,12 @@ class StringJsonWriter(canonical: Boolean = true) extends Writer {
 
     override val structureType = StructureType.Object
 
-    override def beginNestedValue(nestedValueType: ValueType): Unit = {
+    override def beginChildValue(childValueType: ValueType): Unit = {
       nextMemberPartToBeWritten match {
         case MemberPart.MemberName ⇒
 
-          if (canonical && nestedValueType != ValueType.String) {
-            throw new RenderException(s"Member names must be of type ${TokenType.String}, not $nestedValueType")
+          if (canonical && childValueType != ValueType.String) {
+            throw new RenderException(s"Member names must be of type ${TokenType.String}, not $childValueType")
           }
 
           builderLengthBeforeMemberNameWritten = builder.length // Just in case the value is Nothing
@@ -66,7 +80,7 @@ class StringJsonWriter(canonical: Boolean = true) extends Writer {
 
         case MemberPart.MemberValue ⇒
           writeNameSeparator()
-          if (nestedValueType == ValueType.Nothing) {
+          if (childValueType == ValueType.Nothing) {
             builder.length = builderLengthBeforeMemberNameWritten
           }
 
@@ -75,8 +89,8 @@ class StringJsonWriter(canonical: Boolean = true) extends Writer {
       }
     }
 
-    override def endNestedValue(nestedValueType: ValueType): Unit = {
-      if (memberPartCurrentlyBeingWritten == MemberPart.MemberValue && nestedValueType != ValueType.Nothing) {
+    override def endChildValue(childValueType: ValueType): Unit = {
+      if (memberPartCurrentlyBeingWritten == MemberPart.MemberValue && childValueType != ValueType.Nothing) {
         numberOfMembersWrittenSoFar += 1
       }
 
@@ -85,128 +99,151 @@ class StringJsonWriter(canonical: Boolean = true) extends Writer {
 
   }
 
-  class ArrayStructure extends Structure {
+  class ArrayStructure(override val parent: Structure) extends Structure {
 
     var numberOfElementsWrittenSoFar: Int = 0
     var builderLengthBeforeElementWritten: Int = 0
 
     override val structureType = StructureType.Array
 
-    override def beginNestedValue(nestedValueType: ValueType): Unit = {
+    override def beginChildValue(childValueType: ValueType): Unit = {
       builderLengthBeforeElementWritten = builder.length
       if (numberOfElementsWrittenSoFar > 0) {
         writeValueSeparator()
       }
-      if (nestedValueType == ValueType.Nothing) {
+      if (childValueType == ValueType.Nothing) {
         builder.length = builderLengthBeforeElementWritten
       }
     }
 
-    override def endNestedValue(nestedValueType: ValueType): Unit = {
-      if (nestedValueType != ValueType.Nothing) {
+    override def endChildValue(childValueType: ValueType): Unit = {
+      if (childValueType != ValueType.Nothing) {
         numberOfElementsWrittenSoFar += 1
       }
     }
 
   }
 
-  import scala.collection.mutable
-
   val builder = new StringBuilder
-  val structures = new mutable.Stack[Structure]
+  var structure: Structure = RootStructure
 
   def jsonString: String = builder.toString
 
-  @inline def beginValue(valueType: ValueType): Unit = {
-    if (structures.nonEmpty) {
-      structures.top.beginNestedValue(valueType)
-    }
-  }
-
-  @inline def endValue(valueType: ValueType): Unit = {
-    if (structures.nonEmpty) {
-      structures.top.endNestedValue(valueType)
-    }
-  }
-
   override def beginObject(): Unit = {
-    beginValue(ValueType.Object)
-    structures.push(new ObjectStructure)
+    structure.beginChildValue(ValueType.Object)
+    structure = new ObjectStructure(parent = structure)
     builder.append("{")
   }
 
   override def endObject(): Unit = {
     builder.append("}")
-    structures.pop().endStructure(expectedStructureType = StructureType.Object)
-    endValue(ValueType.Object)
+    structure.end(expectedStructureType = StructureType.Object)
+    structure = structure.parent
+    structure.endChildValue(ValueType.Object)
   }
 
   override def beginArray(): Unit = {
-    beginValue(ValueType.Array)
-    structures.push(new ArrayStructure)
+    structure.beginChildValue(ValueType.Array)
+    structure = new ArrayStructure(parent = structure)
     builder.append("[")
   }
 
   override def endArray(): Unit = {
     builder.append("]")
-    structures.pop().endStructure(expectedStructureType = StructureType.Array)
-    endValue(ValueType.Array)
+    structure.end(expectedStructureType = StructureType.Array)
+    structure = structure.parent
+    structure.endChildValue(ValueType.Array)
   }
 
   override def writeRawValue(source: Array[Char], offset: Int, length: Int): Unit = {
-    beginValue(ValueType.Raw)
+    structure.beginChildValue(ValueType.Raw)
     builder.appendAll(source, offset, length)
-    endValue(ValueType.Raw)
+    structure.endChildValue(ValueType.Raw)
   }
 
   override def writeNothing(): Unit = {
-    beginValue(ValueType.Nothing)
-    endValue(ValueType.Nothing)
+    structure.beginChildValue(ValueType.Nothing)
+    structure.endChildValue(ValueType.Nothing)
   }
 
   override def writeString(string: String): Unit = {
-    beginValue(ValueType.String)
-    builder.append('"')
+    structure.beginChildValue(ValueType.String)
+    builder append '"'
 
-    for (i ← 0 until string.length) {
-      string.charAt(i) match {
-        case '"' ⇒
-          builder.append("""\"""")
+    var i = 0
+    val length = string.length
 
-        case '\\' ⇒
-          builder.append("""\\""")
+    var startOfUnescapedCharacters = 0
 
-        case '/' ⇒
-          builder.append("""\/""")
-
-        case '\b' ⇒
-          builder.append("""\b""")
-
-        case '\f' ⇒
-          builder.append("""\f""")
-
-        case '\n' ⇒
-          builder.append("""\n""")
-
-        case '\r' ⇒
-          builder.append("""\r""")
-
-        case '\t' ⇒
-          builder.append("""\t""")
-
-        case ch ⇒
-          builder.append(ch)
+    @inline def appendAnyUnescapedCharacters(): Unit = {
+      if (i > startOfUnescapedCharacters) {
+        builder append string.substring(startOfUnescapedCharacters, i)
       }
     }
 
-    builder.append('"') // TODO escape values
-    endValue(ValueType.String)
+    while (i < length) {
+      string.charAt(i) match {
+        case '"' ⇒
+          appendAnyUnescapedCharacters()
+          builder append """\""""
+          startOfUnescapedCharacters = i + 1
+
+        case '\\' ⇒
+          appendAnyUnescapedCharacters()
+          builder append """\\"""
+          startOfUnescapedCharacters = i + 1
+
+        case '/' ⇒
+          appendAnyUnescapedCharacters()
+          builder append """\/"""
+          startOfUnescapedCharacters = i + 1
+
+        case '\b' ⇒
+          appendAnyUnescapedCharacters()
+          builder append """\b"""
+          startOfUnescapedCharacters = i + 1
+
+        case '\f' ⇒
+          appendAnyUnescapedCharacters()
+          builder append """\f"""
+          startOfUnescapedCharacters = i + 1
+
+        case '\n' ⇒
+          appendAnyUnescapedCharacters()
+          builder append """\n"""
+          startOfUnescapedCharacters = i + 1
+
+        case '\r' ⇒
+          appendAnyUnescapedCharacters()
+          builder append """\r"""
+          startOfUnescapedCharacters = i + 1
+
+        case '\t' ⇒
+          appendAnyUnescapedCharacters()
+          builder append """\t"""
+          startOfUnescapedCharacters = i + 1
+
+        case ch if ch >= 128 ⇒
+          appendAnyUnescapedCharacters()
+          builder append """\""" append "u" append "%04x".format(ch.toInt)
+          startOfUnescapedCharacters = i + 1
+
+        case _ ⇒
+      }
+
+      i += 1
+    }
+
+    appendAnyUnescapedCharacters()
+
+    builder append '"'
+    structure.endChildValue(ValueType.String)
   }
 
   override def writeInt(value: Int): Unit = {
-    beginValue(ValueType.Number)
+    structure.beginChildValue(ValueType.Number)
     builder.append(value)
-    endValue(ValueType.Number)
+    structure.endChildValue(ValueType.Number)
   }
 
   def writeNameSeparator(): Unit =
@@ -217,63 +254,63 @@ class StringJsonWriter(canonical: Boolean = true) extends Writer {
   }
 
   override def writeFalse(): Unit = {
-    beginValue(ValueType.Identifier)
+    structure.beginChildValue(ValueType.LiteralName)
     builder.append("false")
-    endValue(ValueType.Identifier)
+    structure.endChildValue(ValueType.LiteralName)
   }
 
   override def writeTrue(): Unit = {
-    beginValue(ValueType.Identifier)
+    structure.beginChildValue(ValueType.LiteralName)
     builder.append("true")
-    endValue(ValueType.Identifier)
+    structure.endChildValue(ValueType.LiteralName)
   }
 
   override def writeNull(): Unit = {
-    beginValue(ValueType.Identifier)
+    structure.beginChildValue(ValueType.LiteralName)
     builder.append("null")
-    endValue(ValueType.Identifier)
+    structure.endChildValue(ValueType.LiteralName)
   }
 
   override def writeFloat(value: Float): Unit = {
-    beginValue(ValueType.Number)
+    structure.beginChildValue(ValueType.Number)
     builder.append(value)
-    endValue(ValueType.Number)
+    structure.endChildValue(ValueType.Number)
   }
 
   override def writeDouble(value: Double): Unit = {
-    beginValue(ValueType.Number)
+    structure.beginChildValue(ValueType.Number)
     builder.append(value)
-    endValue(ValueType.Number)
+    structure.endChildValue(ValueType.Number)
   }
 
   override def writeLong(value: Long): Unit = {
-    beginValue(ValueType.Number)
+    structure.beginChildValue(ValueType.Number)
     builder.append(value)
-    endValue(ValueType.Number)
+    structure.endChildValue(ValueType.Number)
   }
 
   override def writeChar(value: Char): Unit = {
-    beginValue(ValueType.String)
+    structure.beginChildValue(ValueType.String)
     builder.append('"').append(value).append('"')
-    endValue(ValueType.String)
+    structure.endChildValue(ValueType.String)
   }
 
   override def writeByte(value: Byte): Unit = {
-    beginValue(ValueType.Number)
+    structure.beginChildValue(ValueType.Number)
     builder.append(value)
-    endValue(ValueType.Number)
+    structure.endChildValue(ValueType.Number)
   }
 
   override def writeShort(value: Short): Unit = {
-    beginValue(ValueType.Number)
+    structure.beginChildValue(ValueType.Number)
     builder.append(value)
-    endValue(ValueType.Number)
+    structure.endChildValue(ValueType.Number)
   }
 
   override def writeBoolean(value: Boolean): Unit = {
-    beginValue(ValueType.Boolean)
+    structure.beginChildValue(ValueType.LiteralName)
     builder.append(value)
-    endValue(ValueType.Boolean)
+    structure.endChildValue(ValueType.LiteralName)
   }
 
 }

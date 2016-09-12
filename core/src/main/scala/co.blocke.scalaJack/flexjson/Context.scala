@@ -1,10 +1,14 @@
 package co.blocke.scalajack.flexjson
 
-import co.blocke.scalajack.flexjson.typeadapter.javaprimitives.{ JavaBooleanTypeAdapter, JavaByteTypeAdapter, JavaCharacterTypeAdapter, JavaDoubleTypeAdapter, JavaFloatTypeAdapter, JavaIntegerTypeAdapter, JavaLongTypeAdapter, JavaShortTypeAdapter }
-import co.blocke.scalajack.flexjson.typeadapter.joda.JodaDateTimeTypeAdapter
-import co.blocke.scalajack.flexjson.typeadapter.{ AnyTypeAdapter, BigDecimalTypeAdapter, BooleanTypeAdapter, ByteTypeAdapter, CaseClassTypeAdapter, CharTypeAdapter, DerivedValueClassAdapter, DerivedValueClassCompanionTypeAdapter, DoubleTypeAdapter, EnumerationTypeAdapter, FloatTypeAdapter, IntTypeAdapter, ListTypeAdapter, LongTypeAdapter, MapTypeAdapter, OptionTypeAdapter, SetTypeAdapter, ShortTypeAdapter, StringTypeAdapter, TryTypeAdapter, TupleTypeAdapter, TypeTypeAdapter, UUIDTypeAdapter, _ }
+import java.util.concurrent.ConcurrentHashMap
 
-import scala.reflect.runtime.universe.{ Type, TypeTag, typeOf }
+import co.blocke.scalajack.flexjson.typeadapter.javaprimitives.{ JavaBooleanTypeAdapter, JavaByteTypeAdapter, JavaCharacterTypeAdapter, JavaDoubleTypeAdapter, JavaFloatTypeAdapter, JavaIntegerTypeAdapter, JavaLongTypeAdapter, JavaNumberTypeAdapter, JavaShortTypeAdapter }
+import co.blocke.scalajack.flexjson.typeadapter.joda.JodaDateTimeTypeAdapter
+import co.blocke.scalajack.flexjson.typeadapter.{ AnyTypeAdapter, BigDecimalTypeAdapter, BooleanTypeAdapter, ByteTypeAdapter, CaseClassTypeAdapter, CharTypeAdapter, DerivedValueClassAdapter, DerivedValueClassCompanionTypeAdapter, DoubleTypeAdapter, EnumerationTypeAdapter, FloatTypeAdapter, IntTypeAdapter, ListTypeAdapter, LongTypeAdapter, MapTypeAdapter, OptionTypeAdapter, SetTypeAdapter, ShortTypeAdapter, StringTypeAdapter, TryTypeAdapter, TupleTypeAdapter, TypeTypeAdapter, UUIDTypeAdapter }
+
+import scala.language.existentials
+import scala.reflect.runtime.universe.{ Type, TypeTag }
+import scala.util.{ Success, Try }
 
 object Context {
 
@@ -31,6 +35,8 @@ object Context {
     .withFactory(DerivedValueClassCompanionTypeAdapter)
     .withFactory(DerivedValueClassAdapter)
     .withFactory(EnumerationTypeAdapter)
+    // FIXME    .withFactory(PolymorphicTypeAdapter)
+    .withFactory(JavaNumberTypeAdapter)
     .withFactory(JavaBooleanTypeAdapter)
     .withFactory(JavaByteTypeAdapter)
     .withFactory(JavaCharacterTypeAdapter)
@@ -43,52 +49,95 @@ object Context {
     .withFactory(JodaDateTimeTypeAdapter)
 }
 
+case class TypeAndTypeArgs(tpe: Type, typeArgs: List[Type])
+
 case class Context(factories: List[TypeAdapterFactory] = Nil) {
 
-  var resolvedTypeAdapters = Map[Type, TypeAdapter[_]]()
+  object TypeEntryFactory extends java.util.function.Function[TypeAndTypeArgs, TypeEntry] {
+    override def apply(t: TypeAndTypeArgs): TypeEntry =
+      new TypeEntry(t.tpe, t.typeArgs)
+  }
+
+  class TypeEntry(tpe: Type, typeArgs: List[Type]) {
+
+    @volatile
+    private var typeAdapterAttempt: Try[TypeAdapter[_]] = _
+
+    def typeAdapter: TypeAdapter[_] = {
+      this.synchronized {
+        val typeAdapterAttempt = {
+          val firstTypeAdapterAttempt = this.typeAdapterAttempt
+          if (firstTypeAdapterAttempt == null) {
+            this.synchronized {
+              val secondTypeAdapterAttempt = this.typeAdapterAttempt
+              if (secondTypeAdapterAttempt == null) {
+                this.typeAdapterAttempt = Success(LazyTypeAdapter(Context.this, tpe, typeArgs))
+
+                val thirdTypeAdapterAttempt = Try {
+                  var optionalTypeAdapter: Option[TypeAdapter[_]] = None
+
+                  var remainingFactories = factories
+                  while (optionalTypeAdapter.isEmpty && remainingFactories.nonEmpty) {
+                    optionalTypeAdapter = remainingFactories.head.typeAdapter(tpe, Context.this, typeArgs)
+                    remainingFactories = remainingFactories.tail
+                  }
+
+                  optionalTypeAdapter.getOrElse(throw new IllegalArgumentException(s"Cannot find a type adapter for $tpe"))
+                }
+
+                this.typeAdapterAttempt = thirdTypeAdapterAttempt
+
+                thirdTypeAdapterAttempt
+              } else {
+                secondTypeAdapterAttempt
+              }
+            }
+          } else {
+            firstTypeAdapterAttempt
+          }
+        }
+
+        typeAdapterAttempt.get
+      }
+    }
+
+  }
+
+  private val typeEntries = new ConcurrentHashMap[TypeAndTypeArgs, TypeEntry]
+
+  var resolvedTypeAdapterAttempts = Map[TypeAndTypeArgs, Try[TypeAdapter[_]]]()
 
   def withFactory(factory: TypeAdapterFactory): Context =
     copy(factories = factories :+ factory)
 
   def typeAdapter(tpe: Type, superParamTypes: List[Type] = List.empty[Type]): TypeAdapter[_] = {
-    val tsym = tpe.typeSymbol.asType.typeParams
-    val args = tpe.typeArgs
+    val typeAndTypeArgs = TypeAndTypeArgs(tpe, superParamTypes)
 
-    // if (resolvedTypeAdapters.contains(tpe)) println("FOUND: " + tpe)
+    typeEntries.computeIfAbsent(typeAndTypeArgs, TypeEntryFactory).typeAdapter
 
-    resolvedTypeAdapters.getOrElse(tpe, {
-      var optionalTypeAdapter: Option[TypeAdapter[_]] = None
-
-      var remainingFactories = factories
-      while (optionalTypeAdapter.isEmpty && remainingFactories.nonEmpty) {
-        optionalTypeAdapter = remainingFactories.head.typeAdapter(tpe, this, superParamTypes)
-        remainingFactories = remainingFactories.tail
-      }
-
-      val typeAdapter = optionalTypeAdapter.getOrElse(throw new IllegalArgumentException(s"Cannot find a type adapter for $tpe"))
-
-      // println(">> Saved: " + tpe.typeSymbol.fullName + superParamTypes.map(_.typeSymbol.fullName).mkString("(", ",", ")"))
-
-      // For types that do substitution, we need to make sure the tpe that has type substitution done is the one used as
-      // the key, otherwise the general tpe (pre-substitution) will be used--that's bad.  It'll store tpe for Foo[A], so
-      // Foo[String] and Foo[Boolean] are both found!  Clearly not what we want.  Post-substitution the specific versions are
-      // used as the key.
-      //
-      // NOTE/TODO: We may need a similar thing done for other parameterized types, e.g. collections.  To clean up code smell
-      // we may want to subtype TypeAdapter, i.e. ParameterizedTypeAdapter or something
-      //
-
-      typeAdapter match {
-        case ta: CaseClassTypeAdapter[_] =>
-          resolvedTypeAdapters += ta.caseClassType → ta
-        case ta: PolymorphicTypeAdapter[_] =>
-          resolvedTypeAdapters += ta.polyType → ta
-        case _ =>
-          resolvedTypeAdapters += tpe → typeAdapter
-      }
-
-      typeAdapter
-    })
+    //    resolvedTypeAdapterAttempts.get(typeAndTypeArgs) match {
+    //      case Some(typeAdapterAttempt) ⇒
+    //        typeAdapterAttempt.get
+    //
+    //      case None ⇒
+    //        resolvedTypeAdapterAttempts += typeAndTypeArgs → Success(LazyTypeAdapter(this, typeAndTypeArgs.tpe, typeAndTypeArgs.typeArgs))
+    //
+    //        val typeAdapterAttempt = Try {
+    //          var optionalTypeAdapter: Option[TypeAdapter[_]] = None
+    //
+    //          var remainingFactories = factories
+    //          while (optionalTypeAdapter.isEmpty && remainingFactories.nonEmpty) {
+    //            optionalTypeAdapter = remainingFactories.head.typeAdapter(tpe, this, superParamTypes)
+    //            remainingFactories = remainingFactories.tail
+    //          }
+    //
+    //          optionalTypeAdapter.getOrElse(throw new IllegalArgumentException(s"Cannot find a type adapter for $tpe"))
+    //        }
+    //
+    //        resolvedTypeAdapterAttempts += typeAndTypeArgs → typeAdapterAttempt
+    //
+    //        typeAdapterAttempt.get
+    //    }
   }
 
   def typeAdapterOf[T](implicit valueTypeTag: TypeTag[T]): TypeAdapter[T] =

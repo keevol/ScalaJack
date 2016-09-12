@@ -29,8 +29,6 @@ trait Reader {
     ev(null)
   }
 
-  def readIdentifier(): String
-
   def readBoolean(): Boolean = {
     peek match {
       case TokenType.False ⇒
@@ -39,6 +37,12 @@ trait Reader {
       case TokenType.True ⇒
         true
     }
+  }
+
+  def readNumber(): java.lang.Number = {
+    read(expected = TokenType.Number)
+    val tokenText = this.tokenText
+    java.lang.Integer.valueOf(tokenText)
   }
 
   def readByte(): Byte = {

@@ -90,7 +90,7 @@ class SimpleTestSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
       it("Must support unicode") {
         val a = WithType("następujących")
         val js = sjJS.render(a)
-        js should equal("{\"me\":\"następujących\"}")
+        js should equal("{\"me\":\"nast\\u0119puj\\u0105cych\"}")
         sjJS.read[WithType[String]](js) should equal(a)
       }
       it("Must handle a case class with default values - defaults specified") {
@@ -234,8 +234,9 @@ class SimpleTestSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         sjJS.read[Wrapped2[Boolean]](js4) should equal(a4)
       }
       it("Must read unicode") {
-        val js = "{\"me\":\"nast\\u0119puj\\u0105cych\"}"
         val a = WithType("następujących")
+        val js = sjJS.render(a)
+        js should equal("{\"me\":\"nast\\u0119puj\\u0105cych\"}")
         sjJS.read[WithType[String]](js) should equal(a)
       }
       it("Must handle a case class with default values - defaults specified") {
