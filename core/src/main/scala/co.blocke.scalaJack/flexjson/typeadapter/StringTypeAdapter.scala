@@ -24,5 +24,4 @@ object StringTypeAdapter extends SimpleTypeAdapter[String] {
     } else {
       writer.writeString(value)
     }
-
 }

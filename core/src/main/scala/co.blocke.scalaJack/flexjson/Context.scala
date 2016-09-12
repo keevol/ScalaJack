@@ -62,13 +62,9 @@ case class Context(factories: List[TypeAdapterFactory] = Nil) {
       var remainingFactories = factories
       while (optionalTypeAdapter.isEmpty && remainingFactories.nonEmpty) {
         optionalTypeAdapter = remainingFactories.head.typeAdapter(tpe, this, superParamTypes)
-        val z = typeOf[java.nio.charset.Charset]
-        if (tpe == z)
-          println("SEEK: " + tpe + " from " + remainingFactories.head + "  FOUND? " + optionalTypeAdapter.isDefined)
         remainingFactories = remainingFactories.tail
       }
 
-      println("TPE: " + tpe + "  " + (tpe == typeOf[java.nio.charset.Charset]))
       val typeAdapter = optionalTypeAdapter.getOrElse(throw new IllegalArgumentException(s"Cannot find a type adapter for $tpe"))
 
       // println(">> Saved: " + tpe.typeSymbol.fullName + superParamTypes.map(_.typeSymbol.fullName).mkString("(", ",", ")"))

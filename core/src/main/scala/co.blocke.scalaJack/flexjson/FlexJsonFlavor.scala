@@ -63,11 +63,9 @@ object FlexJsonFlavor extends FlavorKind[String] with ScalaJack[String] with Jac
                 // print("NAME: " + tpe.typeSymbol.fullName + "  -->  " + polymorphicFullName)
                 // if (tpe.typeSymbol.fullName == polymorphicFullName) {
                 val stringTypeAdapter = context.typeAdapterOf[String]
-                println("  FOUND!")
 
                 Some(PolymorphicTypeAdapter(hintFieldName, stringTypeAdapter andThen hintToType.memoized, context.typeAdapterOf[MemberName], context, tpe))
               } else {
-                println(" (nope)")
                 None
               }
             }
