@@ -1,25 +1,64 @@
 package co.blocke.scalajack.reflection
 
-import org.scalatest.{ FunSpec, Matchers }
+import co.blocke.scalajack.ScalaJack
+import org.scalatest.{FunSpec, Matchers}
 
 import scala.reflect.runtime.currentMirror
-import scala.reflect.runtime.universe.{ ClassSymbol, InstanceMirror, TypeName, typeOf }
+import scala.reflect.runtime.universe.{ClassSymbol, InstanceMirror, TypeName, typeOf}
 
 trait Drink
 case class OrangeJuice(pulp: Boolean) extends Drink
 case class Milk(percent: Int) extends Drink
+case class Soda(diet: Boolean) extends Drink
 
-case class Breakfast[D <: Drink](numberOfPancakes: Int, drink: D)
+trait Meal[D <: Drink] {
+  def drink: D
+}
+
+case class Breakfast[D <: Drink](numberOfPancakes: Int, drink: D) extends Meal[D]
+case class Lunch[D <: Drink](numberOfBurgers: Int, drink: D) extends Meal[D]
+
+trait PairOfValues[A, B]
+case class PairOfMeals[D1 <: Drink, D2 <: Drink](meal1: Meal[D1], meal2: Meal[D2]) extends PairOfValues[Meal[D1], Meal[D2]]
 
 //noinspection EmptyCheck
 class ReflectionSpec extends FunSpec with Matchers {
 
+  val scalaJack = ScalaJack()
+
   describe("type substitution") {
-    val t = typeOf[Breakfast[OrangeJuice]]
+    val expected: PairOfValues[Meal[OrangeJuice], Meal[Soda]] = PairOfMeals(
+      Breakfast(numberOfPancakes = 3, drink = OrangeJuice(pulp = true)),
+      Lunch(numberOfBurgers = 2, drink = Soda(diet = false))
+    )
 
-    val typeArgs = List(typeOf[String])
+    val json =
+      """
+        |{
+        |  "_hint": "co.blocke.scalajack.reflection.PairOfMeals",
+        |  "meal1": {
+        |    "_hint": "co.blocke.scalajack.reflection.Breakfast",
+        |    "numberOfPancakes": 3,
+        |    "drink": {
+        |      "_hint": "co.blocke.scalajack.reflection.OrangeJuice",
+        |      "pulp": true
+        |    }
+        |  },
+        |  "meal2": {
+        |    "_hint": "co.blocke.scalajack.reflection.Lunch",
+        |    "numberOfBurgers": 2,
+        |    "drink": {
+        |      "_hint": "co.blocke.scalajack.reflection.Soda",
+        |      "diet": false
+        |    }
+        |  }
+        |}""".stripMargin
 
-    println(t)
+    val actual = scalaJack.read[PairOfValues[Meal[OrangeJuice], Meal[Soda]]](json)
+
+    it("should") {
+      actual should be(expected)
+    }
   }
 
   describe("non-erased types") {
