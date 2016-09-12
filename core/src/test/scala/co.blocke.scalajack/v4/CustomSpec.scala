@@ -1,6 +1,8 @@
 package co.blocke.scalajack
 package test.v4
 
+import flexjson._
+import typeadapter.BasicTypeAdapter
 import json.JsonKind
 import org.scalatest.{ FunSpec, GivenWhenThen, BeforeAndAfterAll }
 import org.scalatest.Matchers._
@@ -15,68 +17,101 @@ import java.nio.charset.Charset
  * and for Java classes (via VisitorContext registration of CustomReadRender handlers).
  */
 
-object ISOTime extends ValueClassCustom {
-  def read: PartialFunction[(KindMarker, _), Any] = {
-    case (jk: JsonKind, js: String) => ISODateTimeFormat.dateTime().parseDateTime(js)
-  }
-  def render: PartialFunction[(KindMarker, _), Any] = {
-    case (jk: JsonKind, iso: DateTime) => '"' + ISODateTimeFormat.dateTime().withZoneUTC().print(iso) + '"'
-  }
-}
-class ISOTime(val dt: DateTime) extends AnyVal
-
-object CCNum extends ValueClassCustom {
-  def read: PartialFunction[(KindMarker, _), Any] = {
-    case (jk: JsonKind, js: String) => js.replaceAllLiterally("-", "")
-  }
-  def render: PartialFunction[(KindMarker, _), Any] = {
-    case (jk: JsonKind, s: String) => '"' + s.grouped(4).toList.mkString("-") + '"'
-  }
-}
-class CCNum(val s: String) extends AnyVal
-case class TestTime(period: ISOTime, cc: CCNum, num: Numa)
-
-class Numa(val s: String) extends AnyVal
-
 // Overriding a primitive requires assigning it to a new type, so as to differentiate it from 
 // the vanilla flavor of the primitive.
 object Overrides {
   type SpecialTime = DateTime
+  type CCNumStr = String
 }
 import Overrides._
+
+object ISOTimeAdapter extends BasicTypeAdapter[SpecialTime] {
+  override def read(reader: Reader): SpecialTime = {
+    reader.peek match {
+      case TokenType.String ⇒
+        ISODateTimeFormat.dateTime().parseDateTime(reader.readString())
+      case TokenType.Null ⇒
+        reader.readNull()
+    }
+  }
+
+  override def write(value: SpecialTime, writer: Writer): Unit =
+    if (value == null) {
+      writer.writeNull()
+    } else {
+      writer.writeString(ISODateTimeFormat.dateTime().withZoneUTC().print(value))
+    }
+}
+
+// object ISOTime extends ValueClassCustom {
+//   def read: PartialFunction[(KindMarker, _), Any] = {
+//     case (jk: JsonKind, js: String) => ISODateTimeFormat.dateTime().parseDateTime(js)
+//   }
+//   def render: PartialFunction[(KindMarker, _), Any] = {
+//     case (jk: JsonKind, iso: DateTime) => '"' + ISODateTimeFormat.dateTime().withZoneUTC().print(iso) + '"'
+//   }
+// }
+class ISOTime(val dt: SpecialTime) extends AnyVal
+
+object CCNumTypeAdapter extends BasicTypeAdapter[CCNumStr] {
+  override def read(reader: Reader): CCNumStr = {
+    reader.peek match {
+      case TokenType.String ⇒
+        reader.readString().replaceAllLiterally("-", "")
+      case TokenType.Null ⇒
+        reader.readNull()
+    }
+  }
+
+  override def write(value: CCNumStr, writer: Writer): Unit =
+    if (value == null) {
+      writer.writeNull()
+    } else {
+      writer.writeString(value.grouped(4).toList.mkString("-"))
+    }
+}
+
+class CCNum(val s: CCNumStr) extends AnyVal
+case class TestTime(period: ISOTime, cc: CCNum, num: Numa)
+
+class Numa(val s: String) extends AnyVal
 
 case class Naked(name: String, when: SpecialTime, charset: Charset)
 case class Bunched(name: String, group: Map[String, SpecialTime], many: List[Charset])
 case class WithCustomType[R, S](r: R, s: S)
 
-class CustomSpec extends FunSpec {
-  val specialTimeHandler = CustomReadRender(
-    {
-      case (j: JsonKind, js: String) => ISODateTimeFormat.dateTime().parseDateTime(js)
-    },
-    {
-      case (j: JsonKind, thing: DateTime) => '"' + ISODateTimeFormat.dateTime().withZoneUTC().print(thing) + '"'
+object CharsetTypeAdapter extends BasicTypeAdapter[Charset] {
+  override def read(reader: Reader): Charset = {
+    reader.peek match {
+      case TokenType.String ⇒
+        Charset.forName(reader.readString())
+      case TokenType.Null ⇒
+        reader.readNull()
     }
-  )
-  val charsetHandler = CustomReadRender(
-    {
-      case (j: JsonKind, js: String) => Charset.forName(js)
-    },
-    {
-      case (j: JsonKind, thing: Charset) => '"' + thing.toString + '"'
-    }
-  )
+  }
 
-  val handlerMap = Map(
-    "co.blocke.scalajack.test.v4.Overrides.SpecialTime" -> specialTimeHandler,
-    "java.nio.charset.Charset" -> charsetHandler
-  )
+  override def write(value: Charset, writer: Writer): Unit =
+    if (value == null) {
+      writer.writeNull()
+    } else {
+      writer.writeString(value.toString)
+    }
+}
+
+class CustomSpec extends FunSpec {
+  // val handlerMap = Map(
+  //   "co.blocke.scalajack.test.v4.Overrides.SpecialTime" -> specialTimeHandler,
+  //   "java.nio.charset.Charset" -> charsetHandler
+  // )
 
   val sjJS = ScalaJack()
-  val vc = VisitorContext().copy(customHandlers = handlerMap)
-  val vc_nc_v = VisitorContext().copy(customHandlers = handlerMap, isCanonical = false, isValidating = true)
-  val vc_c_v = VisitorContext().copy(customHandlers = handlerMap, isValidating = true)
-  val vc_nc_nv = VisitorContext().copy(customHandlers = handlerMap, isCanonical = false)
+  val vc = VisitorContext()
+    .withAdapter(CharsetTypeAdapter)
+    .withAdapter(CCNumTypeAdapter)
+    .withAdapter(ISOTimeAdapter)
+  // val vc_nc_v = VisitorContext().copy(customHandlers = handlerMap, isCanonical = false, isValidating = true)
+  // val vc_c_v = VisitorContext().copy(customHandlers = handlerMap, isValidating = true)
+  // val vc_nc_nv = VisitorContext().copy(customHandlers = handlerMap, isCanonical = false)
   // No vc = c_nv canonical (c) and non-validating (nv)
 
   object JSMaster {
@@ -98,28 +133,10 @@ class CustomSpec extends FunSpec {
   describe("=========================\n| -- Custom VC Tests -- |\n=========================") {
     describe("Value class custom rendering") {
       it("Render Tests - CNV") {
-        sjJS.render(ScalaMaster.a) should be(JSMaster.a)
+        sjJS.render(ScalaMaster.a, vc) should be(JSMaster.a)
       }
       it("Read custom value class - CNV") {
-        sjJS.read[TestTime](JSMaster.a) should be(ScalaMaster.a)
-      }
-      it("Render Tests - NCNV") {
-        sjJS.render(ScalaMaster.a, vc_nc_nv) should be(JSMaster.a)
-      }
-      it("Read custom value class - NCNV") {
-        sjJS.read[TestTime](JSMaster.a, vc_nc_nv) should be(ScalaMaster.a)
-      }
-      it("Render Tests - CV") {
-        sjJS.render(ScalaMaster.a, vc_c_v) should be(JSMaster.a)
-      }
-      it("Read custom value class - CV") {
-        sjJS.read[TestTime](JSMaster.a, vc_c_v) should be(ScalaMaster.a)
-      }
-      it("Render Tests - NCV") {
-        sjJS.render(ScalaMaster.a, vc_nc_v) should be(JSMaster.a)
-      }
-      it("Read custom value class - NCV") {
-        sjJS.read[TestTime](JSMaster.a, vc_nc_v) should be(ScalaMaster.a)
+        sjJS.read[TestTime](JSMaster.a, vc) should be(ScalaMaster.a)
       }
     }
     describe("Java class custom rendering - Single") {
@@ -129,25 +146,8 @@ class CustomSpec extends FunSpec {
       it("Read custom Java class - CNV") {
         sjJS.read[Naked](JSMaster.b, vc) should be(ScalaMaster.b)
       }
-      it("Render Tests - NCNV") {
-        sjJS.render(ScalaMaster.b, vc_nc_nv) should be(JSMaster.b)
-      }
-      it("Read custom Java class - NCNV") {
-        sjJS.read[Naked](JSMaster.b, vc_nc_nv) should be(ScalaMaster.b)
-      }
-      it("Render Tests - CV") {
-        sjJS.render(ScalaMaster.b, vc_c_v) should be(JSMaster.b)
-      }
-      it("Read custom Java class - CV") {
-        sjJS.read[Naked](JSMaster.b, vc_c_v) should be(ScalaMaster.b)
-      }
-      it("Render Tests - NCV") {
-        sjJS.render(ScalaMaster.b, vc_nc_v) should be(JSMaster.b)
-      }
-      it("Read custom Java class - NCV") {
-        sjJS.read[Naked](JSMaster.b, vc_nc_v) should be(ScalaMaster.b)
-      }
     }
+    /*
     describe("Java class custom rendering - Collections") {
       it("Render Tests - CNV") {
         sjJS.render(ScalaMaster.c, vc) should be(JSMaster.c)
@@ -155,49 +155,14 @@ class CustomSpec extends FunSpec {
       it("Read custom Java class - CNV") {
         sjJS.read[Bunched](JSMaster.c, vc) should be(ScalaMaster.c)
       }
-      it("Render Tests - NCNV") {
-        sjJS.render(ScalaMaster.c, vc_nc_nv) should be(JSMaster.c)
-      }
-      it("Read custom Java class - NCNV") {
-        sjJS.read[Bunched](JSMaster.c, vc_nc_nv) should be(ScalaMaster.c)
-      }
-      it("Render Tests - CV") {
-        sjJS.render(ScalaMaster.c, vc_c_v) should be(JSMaster.c)
-      }
-      it("Read custom Java class - CV") {
-        sjJS.read[Bunched](JSMaster.c, vc_c_v) should be(ScalaMaster.c)
-      }
-      it("Render Tests - NCV") {
-        sjJS.render(ScalaMaster.c, vc_nc_v) should be(JSMaster.c)
-      }
-      it("Read custom Java class - NCV") {
-        sjJS.read[Bunched](JSMaster.c, vc_nc_v) should be(ScalaMaster.c)
-      }
     }
+    */
     describe("Java class custom rendering - Custom type parameter renderings") {
       it("Render Tests - CNV") {
         sjJS.render(ScalaMaster.d, vc) should be(JSMaster.d)
       }
       it("Read custom Java class - CNV") {
         sjJS.read[WithCustomType[SpecialTime, Charset]](JSMaster.d, vc) should be(ScalaMaster.d)
-      }
-      it("Render Tests - NCNV") {
-        sjJS.render(ScalaMaster.d, vc_nc_nv) should be(JSMaster.d)
-      }
-      it("Read custom Java class - NCNV") {
-        sjJS.read[WithCustomType[SpecialTime, Charset]](JSMaster.d, vc_nc_nv) should be(ScalaMaster.d)
-      }
-      it("Render Tests - CV") {
-        sjJS.render(ScalaMaster.d, vc_c_v) should be(JSMaster.d)
-      }
-      it("Read custom Java class - CV") {
-        sjJS.read[WithCustomType[SpecialTime, Charset]](JSMaster.d, vc_c_v) should be(ScalaMaster.d)
-      }
-      it("Render Tests - NCV") {
-        sjJS.render(ScalaMaster.d, vc_nc_v) should be(JSMaster.d)
-      }
-      it("Read custom Java class - NCV") {
-        sjJS.read[WithCustomType[SpecialTime, Charset]](JSMaster.d, vc_nc_v) should be(ScalaMaster.d)
       }
     }
   }

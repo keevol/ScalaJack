@@ -34,31 +34,7 @@ object FlexJsonFlavor extends FlavorKind[String] with ScalaJack[String] with Jac
 
         val defaultHintFieldName: String = vc.hintMap.getOrElse("default", "_hint")
 
-        val customHandlerTypeAdapterFactories = vc.customHandlers map {
-          case (fullName, customHandler) ⇒
-            new TypeAdapterFactory {
-              override def typeAdapter(tpe: Type, context: Context, superParamTypes: List[Type] = List.empty[Type]): Option[TypeAdapter[_]] =
-                if (tpe.toString == fullName) {
-                  val anyTypeAdapter = context.typeAdapterOf[Any]
-
-                  Some(new TypeAdapter[Any] {
-
-                    override def read(reader: Reader): Any = {
-                      val raw = anyTypeAdapter.read(reader)
-                      customHandler.read((JsonKind(), raw))
-                    }
-
-                    override def write(value: Any, writer: Writer): Unit = {
-                      val raw = customHandler.render((JsonKind(), value))
-                      writer.writeRawValue(raw.toString)
-                    }
-
-                  })
-                } else {
-                  None
-                }
-            }
-        }
+        val customHandlerTypeAdapterFactories = vc.customAdapters
 
         val polymorphicTypeAdapterFactories = polymorphicFullNames map { polymorphicFullName ⇒
           val polymorphicType = fullNameToType(polymorphicFullName)
