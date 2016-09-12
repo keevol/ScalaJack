@@ -2,10 +2,11 @@ package co.blocke.scalajack
 package test.v4
 
 import flexjson._
-import typeadapter.BasicTypeAdapter
+import typeadapter.{ BasicTypeAdapter, SimpleTypeAdapter }
 import json.JsonKind
-import org.scalatest.{ FunSpec, GivenWhenThen, BeforeAndAfterAll }
+import org.scalatest.{ BeforeAndAfterAll, FunSpec, GivenWhenThen }
 import org.scalatest.Matchers._
+
 import scala.language.postfixOps
 import scala.util.Try
 import org.joda.time.{ DateTime, DateTimeZone }
@@ -80,7 +81,7 @@ case class Naked(name: String, when: SpecialTime, charset: Charset)
 case class Bunched(name: String, group: Map[String, SpecialTime], many: List[Charset])
 case class WithCustomType[R, S](r: R, s: S)
 
-object CharsetTypeAdapter extends BasicTypeAdapter[Charset] {
+object CharsetTypeAdapter extends SimpleTypeAdapter.ForTypeSymbolOf[Charset] {
   override def read(reader: Reader): Charset = {
     reader.peek match {
       case TokenType.String ⇒
