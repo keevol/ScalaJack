@@ -4,7 +4,7 @@ import co.blocke.scalajack.flexjson.FlexJsonFlavor.MemberName
 import co.blocke.scalajack.flexjson.{ Context, ForwardingWriter, Reader, TokenType, TypeAdapter, TypeAdapterFactory, Writer }
 
 import scala.reflect.runtime.currentMirror
-import scala.reflect.runtime.universe.{ ClassSymbol, Type }
+import scala.reflect.runtime.universe.{ ClassSymbol, Type, appliedType, typeOf }
 import scala.collection.mutable.{ Map ⇒ MMap }
 
 case class PolymorphicTypeAdapterFactory(hintFieldName: String) extends TypeAdapterFactory.FromClassSymbol {
@@ -108,7 +108,18 @@ case class PolymorphicTypeAdapter[T](
 
       val concreteType = optionalConcreteType.getOrElse(throw new Exception(s"""Could not find type field named "$typeMemberName" """))
 
-      val concreteTypeAdapter = context.typeAdapter(concreteType, resolvePolyTypes(concreteType))
+      val ttt = concreteType.baseType(polyType.typeSymbol)
+
+      val polyTypes = resolvePolyTypes(concreteType)
+
+      val thing =
+        if (concreteType.typeSymbol.fullName endsWith "PairOfMeals") {
+          appliedType(concreteType, List(typeOf[Char], typeOf[Boolean]))
+        } else {
+          appliedType(concreteType, polyTypes)
+        }
+
+      val concreteTypeAdapter = context.typeAdapter(thing, null)
 
       reader.position = originalPosition
 
@@ -118,9 +129,12 @@ case class PolymorphicTypeAdapter[T](
 
   override def write(value: T, writer: Writer): Unit = {
     // TODO figure out a better way to infer the type (perhaps infer the type arguments?)
-    val valueType = currentMirror.classSymbol(value.getClass).info
+    val valueType = currentMirror.classSymbol(value.getClass).toType
 
-    val valueTypeAdapter = context.typeAdapter(valueType, resolvePolyTypes(valueType)).asInstanceOf[TypeAdapter[T]]
+    val args = resolvePolyTypes(valueType)
+    val r = appliedType(valueType, args)
+
+    val valueTypeAdapter = context.typeAdapter(r, null).asInstanceOf[TypeAdapter[T]]
 
     val polymorphicWriter = new PolymorphicWriter(writer, typeMemberName, valueType, typeTypeAdapter, memberNameTypeAdapter)
     valueTypeAdapter.write(value, polymorphicWriter)

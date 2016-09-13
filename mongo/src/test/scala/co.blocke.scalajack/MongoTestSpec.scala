@@ -501,7 +501,7 @@ class MongoTestSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
           sjM.read[Breakfast[String]](db) should equal(w)
         }
         it("Case class having an embedded parameterized trait, with the trait's parameter another case class") {
-          val w = Breakfast(true, Toast(7, Two("two", true)))
+          val w: Breakfast[Two] = Breakfast(true, Toast(7, Two("two", true)))
           val js = ScalaJack().render(w)
           val db = sjM.render(w)
           js should equal("""{"y":true,"bread":{"_hint":"co.blocke.scalajack.test.Toast","g":7,"yum":{"foo":"two","bar":true}}}""")

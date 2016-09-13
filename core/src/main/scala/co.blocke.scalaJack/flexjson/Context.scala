@@ -4,7 +4,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 import co.blocke.scalajack.flexjson.typeadapter.javaprimitives.{ JavaBooleanTypeAdapter, JavaByteTypeAdapter, JavaCharacterTypeAdapter, JavaDoubleTypeAdapter, JavaFloatTypeAdapter, JavaIntegerTypeAdapter, JavaLongTypeAdapter, JavaNumberTypeAdapter, JavaShortTypeAdapter }
 import co.blocke.scalajack.flexjson.typeadapter.joda.JodaDateTimeTypeAdapter
-import co.blocke.scalajack.flexjson.typeadapter.{ AnyTypeAdapter, BigDecimalTypeAdapter, BooleanTypeAdapter, ByteTypeAdapter, CaseClassTypeAdapter, CharTypeAdapter, DerivedValueClassAdapter, DerivedValueClassCompanionTypeAdapter, DoubleTypeAdapter, EnumerationTypeAdapter, FloatTypeAdapter, IntTypeAdapter, ListTypeAdapter, LongTypeAdapter, MapTypeAdapter, OptionTypeAdapter, SetTypeAdapter, ShortTypeAdapter, StringTypeAdapter, TryTypeAdapter, TupleTypeAdapter, TypeTypeAdapter, UUIDTypeAdapter }
+import co.blocke.scalajack.flexjson.typeadapter.{ AnyTypeAdapter, BigDecimalTypeAdapter, BooleanTypeAdapter, ByteTypeAdapter, CaseClassTypeAdapter, CharTypeAdapter, DerivedValueClassAdapter, DerivedValueClassCompanionTypeAdapter, DoubleTypeAdapter, EnumerationTypeAdapter, FloatTypeAdapter, IntTypeAdapter, ListTypeAdapter, LongTypeAdapter, MapTypeAdapter, OptionTypeAdapter, SetTypeAdapter, ShortTypeAdapter, StringTypeAdapter, TryTypeAdapter, TupleTypeAdapter, TypeParameterTypeAdapter, TypeTypeAdapter, UUIDTypeAdapter }
 
 import scala.language.existentials
 import scala.reflect.runtime.universe.{ Type, TypeTag }
@@ -13,6 +13,7 @@ import scala.util.{ Success, Try }
 object Context {
 
   val StandardContext = Context()
+    .withFactory(TypeParameterTypeAdapter)
     .withFactory(AnyTypeAdapter)
     .withFactory(TypeTypeAdapter)
     .withFactory(ListTypeAdapter)
@@ -80,6 +81,10 @@ case class Context(factories: List[TypeAdapterFactory] = Nil) {
                   while (optionalTypeAdapter.isEmpty && remainingFactories.nonEmpty) {
                     optionalTypeAdapter = remainingFactories.head.typeAdapter(tpe, Context.this, typeArgs)
                     remainingFactories = remainingFactories.tail
+                  }
+
+                  if (optionalTypeAdapter.isEmpty) {
+                    println("CAN'T BE FOUND")
                   }
 
                   optionalTypeAdapter.getOrElse(throw new IllegalArgumentException(s"Cannot find a type adapter for $tpe"))

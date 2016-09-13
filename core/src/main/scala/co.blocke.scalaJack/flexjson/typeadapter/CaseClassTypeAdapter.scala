@@ -22,14 +22,13 @@ object CaseClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
       valueAccessorMethod:                Method,
       derivedValueClassConstructorMirror: Option[MethodMirror],
       defaultValueMirror:                 Option[MethodMirror],
-      outerClass:                         java.lang.Class[_],
-      innerClass:                         Option[java.lang.Class[_]]
+      outerClass:                         Option[java.lang.Class[_]]
   ) {
 
     def valueIn(instance: Any): T = {
       val value = valueAccessorMethod.invoke(instance)
 
-      if (outerClass.isInstance(value)) {
+      if (outerClass.isEmpty || outerClass.get.isInstance(value)) {
         value.asInstanceOf[T]
       } else {
         derivedValueClassConstructorMirror match {
@@ -56,6 +55,15 @@ object CaseClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
     if (classSymbol.isCaseClass) {
       val constructorSymbol = classSymbol.primaryConstructor.asMethod
 
+      val constructorTypeSignature1 = constructorSymbol.typeSignature
+      val constructorTypeSignature2 = constructorSymbol.typeSignatureIn(tpe)
+
+      val params = constructorTypeSignature2.paramLists.flatten
+      for (param ← params) {
+        val ts = param.asTerm.typeSignature
+        //        println(param)
+      }
+
       val classMirror = currentMirror.reflectClass(classSymbol)
       val constructorMirror = classMirror.reflectConstructor(constructorSymbol)
 
@@ -63,50 +71,60 @@ object CaseClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
       val companionObject = currentMirror.reflectModule(classSymbol.companion.asModule).instance
       val companionMirror = currentMirror.reflect(companionObject)
 
-      val typeBeforeSubstitution = constructorSymbol.infoIn(tpe)
-
-      val typeAfterSubstitution =
-        if (superParamTypes.isEmpty) {
-          // tpe
-          // typeBeforeSubstitution.substituteTypes(tpe.typeConstructor.typeParams, superParamTypes)
-          typeBeforeSubstitution.substituteTypes(tpe.typeParams, tpe.typeParams.map(_ ⇒ typeOf[Any]))
-        } else {
-          typeBeforeSubstitution.substituteTypes(tpe.typeConstructor.typeParams, superParamTypes)
-        }
+      //      val typeBeforeSubstitution = constructorSymbol.info
+      //
+      //      val typeAfterSubstitution =
+      //        if (superParamTypes.isEmpty) {
+      // tpe
+      // typeBeforeSubstitution.substituteTypes(tpe.typeConstructor.typeParams, superParamTypes)
+      //          typeBeforeSubstitution.substituteTypes(tpe.typeParams, tpe.typeParams.map(_ ⇒ typeOf[Any]))
+      //        } else {
+      //          typeBeforeSubstitution.substituteTypes(tpe.typeConstructor.typeParams, superParamTypes)
+      //        }
 
       val memberNameTypeAdapter = context.typeAdapterOf[MemberName]
 
-      val members = typeAfterSubstitution.paramLists.flatten.zipWithIndex.map({
+      val members = constructorSymbol.typeSignatureIn(tpe).paramLists.flatten.zipWithIndex.map({
         case (member, index) ⇒
           val memberName = member.name.encodedName.toString
           val accessorMethodSymbol = tpe.member(TermName(memberName)).asMethod
           val accessorMethod = Reflection.methodToJava(accessorMethodSymbol)
 
-          val memberClassSymbol = member.info.typeSymbol.asClass
-          val memberClass = currentMirror.runtimeClass(memberClassSymbol)
+          val (derivedValueClassConstructorMirror, memberClass) =
+            if (member.typeSignature.typeSymbol.isClass) {
+              val memberClassSymbol = member.typeSignature.typeSymbol.asClass
+              val memberClass = currentMirror.runtimeClass(memberClassSymbol)
 
-          val (derivedValueClassConstructorMirror, innerClass) =
-            if (memberClassSymbol.isDerivedValueClass) {
-              // The accessor will actually return the "inner" value, not the value class.
-              val constructorMethodSymbol = memberClassSymbol.primaryConstructor.asMethod
-              //              val innerClass = currentMirror.runtimeClass(constructorMethodSymbol.paramLists.flatten.head.info.typeSymbol.asClass)
-              (Some(currentMirror.reflectClass(memberClassSymbol).reflectConstructor(constructorMethodSymbol)), None)
+              if (memberClassSymbol.isDerivedValueClass) {
+                // The accessor will actually return the "inner" value, not the value class.
+                val constructorMethodSymbol = memberClassSymbol.primaryConstructor.asMethod
+                //              val innerClass = currentMirror.runtimeClass(constructorMethodSymbol.paramLists.flatten.head.info.typeSymbol.asClass)
+                (Some(currentMirror.reflectClass(memberClassSymbol).reflectConstructor(constructorMethodSymbol)), Some(memberClass))
+              } else {
+                (None, None)
+              }
             } else {
               (None, None)
             }
 
-          val defaultValueAccessor = companionType.member(TermName("apply$default$" + (index + 1)))
           val defaultValueAccessorMirror =
-            if (defaultValueAccessor.isMethod) {
-              Some(companionMirror.reflectMethod(defaultValueAccessor.asMethod))
+            if (member.typeSignature.typeSymbol.isClass) {
+              val defaultValueAccessor = companionType.member(TermName("apply$default$" + (index + 1)))
+              if (defaultValueAccessor.isMethod) {
+                Some(companionMirror.reflectMethod(defaultValueAccessor.asMethod))
+              } else {
+                None
+              }
             } else {
               None
             }
 
-          Member(index, memberName, context.typeAdapter(member.info, member.info.typeArgs), accessorMethodSymbol, accessorMethod, derivedValueClassConstructorMirror, defaultValueAccessorMirror, memberClass, innerClass)
+          val memberType = member.asTerm.typeSignature
+          val memberTypeAdapter = context.typeAdapter(memberType, null)
+          Member(index, memberName, memberTypeAdapter, accessorMethodSymbol, accessorMethod, derivedValueClassConstructorMirror, defaultValueAccessorMirror, memberClass)
       })
 
-      Some(CaseClassTypeAdapter(typeAfterSubstitution, constructorMirror, tpe, memberNameTypeAdapter, members))
+      Some(CaseClassTypeAdapter(tpe, constructorMirror, tpe, memberNameTypeAdapter, members))
     } else {
       None
     }

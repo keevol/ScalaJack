@@ -1,5 +1,6 @@
 package co.blocke.scalajack.flexjson.typeadapter
 
+import co.blocke.scalajack.flexjson.FlexJsonFlavor.MemberName
 import co.blocke.scalajack.flexjson.{ Context, Reader, TokenType, TypeAdapter, TypeAdapterFactory, Writer }
 
 import scala.reflect.ClassTag
@@ -10,13 +11,15 @@ object AnyTypeAdapter extends TypeAdapterFactory {
 
   override def typeAdapter(tpe: Type, context: Context, superParamTypes: List[Type]): Option[TypeAdapter[_]] =
     if (tpe =:= typeOf[Any]) {
+      val typeTypeAdapter = context.typeAdapterOf[Type]
+      val memberNameTypeAdapter = context.typeAdapterOf[MemberName]
       val mapTypeAdapter = context.typeAdapterOf[Map[Any, Any]]
       val listTypeAdapter = context.typeAdapterOf[List[Any]]
       val stringTypeAdapter = context.typeAdapterOf[String]
       val booleanTypeAdapter = context.typeAdapterOf[Boolean]
       val bigDecimalTypeAdapter = context.typeAdapterOf[BigDecimal]
 
-      Some(AnyTypeAdapter(mapTypeAdapter, listTypeAdapter, stringTypeAdapter, booleanTypeAdapter, bigDecimalTypeAdapter, context))
+      Some(AnyTypeAdapter(typeTypeAdapter, memberNameTypeAdapter, mapTypeAdapter, listTypeAdapter, stringTypeAdapter, booleanTypeAdapter, bigDecimalTypeAdapter, context))
     } else {
       None
     }
@@ -24,6 +27,8 @@ object AnyTypeAdapter extends TypeAdapterFactory {
 }
 
 case class AnyTypeAdapter(
+    typeTypeAdapter:       TypeAdapter[Type],
+    memberNameTypeAdapter: TypeAdapter[MemberName],
     mapTypeAdapter:        TypeAdapter[Map[Any, Any]],
     listTypeAdapter:       TypeAdapter[List[Any]],
     stringTypeAdapter:     TypeAdapter[String],
@@ -72,11 +77,15 @@ case class AnyTypeAdapter(
         mapTypeAdapter.write(map.asInstanceOf[Map[Any, Any]], writer)
 
       case _ ⇒
-        val valueType = currentMirror.staticClass(value.getClass.getName).info
+        val valueType = currentMirror.staticClass(value.getClass.getName).toType
         //    val valueType = currentMirror.reflectClass(currentMirror.classSymbol(value.getClass)).symbol.info
         //    val valueType = currentMirror.reflect(value)(ClassTag(value.getClass)).symbol.info
 
-        context.typeAdapter(valueType).asInstanceOf[TypeAdapter[Any]].write(value, writer)
+        val valueTypeAdapter = context.typeAdapter(valueType)
+
+        val polymorphicWriter = new PolymorphicWriter(writer, "_hint", valueType, typeTypeAdapter, memberNameTypeAdapter)
+
+        valueTypeAdapter.asInstanceOf[TypeAdapter[Any]].write(value, polymorphicWriter)
     }
   }
 
