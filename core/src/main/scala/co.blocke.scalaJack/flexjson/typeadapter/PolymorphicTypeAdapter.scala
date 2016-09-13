@@ -1,11 +1,11 @@
 package co.blocke.scalajack.flexjson.typeadapter
 
 import co.blocke.scalajack.flexjson.FlexJsonFlavor.MemberName
-import co.blocke.scalajack.flexjson.{ Context, ForwardingWriter, Reader, TokenType, TypeAdapter, TypeAdapterFactory, Writer }
+import co.blocke.scalajack.flexjson.{ Context, ForwardingWriter, Reader, Reflection, TokenType, TypeAdapter, TypeAdapterFactory, Writer }
 
 import scala.reflect.runtime.currentMirror
 import scala.reflect.runtime.universe.{ ClassSymbol, Type, appliedType, typeOf }
-import scala.collection.mutable.{ Map ⇒ MMap }
+import scala.collection.mutable.{ Map => MMap }
 
 case class PolymorphicTypeAdapterFactory(hintFieldName: String) extends TypeAdapterFactory.FromClassSymbol {
 
@@ -54,36 +54,15 @@ case class PolymorphicTypeAdapter[T](
     typeTypeAdapter:       TypeAdapter[Type],
     memberNameTypeAdapter: TypeAdapter[MemberName],
     context:               Context,
-    polyType:              Type
+    polymorphicType:       Type
 ) extends TypeAdapter[T] {
 
-  // Magic that maps (known) parameter types of this polytype to the (unknown) parameter types of a value type
-  // implementing this polytype.
-  private def resolvePolyTypes(childType: Type): List[Type] = {
-    PolymorphicTypeAdapter.resolved.getOrElse((childType, polyType.typeArgs), {
-      // Find the "with" mixin for this polytype in the kid (there may be multiple mixin traits).
-      // Then get it's type arguments, e.g. [String,P].  It's the 'P' we're interested in.
-      val childTypeArgs = childType.baseClasses.find(_ == polyType.typeSymbol).map(f ⇒ childType.baseType(f)).map(_.typeArgs).getOrElse(List.empty[Type])
+  import scala.collection.mutable
 
-      // Match 'em up with dad's (this polytype) type aguments, e.g. [String,Int]
-      val argPairs = polyType.typeArgs zip childTypeArgs
+  val populatedConcreteTypeCache = new mutable.WeakHashMap[Type, Type]
 
-      // In the next step we need to sort this list based on the argument list order in the kid, so get the ordered
-      // list of kid's type arguments now.
-      // (Can't assume that the parameter arg order of the parent is the same are the kid's parameter arg order!)
-      val kidsParamOrder = childType.typeSymbol.asType.typeParams
-
-      // Now pull out the ones that don't match--that need subsititution in the kid (the 'P')
-      val forSubstitution = argPairs.collect {
-        case (fromDad, fromKid) if (fromDad != fromKid) ⇒ (fromDad, kidsParamOrder.indexOf(fromKid.typeSymbol))
-      }
-
-      // Return sorted list
-      val typeList = forSubstitution.sortWith { (a, b) ⇒ a._2 < b._2 }.map(_._1)
-      PolymorphicTypeAdapter.resolved += (childType, polyType.typeArgs) → typeList
-      typeList
-    })
-  }
+  def populateConcreteType(concreteType: Type): Type =
+    populatedConcreteTypeCache.getOrElseUpdate(concreteType, Reflection.populateChildTypeArgs(polymorphicType, concreteType))
 
   override def read(reader: Reader): T = {
     if (reader.peek == TokenType.Null) {
@@ -107,19 +86,8 @@ case class PolymorphicTypeAdapter[T](
       }
 
       val concreteType = optionalConcreteType.getOrElse(throw new Exception(s"""Could not find type field named "$typeMemberName" """))
-
-      val ttt = concreteType.baseType(polyType.typeSymbol)
-
-      val polyTypes = resolvePolyTypes(concreteType)
-
-      val thing =
-        //        if (concreteType.typeSymbol.fullName endsWith "PairOfMeals") {
-        //          appliedType(concreteType, List(typeOf[Char], typeOf[Boolean]))
-        //        } else {
-        appliedType(concreteType, polyTypes)
-      //        }
-
-      val concreteTypeAdapter = context.typeAdapter(thing)
+      val populatedConcreteType = populateConcreteType(concreteType)
+      val concreteTypeAdapter = context.typeAdapter(populatedConcreteType)
 
       reader.position = originalPosition
 
@@ -129,14 +97,11 @@ case class PolymorphicTypeAdapter[T](
 
   override def write(value: T, writer: Writer): Unit = {
     // TODO figure out a better way to infer the type (perhaps infer the type arguments?)
-    val valueType = currentMirror.classSymbol(value.getClass).toType
+    val concreteType = currentMirror.classSymbol(value.getClass).toType
+    val populatedConcreteType = populateConcreteType(concreteType)
+    val valueTypeAdapter = context.typeAdapter(populatedConcreteType).asInstanceOf[TypeAdapter[T]]
 
-    val args = resolvePolyTypes(valueType)
-    val r = appliedType(valueType, args)
-
-    val valueTypeAdapter = context.typeAdapter(r).asInstanceOf[TypeAdapter[T]]
-
-    val polymorphicWriter = new PolymorphicWriter(writer, typeMemberName, valueType, typeTypeAdapter, memberNameTypeAdapter)
+    val polymorphicWriter = new PolymorphicWriter(writer, typeMemberName, populatedConcreteType, typeTypeAdapter, memberNameTypeAdapter)
     valueTypeAdapter.write(value, polymorphicWriter)
   }
 

@@ -203,7 +203,7 @@ class SimpleTestSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
       it("Must read parameterized classes - Nested parameterized trait") {
         val t2 = PairOfMeals(Lunch('a'), Lunch(false))
         val jsT2 = """{"_hint":"co.blocke.scalajack.test.v4.PairOfMeals","a":{"_hint":"co.blocke.scalajack.test.v4.Lunch","drink":"a"},"b":{"_hint":"co.blocke.scalajack.test.v4.Lunch","drink":false}}"""
-        (sjJS.read[PairOfValues[Meal[Char], Meal[Boolean]]](jsT2) == t2) should be(true)
+        sjJS.read[PairOfValues[Meal[Char], Meal[Boolean]]](jsT2) should be(t2)
       }
       it("Must read parameterized classes - Nested parameterized trait, partially applied") {
         val t3 = Ex3("wow", false)
