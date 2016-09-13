@@ -13,7 +13,7 @@ object SimpleTypeAdapter {
 
   abstract class ForTypeSymbolOf[T](implicit valueTypeTag: TypeTag[T]) extends TypeAdapterFactory with TypeAdapter[T] {
 
-    override def typeAdapter(tpe: Type, context: Context, superParamTypes: List[Type]): Option[TypeAdapter[_]] =
+    override def typeAdapter(tpe: Type, context: Context): Option[TypeAdapter[_]] =
       if (tpe.typeSymbol == valueTypeTag.tpe.typeSymbol) {
         Some(this)
       } else {
@@ -28,7 +28,7 @@ abstract class SimpleTypeAdapter[T](implicit valueTypeTag: TypeTag[T]) extends T
 
   val valueType = valueTypeTag.tpe
 
-  override def typeAdapter(tpe: Type, context: Context, superParamTypes: List[Type] = List.empty[Type]): Option[TypeAdapter[_]] =
+  override def typeAdapter(tpe: Type, context: Context): Option[TypeAdapter[_]] =
     if (tpe =:= valueType) {
       Some(this)
     } else {

@@ -7,7 +7,7 @@ import scala.reflect.runtime.universe.{ Type, typeOf }
 
 object TryTypeAdapter extends TypeAdapterFactory {
 
-  override def typeAdapter(tpe: Type, context: Context, superParamTypes: List[Type]): Option[TypeAdapter[_]] =
+  override def typeAdapter(tpe: Type, context: Context): Option[TypeAdapter[_]] =
     if (tpe <:< typeOf[Try[_]]) {
       val valueType = tpe.typeArgs.head
       val valueTypeAdapter = context.typeAdapter(valueType)

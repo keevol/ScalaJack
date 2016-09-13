@@ -9,7 +9,7 @@ import scala.collection.mutable.{ Map ⇒ MMap }
 
 case class PolymorphicTypeAdapterFactory(hintFieldName: String) extends TypeAdapterFactory.FromClassSymbol {
 
-  override def typeAdapter(tpe: Type, classSymbol: ClassSymbol, context: Context, superParamTypes: List[Type]): Option[TypeAdapter[_]] =
+  override def typeAdapter(tpe: Type, classSymbol: ClassSymbol, context: Context): Option[TypeAdapter[_]] =
     if (classSymbol.isTrait) {
       Some(PolymorphicTypeAdapter(hintFieldName, context.typeAdapterOf[Type], context.typeAdapterOf[MemberName], context, tpe))
     } else {
@@ -119,7 +119,7 @@ case class PolymorphicTypeAdapter[T](
           appliedType(concreteType, polyTypes)
         }
 
-      val concreteTypeAdapter = context.typeAdapter(thing, null)
+      val concreteTypeAdapter = context.typeAdapter(thing)
 
       reader.position = originalPosition
 
@@ -134,7 +134,7 @@ case class PolymorphicTypeAdapter[T](
     val args = resolvePolyTypes(valueType)
     val r = appliedType(valueType, args)
 
-    val valueTypeAdapter = context.typeAdapter(r, null).asInstanceOf[TypeAdapter[T]]
+    val valueTypeAdapter = context.typeAdapter(r).asInstanceOf[TypeAdapter[T]]
 
     val polymorphicWriter = new PolymorphicWriter(writer, typeMemberName, valueType, typeTypeAdapter, memberNameTypeAdapter)
     valueTypeAdapter.write(value, polymorphicWriter)

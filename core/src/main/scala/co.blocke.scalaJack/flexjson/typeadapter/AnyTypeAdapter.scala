@@ -9,7 +9,7 @@ import scala.reflect.runtime.currentMirror
 
 object AnyTypeAdapter extends TypeAdapterFactory {
 
-  override def typeAdapter(tpe: Type, context: Context, superParamTypes: List[Type]): Option[TypeAdapter[_]] =
+  override def typeAdapter(tpe: Type, context: Context): Option[TypeAdapter[_]] =
     if (tpe =:= typeOf[Any]) {
       val typeTypeAdapter = context.typeAdapterOf[Type]
       val memberNameTypeAdapter = context.typeAdapterOf[MemberName]

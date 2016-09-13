@@ -6,10 +6,10 @@ import scala.reflect.runtime.universe.{ Type, typeOf }
 
 object OptionTypeAdapter extends TypeAdapterFactory {
 
-  override def typeAdapter(tpe: Type, context: Context, superParamTypes: List[Type]): Option[TypeAdapter[_]] =
+  override def typeAdapter(tpe: Type, context: Context): Option[TypeAdapter[_]] =
     if (tpe <:< typeOf[Option[_]]) {
       val valueType = tpe.typeArgs.head
-      val valueTypeAdapter = context.typeAdapter(valueType, valueType.typeArgs)
+      val valueTypeAdapter = context.typeAdapter(valueType)
 
       Some(OptionTypeAdapter(valueTypeAdapter))
     } else {

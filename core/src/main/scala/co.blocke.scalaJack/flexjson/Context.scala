@@ -72,14 +72,14 @@ case class Context(factories: List[TypeAdapterFactory] = Nil) {
             this.synchronized {
               val secondTypeAdapterAttempt = this.typeAdapterAttempt
               if (secondTypeAdapterAttempt == null) {
-                this.typeAdapterAttempt = Success(LazyTypeAdapter(Context.this, tpe, typeArgs))
+                this.typeAdapterAttempt = Success(LazyTypeAdapter(Context.this, tpe))
 
                 val thirdTypeAdapterAttempt = Try {
                   var optionalTypeAdapter: Option[TypeAdapter[_]] = None
 
                   var remainingFactories = factories
                   while (optionalTypeAdapter.isEmpty && remainingFactories.nonEmpty) {
-                    optionalTypeAdapter = remainingFactories.head.typeAdapter(tpe, Context.this, typeArgs)
+                    optionalTypeAdapter = remainingFactories.head.typeAdapter(tpe, Context.this)
                     remainingFactories = remainingFactories.tail
                   }
 
@@ -115,8 +115,8 @@ case class Context(factories: List[TypeAdapterFactory] = Nil) {
   def withFactory(factory: TypeAdapterFactory): Context =
     copy(factories = factories :+ factory)
 
-  def typeAdapter(tpe: Type, superParamTypes: List[Type] = List.empty[Type]): TypeAdapter[_] = {
-    val typeAndTypeArgs = TypeAndTypeArgs(tpe, superParamTypes)
+  def typeAdapter(tpe: Type): TypeAdapter[_] = {
+    val typeAndTypeArgs = TypeAndTypeArgs(tpe, null)
 
     typeEntries.computeIfAbsent(typeAndTypeArgs, TypeEntryFactory).typeAdapter
 
@@ -146,6 +146,6 @@ case class Context(factories: List[TypeAdapterFactory] = Nil) {
   }
 
   def typeAdapterOf[T](implicit valueTypeTag: TypeTag[T]): TypeAdapter[T] =
-    typeAdapter(valueTypeTag.tpe, valueTypeTag.tpe.typeArgs).asInstanceOf[TypeAdapter[T]]
+    typeAdapter(valueTypeTag.tpe).asInstanceOf[TypeAdapter[T]]
 
 }

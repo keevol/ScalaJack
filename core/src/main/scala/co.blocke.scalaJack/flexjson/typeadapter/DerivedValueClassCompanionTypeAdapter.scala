@@ -11,7 +11,7 @@ import scala.reflect.runtime.universe.{ ClassSymbol, MethodMirror, MethodSymbol,
 
 object DerivedValueClassCompanionTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
 
-  override def typeAdapter(tpe: Type, classSymbol: ClassSymbol, context: Context, superParamTypes: List[Type]): Option[TypeAdapter[_]] = {
+  override def typeAdapter(tpe: Type, classSymbol: ClassSymbol, context: Context): Option[TypeAdapter[_]] = {
     if (tpe.companion <:< typeOf[ValueClassCustom]) {
       val companionMirror = currentMirror.reflectModule(classSymbol.companion.asModule)
       val companion = companionMirror.instance.asInstanceOf[ValueClassCustom]

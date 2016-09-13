@@ -6,13 +6,13 @@ import scala.reflect.runtime.universe.{ Type, typeOf }
 
 object MapTypeAdapter extends TypeAdapterFactory {
 
-  override def typeAdapter(tpe: Type, context: Context, superParamTypes: List[Type]): Option[TypeAdapter[_]] =
+  override def typeAdapter(tpe: Type, context: Context): Option[TypeAdapter[_]] =
     if (tpe <:< typeOf[Map[_, _]]) {
       val keyType = tpe.dealias.typeArgs(0)
-      val keyTypeAdapter = context.typeAdapter(keyType, keyType.typeArgs)
+      val keyTypeAdapter = context.typeAdapter(keyType)
 
       val valueType = tpe.dealias.typeArgs(1)
-      val valueTypeAdapter = context.typeAdapter(valueType, valueType.typeArgs)
+      val valueTypeAdapter = context.typeAdapter(valueType)
 
       Some(MapTypeAdapter(keyTypeAdapter, valueTypeAdapter))
     } else {

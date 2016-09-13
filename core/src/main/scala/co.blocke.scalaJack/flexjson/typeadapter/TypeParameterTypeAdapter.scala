@@ -6,7 +6,7 @@ import scala.reflect.runtime.universe.Type
 
 object TypeParameterTypeAdapter extends TypeAdapterFactory {
 
-  override def typeAdapter(tpe: Type, context: Context, superParamTypes: List[Type]): Option[TypeAdapter[_]] =
+  override def typeAdapter(tpe: Type, context: Context): Option[TypeAdapter[_]] =
     if (tpe.typeSymbol.isParameter) {
       Some(TypeParameterTypeAdapter(context.typeAdapterOf[Any]))
     } else {
