@@ -18,6 +18,10 @@ object TupleTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
       valueAccessorMethod:       Method
   ) {
 
+    def valueIn(tuple: Any): T = {
+      valueAccessorMethod.invoke(tuple).asInstanceOf[T]
+    }
+
     def read(reader: Reader): Any = {
       valueTypeAdapter.read(reader)
     }
@@ -66,11 +70,9 @@ case class TupleTypeAdapter[T >: Null](
         reader.readNull()
 
       case TokenType.BeginArray ⇒
+        val fieldValues = new Array[Any](fields.length)
+
         reader.beginArray()
-
-        val numberOfFields = fields.length
-
-        val fieldValues = new Array[Any](numberOfFields)
 
         for (field ← fields) {
           val fieldValue = field.read(reader)
@@ -89,7 +91,7 @@ case class TupleTypeAdapter[T >: Null](
       writer.beginArray()
 
       for (field ← fields) {
-        val fieldValue = field.valueAccessorMethod.invoke(tuple)
+        val fieldValue = field.valueIn(tuple)
         field.write(fieldValue, writer)
       }
 
