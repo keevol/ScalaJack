@@ -113,11 +113,11 @@ case class PolymorphicTypeAdapter[T](
       val polyTypes = resolvePolyTypes(concreteType)
 
       val thing =
-        if (concreteType.typeSymbol.fullName endsWith "PairOfMeals") {
-          appliedType(concreteType, List(typeOf[Char], typeOf[Boolean]))
-        } else {
-          appliedType(concreteType, polyTypes)
-        }
+        //        if (concreteType.typeSymbol.fullName endsWith "PairOfMeals") {
+        //          appliedType(concreteType, List(typeOf[Char], typeOf[Boolean]))
+        //        } else {
+        appliedType(concreteType, polyTypes)
+      //        }
 
       val concreteTypeAdapter = context.typeAdapter(thing)
 
