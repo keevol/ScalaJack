@@ -61,9 +61,33 @@ object CreditCardAdapter extends BasicTypeAdapter[CreditCard] {
 }
 class CardWrapper(val underlying: CreditCard) extends AnyVal
 
+//------------------------------
+trait OuterTrait[T, U] {
+  val a: T
+  val b: U
+}
+trait InnerTrait[Y] {
+  val x: Y
+}
+case class InnerClass[Z](x: Z) extends InnerTrait[Z]
+case class OuterClass[Z, X](a: InnerTrait[Z], b: InnerTrait[X]) extends OuterTrait[InnerTrait[Z], InnerTrait[X]]
+
+/*
+T -> InnerTrait[Char]
+U -> InnerTrait[Boolean]
+*/
+//------------------------------
+
 class Bar extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
   val sj = ScalaJack()
   describe("-- More Cases --") {
+    it("Nested") {
+      val t2 = OuterClass(InnerClass('a'), InnerClass(false))
+      println(sj.render[OuterTrait[InnerTrait[Char], InnerTrait[Boolean]]](t2))
+      // val jsT2 = """{"_hint":"co.blocke.scalajack.test.v4.OuterClass","a":{"_hint":"co.blocke.scalajack.test.v4.InnerClass","x":"a"},"b":{"_hint":"co.blocke.scalajack.test.v4.InnerClass","x":false}}"""
+      // (sj.read[OuterTrait[InnerTrait[Char], InnerTrait[Boolean]]](jsT2) == t2) should be(true)
+    }
+    /*
     it("Case 1 - Primitive adapter") {
       val vc = VisitorContext().withAdapter(PhoneAdapter)
       val c = Contact("Greg", "123-456-7890")
@@ -83,5 +107,6 @@ class Bar extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
       obj.cc.underlying should equal("1234 5678 9012 3456")
       // Just create a BasicTypeAdapter then define a value class wrapping that basic type and see what happens...
     }
+    */
   }
 }

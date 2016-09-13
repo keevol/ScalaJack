@@ -64,6 +64,7 @@ case class Context(factories: List[TypeAdapterFactory] = Nil) {
     private var typeAdapterAttempt: Try[TypeAdapter[_]] = _
 
     def typeAdapter: TypeAdapter[_] = {
+      // println("Seeking: " + tpe)
       this.synchronized {
         val typeAdapterAttempt = {
           val firstTypeAdapterAttempt = this.typeAdapterAttempt
@@ -97,6 +98,7 @@ case class Context(factories: List[TypeAdapterFactory] = Nil) {
           }
         }
 
+        // println("Found: " + typeAdapterAttempt.map(_.getClass.getName).getOrElse("Not Found"))
         typeAdapterAttempt.get
       }
     }

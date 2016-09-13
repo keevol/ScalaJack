@@ -11,6 +11,8 @@ case class PolymorphicTypeAdapterFactory(hintFieldName: String) extends TypeAdap
 
   override def typeAdapter(tpe: Type, classSymbol: ClassSymbol, context: Context, superParamTypes: List[Type]): Option[TypeAdapter[_]] =
     if (classSymbol.isTrait) {
+      // println("TRAIT TYPES: " + tpe.typeArgs)
+      // println("SUBS FROM DAD: " + superParamTypes)
       Some(PolymorphicTypeAdapter(hintFieldName, context.typeAdapterOf[Type], context.typeAdapterOf[MemberName], context, tpe))
     } else {
       None
@@ -61,12 +63,30 @@ case class PolymorphicTypeAdapter[T](
   // implementing this polytype.
   private def resolvePolyTypes(childType: Type): List[Type] = {
     PolymorphicTypeAdapter.resolved.getOrElse((childType, polyType.typeArgs), {
+
+      println("ME  PARMS: " + polyType.typeSymbol.typeSignature.typeParams.map(_.name.toString))
+      println("ME  ARGS : " + polyType.typeArgs)
+      println("KID: " + childType)
+      println("KID PARMS: " + childType.typeSymbol.typeSignature.typeParams.map(_.name.toString))
+      println("KID ARGS : " + childType.typeArgs)
+
+      val members = polyType.members.filter(_.isTerm).map(_.asMethod).filter(_.isGetter)
+      val mappedParams = scala.collection.mutable.LinkedHashMap.empty[String, Type] ++=
+        members.map(_.name.toString).zip(members.map(_.typeSignature.resultType))
+        .toList
+      // .collect {
+      //   case (item, itemType) if (argMap.contains(itemType.toString)) => (item, argMap(itemType.toString))
+      //   case (item, itemType)                                         => (item, know(itemType.dealias, itemType))
+      // }.toList
+      println("MAPPED: " + mappedParams)
+
       // Find the "with" mixin for this polytype in the kid (there may be multiple mixin traits).
       // Then get it's type arguments, e.g. [String,P].  It's the 'P' we're interested in.
       val childTypeArgs = childType.baseClasses.find(_ == polyType.typeSymbol).map(f ⇒ childType.baseType(f)).map(_.typeArgs).getOrElse(List.empty[Type])
 
       // Match 'em up with dad's (this polytype) type aguments, e.g. [String,Int]
       val argPairs = polyType.typeArgs zip childTypeArgs
+      println(argPairs)
 
       // In the next step we need to sort this list based on the argument list order in the kid, so get the ordered
       // list of kid's type arguments now.
@@ -81,6 +101,7 @@ case class PolymorphicTypeAdapter[T](
       // Return sorted list
       val typeList = forSubstitution.sortWith { (a, b) ⇒ a._2 < b._2 }.map(_._1)
       PolymorphicTypeAdapter.resolved += (childType, polyType.typeArgs) → typeList
+      println("Inside " + polyType + " resolved type parameters " + typeList)
       typeList
     })
   }
