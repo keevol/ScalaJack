@@ -68,16 +68,6 @@ case class PolymorphicTypeAdapter[T](
   private def resolvePolyTypes(childType: Type): List[Type] = {
     PolymorphicTypeAdapter.resolved.getOrElse((childType, polyType.typeArgs), {
 
-      // println(":::")
-      // println("::: ------------------------------ Resolve for type " + polyType.typeSymbol.fullName)
-      // println("::: ------------------------------ With object " + childType.typeSymbol.fullName)
-      // println(":::")
-      // println("ME  PARMS: " + polyType.typeSymbol.typeSignature.typeParams.map(_.name.toString))
-      // println("ME  ARGS : " + polyType.typeArgs)
-      // println("KID: " + childType)
-      // println("KID PARMS: " + childType.typeSymbol.typeSignature.typeParams.map(_.name.toString))
-      // println("KID ARGS : " + childType.typeArgs)
-
       // Find the "with" mixin for this polytype in the kid (there may be multiple mixin traits).
       // Then get it's type arguments, e.g. [String,P].  It's the 'P' we're interested in.
       val childTypeArgs = childType.baseClasses.find(_ == polyType.typeSymbol).map(f ⇒ childType.baseType(f)).map(_.typeArgs).getOrElse(List.empty[Type])
@@ -85,7 +75,7 @@ case class PolymorphicTypeAdapter[T](
       // Match 'em up with dad's (this polytype) type aguments, e.g. [String,Int]
       val _argPairs = polyType.typeArgs zip childTypeArgs
 
-      val objTypeParams = childType.typeSymbol.typeSignature.typeParams
+      val objTypeParams = childType.typeSymbol.typeSignature.typeParams // object's type symbol list
       // TODO: Put this in some kind of loop for n-listed sets.  As-is this handles only 1-level nesting.
       // Also see if there's a better way then having to wrap NoArgs result in a List artificially so flatten will work.
       val argPairs = _argPairs.collect {
