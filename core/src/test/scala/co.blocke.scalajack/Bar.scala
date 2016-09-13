@@ -62,19 +62,29 @@ object CreditCardAdapter extends BasicTypeAdapter[CreditCard] {
 class CardWrapper(val underlying: CreditCard) extends AnyVal
 
 //------------------------------
-trait OuterTrait[T, U] {
+trait OuterTrait[T, U, V] {
   val a: T
-  val b: U
+  val b: List[U]
+  val d: V
 }
 trait InnerTrait[Y] {
   val x: Y
 }
 case class InnerClass[Z](x: Z) extends InnerTrait[Z]
-case class OuterClass[Z, X](a: InnerTrait[Z], b: InnerTrait[X]) extends OuterTrait[InnerTrait[Z], InnerTrait[X]]
+case class OuterClass[Z, X, P](c: Z, a: InnerTrait[Z], b: List[InnerTrait[X]], d: P) extends OuterTrait[InnerTrait[Z], InnerTrait[X], P]
 
 /*
+Step 1: Get mapping for high level class
 T -> InnerTrait[Char]
 U -> InnerTrait[Boolean]
+V -> P
+
+Step 2: Examine fields
+Foreach key (T,U,V): 
+  cur = value for key
+  while( cur is NOT in object's param list (Z,X,P) )
+    cur = unwrap(cur) 
+  resolve mapping and associate cur with object param symbol
 */
 //------------------------------
 
@@ -82,8 +92,8 @@ class Bar extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
   val sj = ScalaJack()
   describe("-- More Cases --") {
     it("Nested") {
-      val t2 = OuterClass(InnerClass('a'), InnerClass(false))
-      println(sj.render[OuterTrait[InnerTrait[Char], InnerTrait[Boolean]]](t2))
+      val t2 = OuterClass('z', InnerClass('a'), List(InnerClass(false), InnerClass(true)), 5)
+      println(sj.render[OuterTrait[InnerTrait[Char], InnerTrait[Boolean], Int]](t2))
       // val jsT2 = """{"_hint":"co.blocke.scalajack.test.v4.OuterClass","a":{"_hint":"co.blocke.scalajack.test.v4.InnerClass","x":"a"},"b":{"_hint":"co.blocke.scalajack.test.v4.InnerClass","x":false}}"""
       // (sj.read[OuterTrait[InnerTrait[Char], InnerTrait[Boolean]]](jsT2) == t2) should be(true)
     }

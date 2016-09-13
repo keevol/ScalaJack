@@ -61,31 +61,37 @@ case class PolymorphicTypeAdapter[T](
 
   // Magic that maps (known) parameter types of this polytype to the (unknown) parameter types of a value type
   // implementing this polytype.
+  // private diveDeep( inMap:Map[String,Type], objType:Type ) = {
+  //   ???    
+  // }
+
   private def resolvePolyTypes(childType: Type): List[Type] = {
     PolymorphicTypeAdapter.resolved.getOrElse((childType, polyType.typeArgs), {
 
-      println("ME  PARMS: " + polyType.typeSymbol.typeSignature.typeParams.map(_.name.toString))
-      println("ME  ARGS : " + polyType.typeArgs)
-      println("KID: " + childType)
-      println("KID PARMS: " + childType.typeSymbol.typeSignature.typeParams.map(_.name.toString))
-      println("KID ARGS : " + childType.typeArgs)
-
-      val members = polyType.members.filter(_.isTerm).map(_.asMethod).filter(_.isGetter)
-      val mappedParams = scala.collection.mutable.LinkedHashMap.empty[String, Type] ++=
-        members.map(_.name.toString).zip(members.map(_.typeSignature.resultType))
-        .toList
-      // .collect {
-      //   case (item, itemType) if (argMap.contains(itemType.toString)) => (item, argMap(itemType.toString))
-      //   case (item, itemType)                                         => (item, know(itemType.dealias, itemType))
-      // }.toList
-      println("MAPPED: " + mappedParams)
+      // println(":::")
+      // println("::: ------------------------------ Resolve for type " + polyType.typeSymbol.fullName)
+      // println("::: ------------------------------ With object " + childType.typeSymbol.fullName)
+      // println(":::")
+      // println("ME  PARMS: " + polyType.typeSymbol.typeSignature.typeParams.map(_.name.toString))
+      // println("ME  ARGS : " + polyType.typeArgs)
+      // println("KID: " + childType)
+      // println("KID PARMS: " + childType.typeSymbol.typeSignature.typeParams.map(_.name.toString))
+      // println("KID ARGS : " + childType.typeArgs)
 
       // Find the "with" mixin for this polytype in the kid (there may be multiple mixin traits).
       // Then get it's type arguments, e.g. [String,P].  It's the 'P' we're interested in.
       val childTypeArgs = childType.baseClasses.find(_ == polyType.typeSymbol).map(f ⇒ childType.baseType(f)).map(_.typeArgs).getOrElse(List.empty[Type])
 
       // Match 'em up with dad's (this polytype) type aguments, e.g. [String,Int]
-      val argPairs = polyType.typeArgs zip childTypeArgs
+      val _argPairs = polyType.typeArgs zip childTypeArgs
+
+      val objTypeParams = childType.typeSymbol.typeSignature.typeParams
+      // TODO: Put this in some kind of loop for n-listed sets.  As-is this handles only 1-level nesting.
+      // Also see if there's a better way then having to wrap NoArgs result in a List artificially so flatten will work.
+      val argPairs = _argPairs.collect {
+        case (known, withSymbols) if (withSymbols.typeArgs.isEmpty) => List((known, withSymbols))
+        case (known, withSymbols)                                   => known.typeArgs zip withSymbols.typeArgs
+      }.flatten
       println(argPairs)
 
       // In the next step we need to sort this list based on the argument list order in the kid, so get the ordered
