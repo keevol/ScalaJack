@@ -4,8 +4,7 @@ import co.blocke.scalajack.flexjson.FlexJsonFlavor.MemberName
 import co.blocke.scalajack.flexjson.{ Context, ForwardingWriter, Reader, Reflection, TokenType, TypeAdapter, TypeAdapterFactory, Writer }
 
 import scala.reflect.runtime.currentMirror
-import scala.reflect.runtime.universe.{ ClassSymbol, Type, appliedType, typeOf }
-import scala.collection.mutable.{ Map => MMap }
+import scala.reflect.runtime.universe.{ ClassSymbol, Type }
 
 case class PolymorphicTypeAdapterFactory(hintFieldName: String) extends TypeAdapterFactory.FromClassSymbol {
 
@@ -45,10 +44,6 @@ class PolymorphicWriter(
 
 }
 
-object PolymorphicTypeAdapter {
-  private val resolved: MMap[(Type, List[Type]), List[Type]] = MMap.empty[(Type, List[Type]), List[Type]]
-}
-
 case class PolymorphicTypeAdapter[T](
     typeMemberName:        MemberName,
     typeTypeAdapter:       TypeAdapter[Type],
@@ -72,22 +67,22 @@ case class PolymorphicTypeAdapter[T](
 
       reader.beginObject()
 
-      var optionalConcreteType: Option[Type] = None
+      var optionalConcreteTypeBeforeSubstitution: Option[Type] = None
 
-      while (optionalConcreteType.isEmpty && reader.hasMoreMembers) {
+      while (optionalConcreteTypeBeforeSubstitution.isEmpty && reader.hasMoreMembers) {
         val memberName = memberNameTypeAdapter.read(reader)
 
         if (memberName == typeMemberName) {
-          val concreteType = typeTypeAdapter.read(reader)
-          optionalConcreteType = Some(concreteType)
+          val concreteTypeBeforeSubstitution = typeTypeAdapter.read(reader)
+          optionalConcreteTypeBeforeSubstitution = Some(concreteTypeBeforeSubstitution)
         } else {
           reader.skipValue()
         }
       }
 
-      val concreteType = optionalConcreteType.getOrElse(throw new Exception(s"""Could not find type field named "$typeMemberName" """))
-      val populatedConcreteType = populateConcreteType(concreteType)
-      val concreteTypeAdapter = context.typeAdapter(populatedConcreteType)
+      val concreteTypeBeforeSubstitution = optionalConcreteTypeBeforeSubstitution.getOrElse(throw new Exception(s"""Could not find type field named "$typeMemberName" """))
+      val concreteTypeAfterSubstitution = populateConcreteType(concreteTypeBeforeSubstitution)
+      val concreteTypeAdapter = context.typeAdapter(concreteTypeAfterSubstitution)
 
       reader.position = originalPosition
 
@@ -96,12 +91,11 @@ case class PolymorphicTypeAdapter[T](
   }
 
   override def write(value: T, writer: Writer): Unit = {
-    // TODO figure out a better way to infer the type (perhaps infer the type arguments?)
-    val concreteType = currentMirror.classSymbol(value.getClass).toType
-    val populatedConcreteType = populateConcreteType(concreteType)
-    val valueTypeAdapter = context.typeAdapter(populatedConcreteType).asInstanceOf[TypeAdapter[T]]
+    val concreteTypeBeforeSubstitution = currentMirror.classSymbol(value.getClass).toType
+    val concreteTypeAfterSubstitution = populateConcreteType(concreteTypeBeforeSubstitution)
+    val valueTypeAdapter = context.typeAdapter(concreteTypeAfterSubstitution).asInstanceOf[TypeAdapter[T]]
 
-    val polymorphicWriter = new PolymorphicWriter(writer, typeMemberName, populatedConcreteType, typeTypeAdapter, memberNameTypeAdapter)
+    val polymorphicWriter = new PolymorphicWriter(writer, typeMemberName, concreteTypeAfterSubstitution, typeTypeAdapter, memberNameTypeAdapter)
     valueTypeAdapter.write(value, polymorphicWriter)
   }
 
