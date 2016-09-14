@@ -14,17 +14,17 @@ object Reflection {
   def methodToJava(methodSymbol: scala.reflect.runtime.universe.MethodSymbol): java.lang.reflect.Method =
     mirror.methodToJava(methodSymbol.asInstanceOf[scala.reflect.internal.Symbols#MethodSymbol])
 
-  private def solveForNeedleAfterTransformation(
-    haystackBeforeTransformation: Type,
-    haystackAfterTransformation:  Type,
-    needleBeforeTransformation:   Type
+  private def solveForNeedleAfterSubstitution(
+    haystackBeforeSubstitution: Type,
+    haystackAfterSubstitution:  Type,
+    needleBeforeSubstitution:   Type
   ): Option[Type] = {
-    if (needleBeforeTransformation == haystackBeforeTransformation) {
-      Some(haystackAfterTransformation)
+    if (needleBeforeSubstitution == haystackBeforeSubstitution) {
+      Some(haystackAfterSubstitution)
     } else {
-      val pairs = haystackBeforeTransformation.typeArgs zip haystackAfterTransformation.typeArgs
+      val pairs = haystackBeforeSubstitution.typeArgs zip haystackAfterSubstitution.typeArgs
 
-      pairs.flatMap({ case (a, b) ⇒ solveForNeedleAfterTransformation(a, b, needleBeforeTransformation) }).headOption
+      pairs.flatMap({ case (a, b) ⇒ solveForNeedleAfterSubstitution(a, b, needleBeforeSubstitution) }).headOption
     }
   }
 
@@ -55,10 +55,10 @@ object Reflection {
           for (childTypeParam ← childTypeParams) yield {
             val childTypeParamBeforeSubstitution = childTypeParam.asType.toType
 
-            val optionalChildTypeArgAfterSubstitution = solveForNeedleAfterTransformation(
-              haystackBeforeTransformation = childAsParentTypeBeforeSubstitution,
-              haystackAfterTransformation  = childAsParentTypeAfterSubstitution,
-              needleBeforeTransformation   = childTypeParamBeforeSubstitution
+            val optionalChildTypeArgAfterSubstitution = solveForNeedleAfterSubstitution(
+              haystackBeforeSubstitution = childAsParentTypeBeforeSubstitution,
+              haystackAfterSubstitution  = childAsParentTypeAfterSubstitution,
+              needleBeforeSubstitution   = childTypeParamBeforeSubstitution
             )
 
             optionalChildTypeArgAfterSubstitution.getOrElse(childTypeParamBeforeSubstitution)
