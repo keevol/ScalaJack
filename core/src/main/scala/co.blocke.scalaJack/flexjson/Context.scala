@@ -69,6 +69,8 @@ case class Context(factories: List[TypeAdapterFactory] = Nil) {
     def typeAdapter: TypeAdapter[_] = {
       val attempt =
         phase match {
+          case Initialized(a) ⇒ a
+
           case Uninitialized | Initializing ⇒
             synchronized {
               phase match {
@@ -98,9 +100,6 @@ case class Context(factories: List[TypeAdapterFactory] = Nil) {
                   a
               }
             }
-
-          case Initialized(a) ⇒
-            a
         }
 
       attempt.get
