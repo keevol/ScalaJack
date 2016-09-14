@@ -10,9 +10,7 @@ object TypeTypeAdapter extends SimpleTypeAdapter[Type] {
   override def read(reader: Reader): Type = {
     val fullName = reader.readString()
     try {
-      val t1 = currentMirror.staticClass(fullName).info
-      val t2 = currentMirror.staticClass(fullName).toType
-      t2
+      currentMirror.staticClass(fullName).toType
     } catch {
       case e: ScalaReflectionException ⇒
         throw new ClassNotFoundException(s"""Unable to find class named "$fullName"""", e)
