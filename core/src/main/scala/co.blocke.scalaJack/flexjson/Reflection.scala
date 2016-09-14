@@ -28,17 +28,17 @@ object Reflection {
     }
   }
 
-  def populateChildTypeArgs(parentType: Type, childType: Type): Type = {
-    if (childType.typeSymbol.isParameter) {
+  def populateChildTypeArgs(parentType: Type, childTypeBeforeSubstitution: Type): Type = {
+    if (childTypeBeforeSubstitution.typeSymbol.isParameter) {
       parentType
     } else {
       val parentTypeConstructor = parentType.typeConstructor
       val parentTypeArgs = parentType.typeArgs
 
-      val childTypeConstructor = childType.typeConstructor
+      val childTypeConstructor = childTypeBeforeSubstitution.typeConstructor
       val childTypeParams = childTypeConstructor.typeParams
 
-      val childAsParentTypeBeforeSubstitution = childType.baseType(parentType.typeSymbol)
+      val childAsParentTypeBeforeSubstitution = childTypeBeforeSubstitution.baseType(parentType.typeSymbol)
       val childAsParentTypeArgsBeforeSubstitution = childAsParentTypeBeforeSubstitution.typeArgs
 
       val childAsParentTypeArgsAfterSubstitution =
@@ -52,19 +52,17 @@ object Reflection {
         appliedType(parentTypeConstructor, childAsParentTypeArgsAfterSubstitution)
       } else {
         val childTypeArgs =
-          for (childTypeParam ← childTypeParams) yield {
-            val childTypeParamBeforeSubstitution = childTypeParam.asType.toType
-
+          for (childTypeParam ← childTypeParams.map(_.asType.toType)) yield {
             val optionalChildTypeArgAfterSubstitution = solveForNeedleAfterSubstitution(
               haystackBeforeSubstitution = childAsParentTypeBeforeSubstitution,
               haystackAfterSubstitution  = childAsParentTypeAfterSubstitution,
-              needleBeforeSubstitution   = childTypeParamBeforeSubstitution
+              needleBeforeSubstitution   = childTypeParam
             )
 
-            optionalChildTypeArgAfterSubstitution.getOrElse(childTypeParamBeforeSubstitution)
+            optionalChildTypeArgAfterSubstitution.getOrElse(childTypeParam)
           }
 
-        appliedType(childType, childTypeArgs)
+        appliedType(childTypeConstructor, childTypeArgs)
       }
     }
   }
