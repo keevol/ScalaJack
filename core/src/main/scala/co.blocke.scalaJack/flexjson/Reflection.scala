@@ -22,9 +22,13 @@ object Reflection {
     if (needleBeforeSubstitution == haystackBeforeSubstitution) {
       Some(haystackAfterSubstitution)
     } else {
-      val pairs = haystackBeforeSubstitution.typeArgs zip haystackAfterSubstitution.typeArgs
+      val needlesAfterSubstitution =
+        for {
+          (typeArgBeforeSubstitution, typeArgAfterSubstitution) ← haystackBeforeSubstitution.typeArgs zip haystackAfterSubstitution.typeArgs
+          needleAfterSubstitution ← solveForNeedleAfterSubstitution(typeArgBeforeSubstitution, typeArgAfterSubstitution, needleBeforeSubstitution)
+        } yield needleAfterSubstitution
 
-      pairs.flatMap({ case (a, b) ⇒ solveForNeedleAfterSubstitution(a, b, needleBeforeSubstitution) }).headOption
+      needlesAfterSubstitution.toSet.headOption
     }
   }
 
@@ -38,7 +42,7 @@ object Reflection {
       val childTypeConstructor = childTypeBeforeSubstitution.typeConstructor
       val childTypeParams = childTypeConstructor.typeParams
 
-      val childAsParentTypeBeforeSubstitution = childTypeBeforeSubstitution.baseType(parentType.typeSymbol)
+      val childAsParentTypeBeforeSubstitution = appliedType(childTypeConstructor, childTypeConstructor.typeParams.map(_.asType.toType)).baseType(parentType.typeSymbol)
       val childAsParentTypeArgsBeforeSubstitution = childAsParentTypeBeforeSubstitution.typeArgs
 
       val childAsParentTypeArgsAfterSubstitution =
@@ -48,22 +52,20 @@ object Reflection {
 
       val childAsParentTypeAfterSubstitution = appliedType(parentTypeConstructor, childAsParentTypeArgsAfterSubstitution)
 
-      if (childTypeConstructor == parentTypeConstructor) {
-        appliedType(parentTypeConstructor, childAsParentTypeArgsAfterSubstitution)
-      } else {
-        val childTypeArgs =
-          for (childTypeParam ← childTypeParams.map(_.asType.toType)) yield {
-            val optionalChildTypeArgAfterSubstitution = solveForNeedleAfterSubstitution(
-              haystackBeforeSubstitution = childAsParentTypeBeforeSubstitution,
-              haystackAfterSubstitution  = childAsParentTypeAfterSubstitution,
-              needleBeforeSubstitution   = childTypeParam
-            )
+      val childTypeArgs =
+        for (childTypeParam ← childTypeParams.map(_.asType.toType)) yield {
+          val optionalChildTypeArgAfterSubstitution = solveForNeedleAfterSubstitution(
+            haystackBeforeSubstitution = childAsParentTypeBeforeSubstitution,
+            haystackAfterSubstitution  = childAsParentTypeAfterSubstitution,
+            needleBeforeSubstitution   = childTypeParam
+          )
 
-            optionalChildTypeArgAfterSubstitution.getOrElse(childTypeParam)
-          }
+          optionalChildTypeArgAfterSubstitution.getOrElse(childTypeParam)
+        }
 
-        appliedType(childTypeConstructor, childTypeArgs)
-      }
+      val childTypeAfterSubstitution = appliedType(childTypeConstructor, childTypeArgs)
+
+      childTypeAfterSubstitution
     }
   }
 
