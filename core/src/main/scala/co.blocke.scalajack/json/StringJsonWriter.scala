@@ -283,6 +283,18 @@ class StringJsonWriter(canonical: Boolean = true) extends Writer {
     structure.endChildValue(ValueType.Number)
   }
 
+  override def writeBigDecimal(value: BigDecimal): Unit = {
+    structure.beginChildValue(ValueType.Number)
+    builder.append(value)
+    structure.endChildValue(ValueType.Number)
+  }
+
+  override def writeBigInt(value: BigInt): Unit = {
+    structure.beginChildValue(ValueType.Number)
+    builder.append(value)
+    structure.endChildValue(ValueType.Number)
+  }
+
   override def writeLong(value: Long): Unit = {
     structure.beginChildValue(ValueType.Number)
     builder.append(value)

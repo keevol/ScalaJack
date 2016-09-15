@@ -30,7 +30,7 @@ trait Reader {
   }
 
   def readBoolean(): Boolean = {
-    peek match {
+    read() match {
       case TokenType.False ⇒
         false
 
@@ -73,6 +73,16 @@ trait Reader {
   def readDouble(): Double = {
     read(expected = TokenType.Number)
     tokenText.toDouble
+  }
+
+  def readBigDecimal(): BigDecimal = {
+    read(expected = TokenType.Number)
+    BigDecimal(tokenText)
+  }
+
+  def readBigInt(): BigInt = {
+    read(expected = TokenType.Number)
+    BigInt(tokenText)
   }
 
   def skipValue(): Unit = {

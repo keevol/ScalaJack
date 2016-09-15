@@ -31,6 +31,10 @@ trait Writer {
 
   def writeDouble(value: Double): Unit
 
+  def writeBigDecimal(value: BigDecimal): Unit
+
+  def writeBigInt(value: BigInt): Unit
+
   def writeLong(value: Long): Unit
 
   def writeBoolean(value: Boolean): Unit
@@ -72,6 +76,10 @@ trait ForwardingWriter extends Writer {
   override def writeFloat(value: Float): Unit = delegate.writeFloat(value)
 
   override def writeDouble(value: Double): Unit = delegate.writeDouble(value)
+
+  override def writeBigDecimal(value: BigDecimal): Unit = delegate.writeBigDecimal(value)
+
+  override def writeBigInt(value: BigInt): Unit = delegate.writeBigInt(value)
 
   override def writeLong(value: Long): Unit = delegate.writeLong(value)
 
