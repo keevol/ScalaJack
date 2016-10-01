@@ -1,7 +1,6 @@
 package co.blocke.scalajack
 
 import typeadapter._
-import typeadapter.joda._
 import typeadapter.javatime._
 import typeadapter.javaprimitives._
 
@@ -18,8 +17,12 @@ object Context {
     .withFactory(AnyTypeAdapter)
     .withFactory(TypeTypeAdapter)
     .withFactory(CanBuildFromTypeAdapter)
-    .withFactory(MapTypeAdapter)
+    //    .withFactory(MapTypeAdapter)
     .withFactory(TupleTypeAdapter)
+
+    .withFactory(DerivedValueClassAdapter) // <-- WARNING: This must preceed CaseClassTypeAdapter or all 
+    //              ValueClasses will be interpreted as case classes!
+
     .withFactory(CaseClassTypeAdapter)
     .withFactory(OptionTypeAdapter)
     .withFactory(TryTypeAdapter)
@@ -34,7 +37,6 @@ object Context {
     .withFactory(BigDecimalTypeAdapter)
     .withFactory(BigIntTypeAdapter)
     .withFactory(StringTypeAdapter)
-    .withFactory(DerivedValueClassAdapter)
     .withFactory(EnumerationTypeAdapter)
     .withFactory(JavaNumberTypeAdapter)
     .withFactory(JavaBooleanTypeAdapter)
@@ -48,7 +50,6 @@ object Context {
     .withFactory(JavaBigDecimalTypeAdapter)
     .withFactory(JavaBigIntegerTypeAdapter)
     .withFactory(UUIDTypeAdapter)
-    .withFactory(JodaDateTimeTypeAdapter)
     .withFactory(DurationTypeAdapter)
     .withFactory(InstantTypeAdapter)
     .withFactory(LocalDateTimeTypeAdapter)

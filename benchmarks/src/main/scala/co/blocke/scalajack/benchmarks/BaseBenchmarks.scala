@@ -3,6 +3,7 @@ package co.blocke.scalajack.benchmarks
 import co.blocke.scalajack.{ ScalaJack }
 import co.blocke.scalajack.json.{ JsonFlavor, Tokenizer }
 import co.blocke.scalajack.{ ScalaJack, HintModifier }
+import co.blocke.scalajack.json.Tokenizer
 import org.openjdk.jmh.annotations.{ Benchmark, Scope, State }
 import scala.reflect.runtime.universe.{ Type, typeOf }
 
@@ -80,8 +81,6 @@ class BaseBenchmarksState {
     .withHints((typeOf[Human] -> "gender"))
     .withHintModifiers((typeOf[Human] -> humanHintMod))
 
-  val listOfPersons = scalaJack.read[List[Person]](jsonString)
-
   implicit val personFormat = {
     import spray.json._
     import DefaultJsonProtocol._
@@ -89,6 +88,20 @@ class BaseBenchmarksState {
     jsonFormat6(Person)
   }
 
+  val series4vc = co.blocke.series4.VisitorContext(
+    hintMap         = Map("co.blocke.scalajack.benchmarks.Human" → "gender"),
+    hintValueRead   = Map("co.blocke.scalajack.benchmarks.Human" → {
+      case "Male"   ⇒ new String("co.blocke.scalajack.benchmarks.Male")
+      case "Female" ⇒ new String("co.blocke.scalajack.benchmarks.Female")
+    }),
+    hintValueRender = Map("co.blocke.scalajack.benchmarks.Human" → {
+      case "co.blocke.scalajack.benchmarks.Male"   ⇒ new String("Male")
+      case "co.blocke.scalajack.benchmarks.Female" ⇒ new String("Female")
+    })
+  )
+  val series4ScalaJack = co.blocke.series4.ScalaJack[String]()
+
+  val listOfPersons = scalaJack.read[List[Person]](jsonString)
 }
 
 @State(Scope.Thread)
@@ -182,6 +195,16 @@ class BaseBenchmarks {
   @Benchmark
   def writeScalaJack(state: BaseBenchmarksState): String = {
     state.scalaJack.render[List[Person]](state.listOfPersons)
+  }
+
+  @Benchmark
+  def readSeries4ScalaJack(state: BaseBenchmarksState): List[Person] = {
+    state.series4ScalaJack.read[List[Person]](state.jsonString, state.series4vc)
+  }
+
+  @Benchmark
+  def writeSeries4ScalaJack(state: BaseBenchmarksState): String = {
+    state.series4ScalaJack.render[List[Person]](state.listOfPersons, state.series4vc)
   }
 
 }

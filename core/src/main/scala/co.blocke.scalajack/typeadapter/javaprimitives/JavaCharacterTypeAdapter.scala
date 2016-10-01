@@ -2,7 +2,7 @@ package co.blocke.scalajack
 package typeadapter
 package javaprimitives
 
-object JavaCharacterTypeAdapter extends SimpleTypeAdapter[java.lang.Character] {
+object JavaCharacterTypeAdapter extends SimpleTypeAdapter[java.lang.Character] with StringKind {
 
   override def read(reader: Reader): java.lang.Character =
     reader.peek match {
@@ -10,8 +10,7 @@ object JavaCharacterTypeAdapter extends SimpleTypeAdapter[java.lang.Character] {
         reader.readNull()
 
       case TokenType.String ⇒
-        reader.read(expected = TokenType.String)
-        java.lang.Character.valueOf(reader.tokenText.head)
+        java.lang.Character.valueOf(reader.readString().head)
 
       case actual ⇒ {
         reader.read()

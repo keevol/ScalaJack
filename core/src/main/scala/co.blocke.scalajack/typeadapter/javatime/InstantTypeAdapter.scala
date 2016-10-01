@@ -4,7 +4,7 @@ package javatime
 
 import java.time.Instant
 
-object InstantTypeAdapter extends SimpleTypeAdapter[Instant] {
+object InstantTypeAdapter extends SimpleTypeAdapter[Instant] with StringKind {
 
   override def read(reader: Reader): Instant =
     reader.peek match {
