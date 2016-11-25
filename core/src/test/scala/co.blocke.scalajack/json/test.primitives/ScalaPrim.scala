@@ -12,34 +12,50 @@ class ScalaPrim() extends FunSpec with Matchers {
     describe("+++ Positive Tests +++") {
       it("BigDecimal must work") {
         val inst = SampleBigDecimal(BigDecimal(123L), BigDecimal(1.23), BigDecimal(0), BigDecimal("123.456"), BigDecimal("0.1499999999999999944488848768742172978818416595458984375"), null)
-        val js = sj.render(inst)
-        assertResult("""{"bd1":123,"bd2":1.23,"bd3":0,"bd4":123.456,"bd5":0.1499999999999999944488848768742172978818416595458984375,"bd6":null}""") { js }
+        assertResult("""{"bd1":123,"bd2":1.23,"bd3":0,"bd4":123.456,"bd5":0.1499999999999999944488848768742172978818416595458984375,"bd6":null}""") {
+          sj.render(inst)
+        }
         assertResult(inst) {
-          sj.read[SampleBigDecimal](js)
+          sj.read[SampleBigDecimal]("""{"bd1":123,"bd2":1.23,"bd3":0,"bd4":123.456,"bd5":0.1499999999999999944488848768742172978818416595458984375,"bd6":null}""")
+        }
+        assertResult(inst) {
+          sj.read[SampleBigDecimal]("""{"bd1":"123","bd2":"1.23","bd3":"0","bd4":"123.456","bd5":"0.1499999999999999944488848768742172978818416595458984375","bd6":null}""")
         }
       }
       it("BigInt must work") {
         val inst = SampleBigInt(BigInt("-90182736451928374653345"), BigInt("90182736451928374653345"), BigInt(0), null)
-        val js = sj.render(inst)
-        assertResult("""{"bi1":-90182736451928374653345,"bi2":90182736451928374653345,"bi3":0,"bi4":null}""") { js }
+        assertResult("""{"bi1":-90182736451928374653345,"bi2":90182736451928374653345,"bi3":0,"bi4":null}""") {
+          sj.render(inst)
+        }
         assertResult(inst) {
-          sj.read[SampleBigInt](js)
+          sj.read[SampleBigInt]("""{"bi1":-90182736451928374653345,"bi2":90182736451928374653345,"bi3":0,"bi4":null}""")
+        }
+        assertResult(inst) {
+          sj.read[SampleBigInt]("""{"bi1":"-90182736451928374653345","bi2":"90182736451928374653345","bi3":"0","bi4":null}""")
         }
       }
       it("Boolean must work (not nullable)") {
         val inst = SampleBoolean(true, false)
-        val js = sj.render(inst)
-        assertResult("""{"bool1":true,"bool2":false}""") { js }
+        assertResult("""{"bool1":true,"bool2":false}""") {
+          sj.render(inst)
+        }
         assertResult(inst) {
-          sj.read[SampleBoolean](js)
+          sj.read[SampleBoolean]("""{"bool1":true,"bool2":false}""")
+        }
+        assertResult(inst) {
+          sj.read[SampleBoolean]("""{"bool1":"true","bool2":"false"}""")
         }
       }
       it("Byte must work (not nullable)") {
         val inst = SampleByte(Byte.MaxValue, Byte.MinValue, 0, 64)
-        val js = sj.render(inst)
-        assertResult("""{"b1":127,"b2":-128,"b3":0,"b4":64}""") { js }
+        assertResult("""{"b1":127,"b2":-128,"b3":0,"b4":64}""") {
+          sj.render(inst)
+        }
         assertResult(inst) {
-          sj.read[SampleByte](js)
+          sj.read[SampleByte]("""{"b1":127,"b2":-128,"b3":0,"b4":64}""")
+        }
+        assertResult(inst) {
+          sj.read[SampleByte]("""{"b1":"127","b2":"-128","b3":"0","b4":"64"}""")
         }
       }
       it("Char must work (not nullable)") {
@@ -52,10 +68,14 @@ class ScalaPrim() extends FunSpec with Matchers {
       }
       it("Double must work (not nullable)") {
         val inst = SampleDouble(Double.MaxValue, Double.MinValue, 0.0, -123.4567)
-        val js = sj.render(inst)
-        assertResult("""{"d1":1.7976931348623157E308,"d2":-1.7976931348623157E308,"d3":0.0,"d4":-123.4567}""") { js }
+        assertResult("""{"d1":1.7976931348623157E308,"d2":-1.7976931348623157E308,"d3":0.0,"d4":-123.4567}""") {
+          sj.render(inst)
+        }
         assertResult(inst) {
-          sj.read[SampleDouble](js)
+          sj.read[SampleDouble]("""{"d1":1.7976931348623157E308,"d2":-1.7976931348623157E308,"d3":0.0,"d4":-123.4567}""")
+        }
+        assertResult(inst) {
+          sj.read[SampleDouble]("""{"d1":"1.7976931348623157E308","d2":"-1.7976931348623157E308","d3":"0.0","d4":"-123.4567"}""")
         }
       }
       it("Enumeration must work (not nullable)") {
@@ -68,34 +88,50 @@ class ScalaPrim() extends FunSpec with Matchers {
       }
       it("Float must work") {
         val inst = SampleFloat(Float.MaxValue, Float.MinValue, 0.0F, -123.4567F)
-        val js = sj.render(inst)
-        assertResult("""{"f1":3.4028235E38,"f2":-3.4028235E38,"f3":0.0,"f4":-123.4567}""") { js }
+        assertResult("""{"f1":3.4028235E38,"f2":-3.4028235E38,"f3":0.0,"f4":-123.4567}""") {
+          sj.render(inst)
+        }
         assertResult(inst) {
-          sj.read[SampleFloat](js)
+          sj.read[SampleFloat]("""{"f1":3.4028235E38,"f2":-3.4028235E38,"f3":0.0,"f4":-123.4567}""")
+        }
+        assertResult(inst) {
+          sj.read[SampleFloat]("""{"f1":"3.4028235E38","f2":"-3.4028235E38","f3":"0.0","f4":"-123.4567"}""")
         }
       }
       it("Int must work (not nullable)") {
         val inst = SampleInt(Int.MaxValue, Int.MinValue, 0, 123)
-        val js = sj.render(inst)
-        assertResult("""{"i1":2147483647,"i2":-2147483648,"i3":0,"i4":123}""") { js }
+        assertResult("""{"i1":2147483647,"i2":-2147483648,"i3":0,"i4":123}""") {
+          sj.render(inst)
+        }
         assertResult(inst) {
-          sj.read[SampleInt](js)
+          sj.read[SampleInt]("""{"i1":2147483647,"i2":-2147483648,"i3":0,"i4":123}""")
+        }
+        assertResult(inst) {
+          sj.read[SampleInt]("""{"i1":"2147483647","i2":"-2147483648","i3":"0","i4":"123"}""")
         }
       }
       it("Long must work (not nullable)") {
         val inst = SampleLong(Long.MaxValue, Long.MinValue, 0L, 123L)
-        val js = sj.render(inst)
-        assertResult("""{"l1":9223372036854775807,"l2":-9223372036854775808,"l3":0,"l4":123}""") { js }
+        assertResult("""{"l1":9223372036854775807,"l2":-9223372036854775808,"l3":0,"l4":123}""") {
+          sj.render(inst)
+        }
         assertResult(inst) {
-          sj.read[SampleLong](js)
+          sj.read[SampleLong]("""{"l1":9223372036854775807,"l2":-9223372036854775808,"l3":0,"l4":123}""")
+        }
+        assertResult(inst) {
+          sj.read[SampleLong]("""{"l1":"9223372036854775807","l2":"-9223372036854775808","l3":"0","l4":"123"}""")
         }
       }
       it("Short must work (not nullable)") {
         val inst = SampleShort(Short.MaxValue, Short.MinValue, 0, 123)
-        val js = sj.render(inst)
-        assertResult("""{"s1":32767,"s2":-32768,"s3":0,"s4":123}""") { js }
+        assertResult("""{"s1":32767,"s2":-32768,"s3":0,"s4":123}""") {
+          sj.render(inst)
+        }
         assertResult(inst) {
-          sj.read[SampleShort](js)
+          sj.read[SampleShort]("""{"s1":32767,"s2":-32768,"s3":0,"s4":123}""")
+        }
+        assertResult(inst) {
+          sj.read[SampleShort]("""{"s1":"32767","s2":"-32768","s3":"0","s4":"123"}""")
         }
       }
       it("String must work") {

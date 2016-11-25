@@ -12,6 +12,9 @@ object BigDecimalTypeAdapter extends SimpleTypeAdapter[BigDecimal] {
       case TokenType.Null =>
         reader.readNull()
 
+      case TokenType.String =>
+        BigDecimal(reader.readString())
+
       case actual => {
         reader.read()
         throw new IllegalStateException(s"Expected value token of type Number, not $actual when reading BigDecimal value.  (Is your value wrapped in quotes?)\n" + reader.showError())

@@ -12,6 +12,9 @@ object BigIntTypeAdapter extends SimpleTypeAdapter[BigInt] {
       case TokenType.Null =>
         reader.readNull()
 
+      case TokenType.String =>
+        BigInt(reader.readString())
+
       case actual => {
         reader.read()
         throw new IllegalStateException(s"Expected value token of type Number, not $actual when reading BigInt value.  (Is your value wrapped in quotes?)\n" + reader.showError())
