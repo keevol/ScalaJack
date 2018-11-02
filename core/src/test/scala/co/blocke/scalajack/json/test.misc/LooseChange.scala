@@ -5,6 +5,7 @@ import org.scalatest.{ FunSpec, GivenWhenThen, BeforeAndAfterAll }
 import org.scalatest.Matchers._
 import scala.reflect.runtime.universe.typeOf
 import typeadapter.{ CaseClassTypeAdapter, PlainClassTypeAdapter }
+import org.json4s._
 
 class LooseChange extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
 
@@ -33,6 +34,15 @@ class LooseChange extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
       val adapter = sj.context.typeAdapter(typeOf[Plain]).as[PlainClassTypeAdapter[_]]
       adapter.collectionName should be(Some("plains"))
       adapter.dbKeys.head.dbKeyIndex should be(Some(1))
+    }
+    it("Materialize from AST works") {
+      import org.json4s.JsonDSL._
+      val c = View1("Fred", 123L, None)
+      val ast = sj.dematerialize(c).asInstanceOf[JObject] // JObject(List((name,JString(Fred)), (big,JLong(123))))
+      val modded = (ast ~ ("maybe" -> "I'm here")).transformField {
+        case JField("name", _) => ("name", JString("Sally"))
+      }
+      sj.materialize[View1](modded) should be(View1("Sally", 123L, Some("I'm here")))
     }
   }
 }

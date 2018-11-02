@@ -14,8 +14,11 @@ trait JackFlavor[AST, S] {
       case Left(x)  => throw new DeserializationException(x)
     }
 
-  def parse(src: S): AST
-  def emit(ast: AST): S
+  def parseToAST(src: S): AST
+  def emitFromAST(ast: AST): S
+
+  def materialize[T](ast: AST)(implicit tt: TypeTag[T]): T
+  def dematerialize[T](t: T)(implicit tt: TypeTag[T]): AST
 
   // TODO
   //  def become[N](ast: AST)(implicit becomeFn: (AST) => N): N = becomeFn(ast)

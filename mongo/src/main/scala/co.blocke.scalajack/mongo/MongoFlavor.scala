@@ -5,7 +5,7 @@ import org.bson.BsonValue
 import org.mongodb.scala.bson.collection.immutable.Document
 import typeadapter._
 
-import scala.reflect.runtime.universe.{ Type, TypeTag }
+import scala.reflect.runtime.universe.Type
 
 case class MongoFlavor(
     customAdapters:    List[TypeAdapterFactory] = List.empty[TypeAdapterFactory],
@@ -48,10 +48,22 @@ case class MongoFlavor(
     }
   }
 
-  def parse(doc: Document): BsonValue = ops.parse(doc)
+  def parseToAST(doc: Document): BsonValue = ops.parse(doc)
 
-  def emit(ast: BsonValue): Document = ops.renderCompact(ast, this)
+  def emitFromAST(ast: BsonValue): Document = ops.renderCompact(ast, this)
 
+  def materialize[T](ast: BsonValue)(implicit tt: TypeTag[T]): T =
+    context.typeAdapterOf[T].deserializer.deserialize(Path.Root, ast) match {
+      case DeserializationSuccess(ok)   => ok.get
+      case fail: DeserializationFailure => throw new DeserializationException(fail)
+    }
+
+  def dematerialize[T](t: T)(implicit tt: TypeTag[T]): BsonValue = {
+    context.typeAdapterOf[T].serializer.serialize(TypeTagged(t, typeOf[T]))(BsonOps, guidance) match {
+      case SerializationSuccess(ast)     => ast
+      case fail: SerializationFailure[_] => throw new SerializationException(fail)
+    }
+  }
   override protected def bakeContext(): Context = {
     val ctx = super.bakeContext()
     ctx.copy(factories = MongoCaseClassTypeAdapter :: BsonDateTimeTypeAdapter :: MongoOffsetDateTimeTypeAdapter :: MongoZonedDateTimeTypeAdapter :: BsonObjectIdTypeAdapter :: ctx.factories)

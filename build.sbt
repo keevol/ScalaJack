@@ -66,7 +66,7 @@ lazy val root = (project in file("."))
   .settings(basicSettings: _*)
   .settings(publishArtifact := false)
   .settings(publish := { })
-  .aggregate(scalajack, scalajack_mongo)//, scalajack_dynamodb, scalajack_mongo)
+  .aggregate(scalajack, scalajack_mongo, scalajack_dynamodb)
 // For gpg might need this too:
 //publishTo := Some(Resolver.file("Unused transient repository", file("target/unusedrepo")))
 
@@ -91,14 +91,14 @@ lazy val scalajack = project.in(file("core"))
       test(scalatest)
   )
 
-//lazy val scalajack_dynamodb = project.in(file("dynamodb"))
-//  .settings(basicSettings: _*)
-//  .settings(pubSettings: _*)
-//  .settings(libraryDependencies ++=
-//    compile( dynamo ) ++
-//      test( scalatest, slf4j_simple )
-//  ).dependsOn( scalajack )
-//
+lazy val scalajack_dynamodb = project.in(file("dynamodb"))
+  .settings(basicSettings: _*)
+  .settings(pubSettings: _*)
+  .settings(libraryDependencies ++=
+    compile( dynamo ) ++
+      test( scalatest, slf4j_simple )
+  ).dependsOn( scalajack )
+
 lazy val scalajack_mongo = project.in(file("mongo"))
   .settings(basicSettings: _*)
   .settings(pubSettings: _*)

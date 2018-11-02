@@ -29,9 +29,7 @@ object SealedTraitTypeAdapter extends TypeAdapterFactory {
               type U = T
 
               val subclassTypeAdapter = context.typeAdapter(subclassType2).asInstanceOf[TypeAdapter[U]]
-              //.asInstanceOf[ClassLikeTypeAdapter[Any]]
               val memberNames2 = subclassTypeAdapter.as[ClassLikeTypeAdapter[Any]].members.map(_.name)
-              //              Subclass[T](subclassType, runtimeClass(subclassType).asInstanceOf[Class[_ <: T]], subclassTypeAdapter, memberNames.toSet)
               new Subclass[T] {
                 override type U = T
                 override val subclassType: Type = subclassType2

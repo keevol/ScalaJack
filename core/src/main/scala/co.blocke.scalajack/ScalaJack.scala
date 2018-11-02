@@ -36,6 +36,7 @@ abstract class ScalaJackLike[AST, S] extends JackFlavor[AST, S] {
    * @param master the master object from which the smaller object is projected
    * @return an object of type T which is a "subset" of the master
    */
+  /*
   // WARNING: Assumes CaseClassTypeAdapter.members is in constructor-order.  If not, sort on members.index.
   def view[T](master: Any)(implicit tt: TypeTag[T]): T = {
     val viewTarget = context.typeAdapter(tt.tpe).maybeAs[CaseClassTypeAdapter[T]] match {
@@ -78,6 +79,7 @@ abstract class ScalaJackLike[AST, S] extends JackFlavor[AST, S] {
     }
     masterTarget.constructorMirror.apply(args: _*).asInstanceOf[U]
   }
+  */
 
   protected def bakeContext(): Context = {
 

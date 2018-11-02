@@ -2,7 +2,8 @@ package co.blocke.scalajack
 package json
 
 import org.json4s.JsonAST.{ JNull, JValue }
-import scala.reflect.runtime.universe.{ Type, TypeTag }
+
+import scala.reflect.runtime.universe.Type
 
 case class JsonFlavor(
     customAdapters:    List[TypeAdapterFactory] = List.empty[TypeAdapterFactory],
@@ -52,9 +53,6 @@ case class JsonFlavor(
     }
   }
 
-  def parse(json: String): JValue =
-    JsonParser.parse(json)(Json4sOps).getOrElse(JNull)
-
   def render[T](value: T)(implicit valueTypeTag: TypeTag[T]): String = {
     val typeAdapter = context.typeAdapterOf[T]
     val serializer = typeAdapter.serializer
@@ -64,7 +62,22 @@ case class JsonFlavor(
     }
   }
 
-  def emit(ast: JValue): String =
+  def parseToAST(json: String): JValue =
+    JsonParser.parse(json)(Json4sOps).getOrElse(JNull)
+
+  def emitFromAST(ast: JValue): String =
     Json4sOps.renderCompact(ast, this)
 
+  def materialize[T](ast: JValue)(implicit tt: TypeTag[T]): T =
+    context.typeAdapterOf[T].deserializer.deserialize(Path.Root, ast)(Json4sOps, guidance) match {
+      case DeserializationSuccess(ok)   => ok.get
+      case fail: DeserializationFailure => throw new DeserializationException(fail)
+    }
+
+  def dematerialize[T](t: T)(implicit tt: TypeTag[T]): JValue = {
+    context.typeAdapterOf[T].serializer.serialize(TypeTagged(t, typeOf[T]))(Json4sOps, guidance) match {
+      case SerializationSuccess(ast)     => ast
+      case fail: SerializationFailure[_] => throw new SerializationException(fail)
+    }
+  }
 }

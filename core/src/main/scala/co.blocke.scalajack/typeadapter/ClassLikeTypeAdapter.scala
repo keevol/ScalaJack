@@ -47,5 +47,4 @@ trait ClassLikeTypeAdapter[C] extends TypeAdapter[C] {
   def typeMember(memberName: MemberName): Option[TypeMember]
   def fieldMembers: List[FieldMember]
   def fieldMember(memberName: MemberName): Option[FieldMember]
-  def instantiate(fieldMemberValues: Array[Any]): C
 }

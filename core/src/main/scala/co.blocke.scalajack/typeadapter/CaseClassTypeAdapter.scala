@@ -224,8 +224,5 @@ case class CaseClassTypeAdapter[T](
 
   override def fieldMember(memberName: MemberName): Option[FieldMember] =
     fieldMembersByName.get(memberName)
-
-  override def instantiate(memberValues: Array[Any]): T =
-    constructorMirror.apply(memberValues: _*).asInstanceOf[T]
   // $COVERAGE-ON$
 }
