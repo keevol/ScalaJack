@@ -279,7 +279,8 @@ object PlainClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
           CaseClassTypeAdapter[T](
             new ClassDeserializerUsingReflectedConstructor[T](context, constructorMirror, context.typeAdapterOf[Type].deserializer, Nil, members, isSJCapture),
             new ClassSerializer[T](context, constructorMirror, context.typeAdapterOf[Type].serializer, Nil, members, isSJCapture),
-            context, tpe, constructorMirror, memberNameTypeAdapter, context.typeAdapterOf[Type], Nil, members, isSJCapture,
+            members, members,
+            //            context, tpe, constructorMirror, memberNameTypeAdapter, context.typeAdapterOf[Type], Nil, members, isSJCapture,
             collectionAnnotation)
         case _ if (!classSymbol.isJava && hasEmptyConstructor) =>
           val members = reflectScalaGetterSetterFields

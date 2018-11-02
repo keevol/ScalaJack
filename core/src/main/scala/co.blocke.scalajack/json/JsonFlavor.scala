@@ -34,12 +34,13 @@ case class JsonFlavor(
     else
       first
   }
+  implicit val ops: AstOps[JValue, String] = Json4sOps
 
   def readSafely[T](json: String)(implicit tt: TypeTag[T]): Either[DeserializationFailure, T] = {
     val deserializationResult = try {
-      val Some(js) = JsonParser.parse(json)(Json4sOps)
+      val Some(js) = JsonParser.parse(json)
       val deserializer = context.typeAdapterOf[T].deserializer
-      deserializer.deserialize(Path.Root, js)(Json4sOps, guidance)
+      deserializer.deserialize(Path.Root, js)
     } catch {
       case e: Exception =>
         DeserializationFailure(Path.Unknown, DeserializationError.ExceptionThrown(e))
@@ -56,7 +57,7 @@ case class JsonFlavor(
   def render[T](value: T)(implicit valueTypeTag: TypeTag[T]): String = {
     val typeAdapter = context.typeAdapterOf[T]
     val serializer = typeAdapter.serializer
-    serializer.serialize[JValue, String](TypeTagged(value, valueTypeTag.tpe))(Json4sOps, guidance) match {
+    serializer.serialize[JValue, String](TypeTagged(value, valueTypeTag.tpe)) match {
       case SerializationSuccess(json)                                      => Json4sOps.renderCompact(json, this)
       case SerializationFailure(f) if f == Seq(SerializationError.Nothing) => ""
     }
@@ -69,13 +70,13 @@ case class JsonFlavor(
     Json4sOps.renderCompact(ast, this)
 
   def materialize[T](ast: JValue)(implicit tt: TypeTag[T]): T =
-    context.typeAdapterOf[T].deserializer.deserialize(Path.Root, ast)(Json4sOps, guidance) match {
+    context.typeAdapterOf[T].deserializer.deserialize(Path.Root, ast) match {
       case DeserializationSuccess(ok)   => ok.get
       case fail: DeserializationFailure => throw new DeserializationException(fail)
     }
 
   def dematerialize[T](t: T)(implicit tt: TypeTag[T]): JValue = {
-    context.typeAdapterOf[T].serializer.serialize(TypeTagged(t, typeOf[T]))(Json4sOps, guidance) match {
+    context.typeAdapterOf[T].serializer.serialize(TypeTagged(t, typeOf[T])) match {
       case SerializationSuccess(ast)     => ast
       case fail: SerializationFailure[_] => throw new SerializationException(fail)
     }

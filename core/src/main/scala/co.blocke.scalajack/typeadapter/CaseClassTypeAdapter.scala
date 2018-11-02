@@ -185,14 +185,23 @@ object CaseClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
           typeMembers,
           fieldMembers,
           isSJCapture),
-        context,
-        tt.tpe,
-        constructorMirror,
-        memberNameTypeAdapter,
-        context.typeAdapterOf[Type],
-        typeMembers,
+        typeMembers ++ fieldMembers,
         fieldMembers,
-        isSJCapture,
+        /*
+  def members = typeMembers ++ fieldMembers
+  def typeMembers: List[TypeMember]
+  def typeMember(memberName: MemberName): Option[TypeMember]
+  def fieldMembers: List[FieldMember]
+  def fieldMember(memberName: MemberName): Option[FieldMember]
+         */
+        //        context,
+        //        tt.tpe,
+        //        constructorMirror,
+        //        memberNameTypeAdapter,
+        //        context.typeAdapterOf[Type],
+        //        typeMembers,
+        //        fieldMembers,
+        //        isSJCapture,
         collectionAnnotation)
     } else {
       next.typeAdapterOf[T]
@@ -203,16 +212,18 @@ object CaseClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
 case class CaseClassTypeAdapter[T](
     override val deserializer: Deserializer[T],
     override val serializer:   Serializer[T],
-    context:                   Context,
-    tpe:                       Type,
-    constructorMirror:         MethodMirror,
-    memberNameTypeAdapter:     TypeAdapter[MemberName],
-    typeTypeAdapter:           TypeAdapter[Type],
-    typeMembers:               List[CaseClassTypeAdapter.TypeMember[T]],
-    fieldMembers:              List[ClassFieldMember[T]],
-    isSJCapture:               Boolean,
-    collectionName:            Option[String]                           = None) extends ClassLikeTypeAdapter[T] {
+    members:                   List[ClassLikeTypeAdapter.Member[T]],
+    //    context:                   Context,
+    //    tpe:                       Type,
+    //    constructorMirror:         MethodMirror,
+    //    memberNameTypeAdapter:     TypeAdapter[MemberName],
+    //    typeTypeAdapter:           TypeAdapter[Type],
+    //    typeMembers:               List[CaseClassTypeAdapter.TypeMember[T]],
+    fieldMembers: List[ClassFieldMember[T]],
+    //    isSJCapture:               Boolean,
+    collectionName: Option[String] = None) extends ClassLikeTypeAdapter[T] {
 
+  /*
   val dbKeys: List[ClassFieldMember[T]] = fieldMembers.filter(_.dbKeyIndex.isDefined).sortBy(_.dbKeyIndex.get)
 
   private val typeMembersByName = typeMembers.map(member => member.name -> member).toMap
@@ -225,4 +236,5 @@ case class CaseClassTypeAdapter[T](
   override def fieldMember(memberName: MemberName): Option[FieldMember] =
     fieldMembersByName.get(memberName)
   // $COVERAGE-ON$
+  */
 }

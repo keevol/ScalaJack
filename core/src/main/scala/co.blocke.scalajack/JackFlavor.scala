@@ -2,6 +2,7 @@ package co.blocke.scalajack
 
 trait JackFlavor[AST, S] {
   implicit val guidance: SerializationGuidance
+  implicit val ops: AstOps[AST, S]
 
   def render[T](instance: T)(implicit tt: TypeTag[T]): S
 

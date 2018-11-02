@@ -16,6 +16,24 @@ class ViewSplice() extends FunSpec with Matchers {
       val master = Master("Greg", List(), List(Encapsulated("x", false), Encapsulated("y", true)), Encapsulated("Nest!", true), Some("wow"), Map("hey" -> 17, "you" -> 21), true, 99123986123L, Num.C, 46)
       sj.view[Empty](master) should equal(Empty("Greg", List.empty[String]))
     }
+    it("Must enforce View object as a case class") {
+      val master = Master("Greg", List("a", "b"), List(Encapsulated("x", false), Encapsulated("y", true)), Encapsulated("Nest!", true), Some("wow"), Map("hey" -> 17, "you" -> 21), true, 99123986123L, Num.C, 46)
+      the[ViewException] thrownBy sj.view[Int](master) should have message """Output of view() must be a case class, not Int"""
+    }
+    it("Must enforce required constructor fields") {
+      val master = Master("Greg", List("a", "b"), List(Encapsulated("x", false), Encapsulated("y", true)), Encapsulated("Nest!", true), Some("wow"), Map("hey" -> 17, "you" -> 21), true, 99123986123L, Num.C, 46)
+      val msg = """DeserializationException(2 errors):
+                  |  [$.bar] Required field missing (reported by: co.blocke.scalajack.typeadapter.BooleanDeserializer)
+                  |  [$.foo] Required field missing (reported by: co.blocke.scalajack.typeadapter.StringDeserializer)""".stripMargin
+      val msg2 = """DeserializationException(2 errors):
+                  |  [$.foo] Required field missing (reported by: co.blocke.scalajack.typeadapter.StringDeserializer)
+                  |  [$.bar] Required field missing (reported by: co.blocke.scalajack.typeadapter.BooleanDeserializer)""".stripMargin
+      val ex = scala.util.Try { sj.view[Encapsulated](master) }.toEither match {
+        case Left(boom) => (boom.getMessage() == msg || boom.getMessage == msg2)
+        case Right(_)   => false
+      }
+      assertResult(true) { ex }
+    }
     it("Must spliceInto") {
       val master = Master("Greg", List("a", "b"), List(Encapsulated("x", false), Encapsulated("y", true)), Encapsulated("Nest!", true), Some("wow"), Map("hey" -> 17, "you" -> 21), true, 99123986123L, Num.C, 46)
       val x = sj.view[View1](master)
@@ -39,10 +57,6 @@ class ViewSplice() extends FunSpec with Matchers {
       val x = NoMatch(true, 25)
       val y: Master = sj.spliceInto(x, master)
       y should equal(master)
-    }
-    it("Must enforce View object as a case class") {
-      val master = Master("Greg", List("a", "b"), List(Encapsulated("x", false), Encapsulated("y", true)), Encapsulated("Nest!", true), Some("wow"), Map("hey" -> 17, "you" -> 21), true, 99123986123L, Num.C, 46)
-      the[ViewException] thrownBy sj.view[Int](master) should have message """Output of view() must be a case class.  scala.Int is not a case class."""
     }
   }
 }

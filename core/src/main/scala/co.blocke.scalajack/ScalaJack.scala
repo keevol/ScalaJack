@@ -36,22 +36,11 @@ abstract class ScalaJackLike[AST, S] extends JackFlavor[AST, S] {
    * @param master the master object from which the smaller object is projected
    * @return an object of type T which is a "subset" of the master
    */
-  /*
-  // WARNING: Assumes CaseClassTypeAdapter.members is in constructor-order.  If not, sort on members.index.
-  def view[T](master: Any)(implicit tt: TypeTag[T]): T = {
-    val viewTarget = context.typeAdapter(tt.tpe).maybeAs[CaseClassTypeAdapter[T]] match {
-      case Some(ta: CaseClassTypeAdapter[T]) => ta
-      case None                              => throw new ViewException(s"Output of view() must be a case class.  ${tt.tpe.typeSymbol.fullName} is not a case class.")
-    }
-    val masterData = master.getClass.getDeclaredFields
-    val args = viewTarget.fieldMembers.map { f =>
-      masterData.find(md => md.getName == f.name && md.getType == f.asInstanceOf[FieldMember[_, _]].valueAccessorMethod.getReturnType).map(dataField => {
-        dataField.setAccessible(true)
-        dataField.get(master)
-      })
-    }.flatten.toList
-    viewTarget.constructorMirror.apply(args: _*).asInstanceOf[T]
-  }
+  def view[T](master: Any)(implicit tt: TypeTag[T]): T =
+    if (tt.tpe.typeSymbol.asClass.isCaseClass)
+      materialize[T](dematerialize(master))
+    else
+      throw new ViewException(s"Output of view() must be a case class, not ${tt.tpe}")
 
   /**
    * Splice a view (subset) object's fields into a master object's fields.
@@ -59,27 +48,21 @@ abstract class ScalaJackLike[AST, S] extends JackFlavor[AST, S] {
    * @param master master object
    * @return the master object with the view object's corresponding fields merged/overlayed
    */
-  def spliceInto[T, U](view: T, master: U)(implicit tu: TypeTag[U]): U = {
-    val masterTarget = context.typeAdapter(tu.tpe).maybeAs[CaseClassTypeAdapter[T]] match {
-      case Some(ta: CaseClassTypeAdapter[T]) => ta
-      case None                              => throw new ViewException(s"Output of view() must be a case class.  ${tu.tpe.typeSymbol.fullName} is not a case class.")
+  def spliceInto[T, U](view: T, master: U)(implicit tt: TypeTag[T], tu: TypeTag[U]): U = {
+    val viewFields = scala.collection.mutable.Map.empty[String, AST]
+    val viewAST = dematerialize(view) match {
+      case AstObject(x) => x.asInstanceOf[ops.ObjectFields]
+      case _            => throw new ViewException(s"View must be a case class, not ${tt.tpe}")
     }
-    val viewData = view.getClass.getDeclaredFields
-    val masterData = master.getClass.getDeclaredFields
-    val args = masterTarget.fieldMembers.map { f =>
-      viewData.find(vd => vd.getName == f.name && vd.getType == f.asInstanceOf[FieldMember[_, _]].valueAccessorMethod.getReturnType).map(dataField => {
-        // Found matching master field in view object
-        dataField.setAccessible(true)
-        dataField.get(view)
-      }).getOrElse(masterData.find(_.getName == f.name).map { dataField =>
-        // Didn't find matching master field in view object--just use original field from master object
-        dataField.setAccessible(true)
-        dataField.get(master)
-      }.get)
+    val masterAST = dematerialize(master) match {
+      case AstObject(x) => x.asInstanceOf[ops.ObjectFields]
+      case _            => throw new ViewException(s"Master must be a case class, not ${tu.tpe}")
     }
-    masterTarget.constructorMirror.apply(args: _*).asInstanceOf[U]
+    ops.foreachObjectField(viewAST, { (fname, value) => viewFields.put(fname, value) })
+    materialize[U](ops.mapObjectFields(masterAST, { (fname, fast) =>
+      (fname, viewFields.getOrElse(fname, fast))
+    }).asInstanceOf[AST])
   }
-  */
 
   protected def bakeContext(): Context = {
 
