@@ -2,19 +2,18 @@ package co.blocke.scalajack
 package mongo
 package typeadapter
 
-import co.blocke.scalajack.typeadapter.{ CaseClassTypeAdapter, ClassFieldMember, ClassSerializer }
+import co.blocke.scalajack.typeadapter._
 
 class MongoCaseClassSerializer[C](
-    dbKeys:            List[ClassFieldMember[C]],
-    idMemberName:      String,
-    context:           Context,
-    constructorMirror: MethodMirror,
-    typeSerializer:    Serializer[Type],
-    typeMembers:       List[CaseClassTypeAdapter.TypeMember[C]],
-    fieldMembers:      List[ClassFieldMember[C]],
-    isSJCapture:       Boolean)(implicit tt: TypeTag[C]) extends ClassSerializer[C](context, constructorMirror, typeSerializer, typeMembers, fieldMembers, isSJCapture) {
+    dbKeys:         List[ClassLikeTypeAdapter.FieldMember[C]],
+    idMemberName:   String,
+    context:        Context,
+    typeSerializer: Serializer[Type],
+    typeMembers:    List[CaseClassTypeAdapter.TypeMember[C]],
+    fieldMembers:   List[ClassLikeTypeAdapter.FieldMember[C]],
+    isSJCapture:    Boolean)(implicit tt: TypeTag[C]) extends ClassSerializer[C](context, typeSerializer, typeMembers, fieldMembers, isSJCapture) {
 
-  override protected def handleDBKeys[AST, S](ast: AST, members: List[ClassFieldMember[C]])(implicit ops: AstOps[AST, S]): AST = {
+  override protected def handleDBKeys[AST, S](ast: AST, members: List[ClassLikeTypeAdapter.FieldMember[C]])(implicit ops: AstOps[AST, S]): AST = {
 
     dbKeys.size match {
       case 0 => ast // no db keys specified... do nothing and return original ast

@@ -4,15 +4,10 @@ package typeadapter
 import java.lang.reflect.Method
 
 import scala.language.existentials
-import scala.reflect.api.{ Mirror, Universe }
 import scala.reflect.runtime.{ currentMirror, universe }
 
-trait ClassFieldMember[Owner] extends ClassLikeTypeAdapter.FieldMember[Owner] {
-  def dbKeyIndex: Option[Int]
-  def declaredValueType: Type
-}
-
 object CaseClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
+
   case class TypeMember[Owner](name: MemberName, typeSignature: Type, baseType: Type) extends ClassLikeTypeAdapter.TypeMember[Owner]
 
   case class FieldMember[Owner, T](
@@ -28,59 +23,11 @@ object CaseClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
       outerClass:                         Option[java.lang.Class[_]],
       dbKeyIndex:                         Option[Int],
       fieldMapName:                       Option[String],
-      annotations:                        List[universe.Annotation]) extends ClassFieldMember[Owner] {
+      annotations:                        List[universe.Annotation]) extends ClassLikeTypeAdapter.FieldMember[Owner] {
 
     override type Value = T
 
-    override val valueTypeTag = new TypeTag[T] {
-
-      // $COVERAGE-OFF$Unused in our context
-      override def in[U <: Universe with Singleton](otherMirror: Mirror[U]): U#TypeTag[T] = ???
-      // $COVERAGE-ON$
-
-      override val mirror: universe.Mirror = currentMirror
-
-      override def tpe: universe.Type = valueType
-
-    }
-
-    override def valueIn(tagged: TypeTagged[Owner]): TypeTagged[Value] = {
-      val TypeTagged(owner) = tagged
-      val value = valueAccessorMethod.invoke(owner)
-
-      if (outerClass.isEmpty || outerClass.get.isInstance(value)) {
-        TypeTagged(value.asInstanceOf[Value], valueType)
-      } else {
-        derivedValueClassConstructorMirror match {
-          case Some(methodMirror) =>
-            TypeTagged(methodMirror.apply(value).asInstanceOf[Value], valueType)
-
-          case None =>
-            TypeTagged(value.asInstanceOf[Value], valueType)
-        }
-      }
-    }
-
-    // Find any specified default value for this field.  If none...and this is an Optional field, return None (the value)
-    // otherwise fail the default lookup.
-    override def defaultValue: Option[Value] =
-      defaultValueMirror.map(_.apply().asInstanceOf[T]).orElse(valueTypeAdapter.defaultValue)
-
-    override def deserializeValueFromNothing[AST, S](path: Path)(implicit ops: AstOps[AST, S]): DeserializationResult[T] =
-      valueTypeAdapter.deserializer.deserializeFromNothing(path)
-
-    override def deserializeValue[AST, S](path: Path, ast: AST)(implicit ops: AstOps[AST, S], guidance: SerializationGuidance): DeserializationResult[T] =
-      valueTypeAdapter.deserializer.deserialize(path, ast)
-
-    override def serializeValue[AST, S](tagged: TypeTagged[T])(implicit ops: AstOps[AST, S], guidance: SerializationGuidance): SerializationResult[AST] =
-      valueTypeAdapter.serializer.serialize(tagged)
-
-    override def annotationOf[A](implicit tt: TypeTag[A]): Option[universe.Annotation] =
-      annotations.find(_.tree.tpe =:= tt.tpe)
-
-    override def isStringValue: Boolean =
-      valueTypeAdapter.isInstanceOf[StringKind]
-
+    val defaultValue: Option[Value] = defaultValueMirror.map(_.apply().asInstanceOf[T]).orElse(valueTypeAdapter.defaultValue)
   }
 
   override def typeAdapterOf[T](classSymbol: ClassSymbol, next: TypeAdapterFactory)(implicit context: Context, tt: TypeTag[T]): TypeAdapter[T] =
@@ -93,8 +40,6 @@ object CaseClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
       val companionType: Type = classSymbol.companion.typeSignature
       val companionObject = currentMirror.reflectModule(classSymbol.companion.asModule).instance
       val companionMirror = currentMirror.reflect(companionObject)
-
-      val memberNameTypeAdapter = context.typeAdapterOf[MemberName]
 
       val isSJCapture = !(tt.tpe.baseType(typeOf[SJCapture].typeSymbol) == NoType)
 
@@ -120,7 +65,6 @@ object CaseClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
               val memberClass = currentMirror.runtimeClass(memberClassSymbol)
               // The accessor will actually return the "inner" value, not the value class.
               val constructorMethodSymbol = memberClassSymbol.primaryConstructor.asMethod
-              //              val innerClass = currentMirror.runtimeClass(constructorMethodSymbol.paramLists.flatten.head.info.typeSymbol.asClass)
               (Some(currentMirror.reflectClass(memberClassSymbol).reflectConstructor(constructorMethodSymbol)), Some(memberClass))
             } else {
               (None, None)
@@ -180,28 +124,12 @@ object CaseClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
           isSJCapture),
         new ClassSerializer[T](
           context,
-          constructorMirror,
           context.typeAdapterOf[Type].serializer,
           typeMembers,
           fieldMembers,
           isSJCapture),
-        typeMembers ++ fieldMembers,
+        typeMembers,
         fieldMembers,
-        /*
-  def members = typeMembers ++ fieldMembers
-  def typeMembers: List[TypeMember]
-  def typeMember(memberName: MemberName): Option[TypeMember]
-  def fieldMembers: List[FieldMember]
-  def fieldMember(memberName: MemberName): Option[FieldMember]
-         */
-        //        context,
-        //        tt.tpe,
-        //        constructorMirror,
-        //        memberNameTypeAdapter,
-        //        context.typeAdapterOf[Type],
-        //        typeMembers,
-        //        fieldMembers,
-        //        isSJCapture,
         collectionAnnotation)
     } else {
       next.typeAdapterOf[T]
@@ -212,29 +140,7 @@ object CaseClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
 case class CaseClassTypeAdapter[T](
     override val deserializer: Deserializer[T],
     override val serializer:   Serializer[T],
-    members:                   List[ClassLikeTypeAdapter.Member[T]],
-    //    context:                   Context,
-    //    tpe:                       Type,
-    //    constructorMirror:         MethodMirror,
-    //    memberNameTypeAdapter:     TypeAdapter[MemberName],
-    //    typeTypeAdapter:           TypeAdapter[Type],
-    //    typeMembers:               List[CaseClassTypeAdapter.TypeMember[T]],
-    fieldMembers: List[ClassFieldMember[T]],
-    //    isSJCapture:               Boolean,
-    collectionName: Option[String] = None) extends ClassLikeTypeAdapter[T] {
-
-  /*
-  val dbKeys: List[ClassFieldMember[T]] = fieldMembers.filter(_.dbKeyIndex.isDefined).sortBy(_.dbKeyIndex.get)
-
-  private val typeMembersByName = typeMembers.map(member => member.name -> member).toMap
-  private val fieldMembersByName = fieldMembers.map(member => member.name -> member).toMap
-
-  // $COVERAGE-OFF$Not used for JSON (Mongo)
-  override def typeMember(memberName: MemberName): Option[TypeMember] =
-    typeMembersByName.get(memberName)
-
-  override def fieldMember(memberName: MemberName): Option[FieldMember] =
-    fieldMembersByName.get(memberName)
-  // $COVERAGE-ON$
-  */
+    typeMembers:               List[ClassLikeTypeAdapter.TypeMember[T]],
+    fieldMembers:              List[ClassLikeTypeAdapter.FieldMember[T]],
+    collectionName:            Option[String]                            = None) extends ClassLikeTypeAdapter[T] {
 }

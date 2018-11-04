@@ -9,10 +9,8 @@ import co.blocke.scalajack.typeadapter.CaseClassTypeAdapter.FieldMember
 import scala.collection.immutable.List
 import scala.language.existentials
 import scala.reflect.ClassTag
-import scala.reflect.api.{ Mirror, Universe }
 import scala.reflect.runtime.currentMirror
 import scala.reflect.runtime.universe._
-import scala.reflect.runtime.universe
 import scala.util.{ Failure, Success, Try }
 
 // WARNING: This adapter should be last in the list!  This classSymbol.isClass will match pretty much
@@ -21,79 +19,32 @@ import scala.util.{ Failure, Success, Try }
 
 object PlainClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
 
-  trait PlainFieldMember[Owner] extends ClassFieldMember[Owner] {
+  trait PlainFieldMember[Owner] extends ClassLikeTypeAdapter.FieldMember[Owner] {
+    type Value = Any
     implicit def ownerClassTag: ClassTag[Owner]
+
     val valueType: Type
     val valueTypeAdapter: TypeAdapter[Value]
-    val valueGetterMethod: Method
+    val valueAccessorMethod: Method // getter method for plain classes!
+
     // Java & Scala need different setters.  Scala needs to properly set ValueClass values,
     // which can't be done using a Java method call.  Of course Java can *only* use a Java
     // method call, so... we have both.
     val valueSetterMethodSymbol: Option[MethodSymbol] // for Scala
     val valueSetterMethod: Option[Method] // for Java
+
     val derivedValueClassConstructorMirror: Option[MethodMirror]
     val outerClass: Option[java.lang.Class[_]]
 
-    def deserializer: Deserializer[Value] = valueTypeAdapter.deserializer
-
-    def serializer: Serializer[Value] = valueTypeAdapter.serializer
-
-    lazy val isOptional = valueTypeAdapter.isInstanceOf[OptionTypeAdapter[_]]
-
-    override lazy val valueTypeTag = new TypeTag[Value] {
-
-      override def in[U <: Universe with Singleton](otherMirror: Mirror[U]): U#TypeTag[Value] = ???
-
-      override val mirror: universe.Mirror = currentMirror
-
-      override def tpe: universe.Type = valueType
-
-    }
-
-    def valueIn(tagged: TypeTagged[Owner]): TypeTagged[Value] =
-      tagged match {
-        case TypeTagged(instance) =>
-          val value = valueGetterMethod.invoke(instance)
-
-          if (outerClass.isEmpty || outerClass.get.isInstance(value)) {
-            TypeTagged.inferFromRuntimeClass[Value](value.asInstanceOf[Value])
-          } else {
-            derivedValueClassConstructorMirror match {
-              case Some(methodMirror) =>
-                TypeTagged.inferFromRuntimeClass[Value](methodMirror.apply(value).asInstanceOf[Value])
-
-              case None =>
-                TypeTagged.inferFromRuntimeClass[Value](value.asInstanceOf[Value])
-            }
-          }
-      }
+    val defaultValue: Option[Value] = if (isOptional) {
+      Some(None).asInstanceOf[Option[Value]]
+    } else None
 
     def valueSet(instance: Owner, value: Value): Unit =
       valueSetterMethodSymbol match {
         case Some(vsms) => currentMirror.reflect(instance).reflectMethod(vsms)(value)
         case None       => valueSetterMethod.get.invoke(instance, value.asInstanceOf[Object])
       }
-
-    override def deserializeValueFromNothing[AST, S](path: Path)(implicit ops: AstOps[AST, S]): DeserializationResult[Value] =
-      valueTypeAdapter.deserializer.deserializeFromNothing(path)
-
-    override def deserializeValue[AST, S](path: Path, ast: AST)(implicit ops: AstOps[AST, S], guidance: SerializationGuidance): DeserializationResult[Value] =
-      valueTypeAdapter.deserializer.deserialize(path, ast)
-
-    override def serializeValue[AST, S](tagged: TypeTagged[Value])(implicit ops: AstOps[AST, S], guidance: SerializationGuidance): SerializationResult[AST] =
-      valueTypeAdapter.serializer.serialize(tagged)
-
-    // Find any specified default value for this field.  If none...and this is an Optional field, return None (the value)
-    // otherwise fail the default lookup.
-    override def defaultValue: Option[Value] = if (isOptional) {
-      Some(None).asInstanceOf[Option[Value]]
-    } else None
-
-    override def annotationOf[N](implicit tt: TypeTag[N]): Option[universe.Annotation] = None
-
-    override def isStringValue: Boolean =
-      valueTypeAdapter.isInstanceOf[StringKind]
-
   }
 
   override def typeAdapterOf[T](classSymbol: ClassSymbol, next: TypeAdapterFactory)(implicit context: Context, typeTag: TypeTag[T]): TypeAdapter[T] = {
@@ -102,12 +53,11 @@ object PlainClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
       val constructorSymbol = classSymbol.primaryConstructor.asMethod
       val classMirror = currentMirror.reflectClass(classSymbol)
       val constructorMirror = classMirror.reflectConstructor(constructorSymbol)
-      val memberNameTypeAdapter = context.typeAdapterOf[MemberName]
       val isSJCapture = !(tpe.baseType(typeOf[SJCapture].typeSymbol) == NoType)
 
       def newInstance(): T = constructorMirror.apply().asInstanceOf[T]
 
-      def inferConstructorValFields: List[ClassFieldMember[T]] =
+      def inferConstructorValFields: List[ClassLikeTypeAdapter.FieldMember[T]] =
         Try {
           // Might fail if *all* the constructor's parameters aren't val notated
           constructorSymbol.typeSignatureIn(tpe).paramLists.flatten.zipWithIndex.map({
@@ -151,7 +101,7 @@ object PlainClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
         } match {
           case Success(m) => m
           case Failure(_) =>
-            List.empty[ClassFieldMember[T]]
+            List.empty[ClassLikeTypeAdapter.FieldMember[T]]
         }
 
       def dontIgnore(p: Symbol) = {
@@ -162,9 +112,7 @@ object PlainClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
         ignoreAnno.isEmpty
       }
 
-      def reflectScalaGetterSetterFields: List[PlainFieldMember[T]] = {
-        var i = 0
-
+      def reflectScalaGetterSetterFields: List[PlainFieldMember[T]] =
         tpe.members.filter(p => p.isPublic && p.isMethod).collect {
           // Scala case
           case p if (dontIgnore(p) && tpe.member(TermName(p.name.toString + "_$eq")) != NoSymbol && p.owner != typeOf[SJCapture].typeSymbol) =>
@@ -201,16 +149,11 @@ object PlainClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
             new PlainFieldMember[T] {
               override type Value = Any
               override implicit val ownerClassTag: ClassTag[T] = ClassTag(runtimeClassOf[T])
-              override val index: Int = {
-                val idx = i
-                i += 1
-                idx
-              }
               override val name: String = mapNameAnno.getOrElse(p.name.encodedName.toString)
               override val valueType: Type = memberType
               override val valueTypeAdapter: TypeAdapter[Value] = memberTypeAdapter
               override val declaredValueType: Type = declaredMemberType
-              override val valueGetterMethod: Method = Reflection.methodToJava(p.asMethod)
+              override val valueAccessorMethod: Method = Reflection.methodToJava(p.asMethod)
               override val valueSetterMethodSymbol: Option[MethodSymbol] = Some(tpe.member(TermName(p.name.toString + "_$eq")).asMethod)
               override val valueSetterMethod: Option[Method] = None
               override val derivedValueClassConstructorMirror: Option[MethodMirror] = derivedValueClassConstructorMirror2
@@ -218,7 +161,6 @@ object PlainClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
               override val dbKeyIndex: Option[Int] = dbkeyAnno
             }
         }.toList
-      }
 
       def ignoreThisJavaProperty(pd: java.beans.PropertyDescriptor): Boolean = {
         def annoTypeMatches[A](a: Class[A]): Boolean = a.getTypeName == typeOf[Ignore].toString
@@ -234,7 +176,6 @@ object PlainClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
       }
 
       def reflectJavaGetterSetterFields: List[PlainFieldMember[T]] = {
-        var i = 0
         val clazz = currentMirror.runtimeClass(tpe.typeSymbol.asClass)
 
         // Figure out getters/setters, accouting for @Ignore
@@ -246,16 +187,11 @@ object PlainClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
             new PlainFieldMember[T] {
               override implicit val ownerClassTag: ClassTag[T] = ClassTag(runtimeClassOf[T])
               override type Value = Any
-              override val index: Int = {
-                val idx = i
-                i += 1
-                idx
-              }
               override val name: String = propertyDescriptor.getName
               override val valueType: Type = memberType
               override val valueTypeAdapter: TypeAdapter[Value] = memberTypeAdapter
               override val declaredValueType: Type = declaredMemberType
-              override val valueGetterMethod: Method = propertyDescriptor.getReadMethod
+              override val valueAccessorMethod: Method = propertyDescriptor.getReadMethod
               override val valueSetterMethodSymbol: Option[MethodSymbol] = None
               override val valueSetterMethod: Option[Method] = Some(propertyDescriptor.getWriteMethod)
               override val derivedValueClassConstructorMirror: Option[MethodMirror] = None
@@ -270,7 +206,7 @@ object PlainClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
         .map(_.tree.children(1).productElement(1).asInstanceOf[scala.reflect.internal.Trees$Literal]
           .value().value).asInstanceOf[Option[String]]
 
-      def dbKeys[Owner](members: List[ClassFieldMember[Owner]]): List[ClassFieldMember[Owner]] = members.filter(_.dbKeyIndex.isDefined).sortBy(_.dbKeyIndex.get)
+      //      def dbKeys[Owner](members: List[ClassLikeTypeAdapter.FieldMember[Owner]]): List[ClassLikeTypeAdapter.FieldMember[Owner]] = members.filter(_.dbKeyIndex.isDefined).sortBy(_.dbKeyIndex.get)
 
       val hasEmptyConstructor = constructorSymbol.typeSignatureIn(tpe).paramLists.flatten.isEmpty
       inferConstructorValFields match {
@@ -278,23 +214,22 @@ object PlainClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
           // Because all the val fields were found in the constructor we can use a normal CaseClassTypeAdapter
           CaseClassTypeAdapter[T](
             new ClassDeserializerUsingReflectedConstructor[T](context, constructorMirror, context.typeAdapterOf[Type].deserializer, Nil, members, isSJCapture),
-            new ClassSerializer[T](context, constructorMirror, context.typeAdapterOf[Type].serializer, Nil, members, isSJCapture),
-            members, members,
-            //            context, tpe, constructorMirror, memberNameTypeAdapter, context.typeAdapterOf[Type], Nil, members, isSJCapture,
+            new ClassSerializer[T](context, context.typeAdapterOf[Type].serializer, Nil, members, isSJCapture),
+            List.empty[ClassLikeTypeAdapter.TypeMember[T]], members,
             collectionAnnotation)
         case _ if (!classSymbol.isJava && hasEmptyConstructor) =>
           val members = reflectScalaGetterSetterFields
           PlainClassTypeAdapter[T](
             new PlainClassDeserializer[T](members, (() => newInstance()), isSJCapture), // FIXME
             new PlainClassSerializer[T](members, isSJCapture),
-            dbKeys(members),
+            members,
             collectionAnnotation)
         case _ if (classSymbol.isJava && hasEmptyConstructor) =>
           val members = reflectJavaGetterSetterFields
           PlainClassTypeAdapter[T](
             new PlainClassDeserializer[T](members, (() => newInstance()), isSJCapture), // FIXME
             new PlainClassSerializer[T](members, isSJCapture),
-            dbKeys(members),
+            members,
             collectionAnnotation)
         // There's no support for Java classes with non-empty constructors.  If multiple, which one to use?
         // Opens the door for uncertain results.
@@ -312,5 +247,7 @@ object PlainClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
 case class PlainClassTypeAdapter[T](
     override val deserializer: Deserializer[T],
     override val serializer:   Serializer[T],
-    dbKeys:                    List[ClassFieldMember[T]],
-    collectionName:            Option[String]            = None) extends TypeAdapter[T]
+    fieldMembers:              List[ClassLikeTypeAdapter.FieldMember[T]],
+    collectionName:            Option[String]                            = None) extends ClassLikeTypeAdapter[T] {
+  val typeMembers = List.empty[ClassLikeTypeAdapter.TypeMember[T]]
+}

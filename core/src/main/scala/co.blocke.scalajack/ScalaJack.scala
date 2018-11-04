@@ -2,7 +2,6 @@ package co.blocke.scalajack
 
 import co.blocke.scalajack.BijectiveFunctions._
 import co.blocke.scalajack.json.JsonFlavor
-import co.blocke.scalajack.typeadapter.CaseClassTypeAdapter.FieldMember
 import co.blocke.scalajack.typeadapter._
 
 object ScalaJack {

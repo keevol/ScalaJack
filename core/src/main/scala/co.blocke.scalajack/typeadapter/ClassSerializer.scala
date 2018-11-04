@@ -5,18 +5,17 @@ import scala.reflect.runtime.universe.lub
 import scala.collection.immutable
 
 class ClassSerializer[C](
-    context:           Context,
-    constructorMirror: MethodMirror,
-    typeSerializer:    Serializer[Type],
-    typeMembers:       List[CaseClassTypeAdapter.TypeMember[C]],
-    fieldMembers:      List[ClassFieldMember[C]],
-    isSJCapture:       Boolean)(implicit tt: TypeTag[C]) extends Serializer[C] {
+    context:        Context,
+    typeSerializer: Serializer[Type],
+    typeMembers:    List[CaseClassTypeAdapter.TypeMember[C]], // <- NOTE: Not a ClassLikeTypeAdapter here!
+    fieldMembers:   List[ClassLikeTypeAdapter.FieldMember[C]],
+    isSJCapture:    Boolean)(implicit tt: TypeTag[C]) extends Serializer[C] {
 
   private val tpe: Type = tt.tpe
   private val TypeType: Type = typeOf[Type]
 
   // Hook for subclasses (e.g. Mongo) do to anything needed to handle the db key field(s) as given by the @DBKey annotation
-  protected def handleDBKeys[AST, S](ast: AST, members: List[ClassFieldMember[C]])(implicit ops: AstOps[AST, S]): AST = ast
+  protected def handleDBKeys[AST, S](ast: AST, members: List[ClassLikeTypeAdapter.FieldMember[C]])(implicit ops: AstOps[AST, S]): AST = ast
 
   override def serialize[AST, S](tagged: TypeTagged[C])(implicit ops: AstOps[AST, S], guidance: SerializationGuidance): SerializationResult[AST] =
     tagged match {

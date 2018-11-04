@@ -1,12 +1,11 @@
 package co.blocke.scalajack
 package dynamodb
 
-import co.blocke.scalajack.json.{ Json4sOps, JsonParser }
+import co.blocke.scalajack.json.Json4sOps
 import org.json4s.JsonAST.{ JNull, JValue }
 
 import scala.reflect.runtime.universe.Type
 import scala.collection.JavaConverters._
-import scala.language.existentials
 import typeadapter._
 import com.amazonaws.services.dynamodbv2.document.Item
 import com.amazonaws.services.dynamodbv2.model.{ AttributeDefinition, CreateTableRequest, KeySchemaElement, KeyType, ProvisionedThroughput, ScalarAttributeType }
@@ -43,6 +42,7 @@ case class DynamoFlavor(
   }
 
   implicit val guidance: SerializationGuidance = SerializationGuidance().withMapValue()
+  implicit val ops: AstOps[JValue, Item] = DynamoOps.asInstanceOf[AstOps[JValue, Item]]
 
   def render[T](value: T)(implicit valueTypeTag: TypeTag[T]): Item = {
     Item.fromJSON(sj.render(value))
@@ -50,9 +50,9 @@ case class DynamoFlavor(
   // No exceptions on failure -- Left return on Either for failures
   def readSafely[T](src: Item)(implicit tt: TypeTag[T]): Either[DeserializationFailure, T] = {
     val deserializationResult = try {
-      val Some(js) = JsonParser.parse(src.toJSON)(Json4sOps)
+      val Some(js) = ops.parser.parse(src)
       val deserializer = context.typeAdapterOf[T].deserializer
-      deserializer.deserialize(Path.Root, js)(Json4sOps, guidance)
+      deserializer.deserialize(Path.Root, js)
     } catch {
       case e: Exception =>
         DeserializationFailure(Path.Unknown, DeserializationError.ExceptionThrown(e))
@@ -70,19 +70,12 @@ case class DynamoFlavor(
   def createTableRequest[T](provisionedThroughput: ProvisionedThroughput)(implicit tt: TypeTag[T]): CreateTableRequest = {
     val tpe = tt.tpe
 
-    println("T: " + typeOf[T])
     val (optionalTableName, keys) = context.typeAdapterOf[T] match { //context.typeAdapter(tpe) match {
       case ta if (tpe.typeSymbol.asClass.isCaseClass) =>
         val adapter = ta.as[CaseClassTypeAdapter[T]]
         (adapter.collectionName, adapter.dbKeys)
       case ta =>
-        println("Trait? " + ta.is[TraitTypeAdapter[T]])
-        println("Plain? " + ta.is[PlainClassTypeAdapter[T]])
-        println("Map? " + ta.is[MapTypeAdapter[_, _, _]])
-        println("Decorating? " + ta.is[DecoratingTypeAdapter[T]])
-        println("Wrapped? " + ta.as[DecoratingTypeAdapter[T]].decorated.is[PlainClassTypeAdapter[T]])
-        println("CLike? " + ta.is[ClassLikeTypeAdapter[T]])
-        val adapter = ta.as[PlainClassTypeAdapter[T]]
+        val adapter = ta.as[ClassLikeTypeAdapter[T]]
         (adapter.collectionName, adapter.dbKeys)
     }
     val tableName = optionalTableName.getOrElse(
@@ -97,25 +90,25 @@ case class DynamoFlavor(
   }
 
   def parseToAST(item: Item): JValue =
-    Json4sOps.parser.parse(item.toJSON)(Json4sOps).getOrElse(JNull)
+    ops.parser.parse(item).getOrElse(JNull)
 
   def emitFromAST(ast: JValue): Item =
     Item.fromJSON(Json4sOps.renderCompact(ast, this))
 
   def materialize[T](ast: JValue)(implicit tt: TypeTag[T]): T =
-    context.typeAdapterOf[T].deserializer.deserialize(Path.Root, ast)(Json4sOps, guidance) match {
+    context.typeAdapterOf[T].deserializer.deserialize(Path.Root, ast) match {
       case DeserializationSuccess(ok)   => ok.get
       case fail: DeserializationFailure => throw new DeserializationException(fail)
     }
 
   def dematerialize[T](t: T)(implicit tt: TypeTag[T]): JValue = {
-    context.typeAdapterOf[T].serializer.serialize(TypeTagged(t, typeOf[T]))(Json4sOps, guidance) match {
+    context.typeAdapterOf[T].serializer.serialize(TypeTagged(t, typeOf[T])) match {
       case SerializationSuccess(ast)     => ast
       case fail: SerializationFailure[_] => throw new SerializationException(fail)
     }
   }
 
-  private def getAttrType(key: ClassFieldMember[_]) =
+  private def getAttrType(key: ClassLikeTypeAdapter.FieldMember[_]) =
     if (key.isStringValue)
       ScalarAttributeType.S
     else

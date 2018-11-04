@@ -38,6 +38,8 @@ class Plain extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
     describe("Creation:") {
       it("All val constructor") {
         val req = sj.asInstanceOf[DynamoFlavor].createTableRequest[PersonPlain1](new ProvisionedThroughput(12L, 5L))
+        println(req.toString)
+        println("""{AttributeDefinitions: [{AttributeName: age,AttributeType: N}, {AttributeName: name,AttributeType: S}],TableName: people,KeySchema: [{AttributeName: age,KeyType: HASH}, {AttributeName: name,KeyType: RANGE}],ProvisionedThroughput: {ReadCapacityUnits: 12,WriteCapacityUnits: 5},}""")
         assertResult("""{AttributeDefinitions: [{AttributeName: age,AttributeType: N}, {AttributeName: name,AttributeType: S}],TableName: people,KeySchema: [{AttributeName: age,KeyType: HASH}, {AttributeName: name,KeyType: RANGE}],ProvisionedThroughput: {ReadCapacityUnits: 12,WriteCapacityUnits: 5},}""") { req.toString }
       }
       it("Zero-arg constructor with var members") {

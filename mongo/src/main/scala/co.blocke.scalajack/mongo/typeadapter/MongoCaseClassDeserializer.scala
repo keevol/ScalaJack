@@ -2,21 +2,21 @@ package co.blocke.scalajack
 package mongo
 package typeadapter
 
-import co.blocke.scalajack.typeadapter.{ CaseClassTypeAdapter, ClassFieldMember, ClassDeserializerUsingReflectedConstructor }
+import co.blocke.scalajack.typeadapter._
 
 class MongoCaseClassDeserializer[C](
-    dbKeys:            List[ClassFieldMember[C]],
+    dbKeys:            List[ClassLikeTypeAdapter.FieldMember[_]],
     idMemberName:      String,
     context:           Context,
     constructorMirror: MethodMirror,
     typeDeserializer:  Deserializer[Type],
     typeMembers:       List[CaseClassTypeAdapter.TypeMember[C]],
-    fieldMembers:      List[ClassFieldMember[C]],
+    fieldMembers:      List[ClassLikeTypeAdapter.FieldMember[C]],
     isSJCapture:       Boolean)(implicit tt: TypeTag[C]) extends ClassDeserializerUsingReflectedConstructor[C](
   context, constructorMirror, typeDeserializer, typeMembers, fieldMembers, isSJCapture
 ) {
 
-  override protected def handleDBKeys[AST, S](path: Path, ast: AST, members: List[ClassFieldMember[C]])(implicit ops: AstOps[AST, S]): Either[DeserializationFailure, AST] =
+  override protected def handleDBKeys[AST, S](path: Path, ast: AST, members: List[ClassLikeTypeAdapter.FieldMember[C]])(implicit ops: AstOps[AST, S]): Either[DeserializationFailure, AST] =
     dbKeys.size match {
       case 0 => Right(ast)
       case 1 =>

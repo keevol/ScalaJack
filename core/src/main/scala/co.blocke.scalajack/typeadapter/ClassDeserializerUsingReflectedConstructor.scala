@@ -6,15 +6,17 @@ import scala.util.Try
 import scala.util.control.NonFatal
 
 class ClassDeserializerUsingReflectedConstructor[CC](
-    context:           Context,
-    constructorMirror: MethodMirror,
-    typeDeserializer:  Deserializer[Type],
-    typeMembers:       List[CaseClassTypeAdapter.TypeMember[CC]],
-    fieldMembers:      List[ClassFieldMember[CC]],
-    isSJCapture:       Boolean)(implicit tt: TypeTag[CC]) extends Deserializer[CC] {
+    context:               Context,
+    val constructorMirror: MethodMirror,
+    typeDeserializer:      Deserializer[Type],
+    typeMembers:           List[CaseClassTypeAdapter.TypeMember[CC]],
+    fieldMembers:          List[ClassLikeTypeAdapter.FieldMember[CC]],
+    isSJCapture:           Boolean)(implicit tt: TypeTag[CC]) extends Deserializer[CC] {
+
+  self =>
 
   private type TypeMember = CaseClassTypeAdapter.TypeMember[CC]
-  private type FieldMember = ClassFieldMember[CC]
+  private type FieldMember = ClassLikeTypeAdapter.FieldMember[CC]
 
   private val caseClassType: Type = tt.tpe
   private val nullTypeTagged: TypeTagged[CC] = TypeTagged[CC](null.asInstanceOf[CC], caseClassType)
@@ -22,7 +24,7 @@ class ClassDeserializerUsingReflectedConstructor[CC](
   private val fieldMembersByName: Map[String, FieldMember] = fieldMembers.map(fieldMember => fieldMember.name -> fieldMember).toMap
 
   // Hook for subclasses (e.g. Mongo) do to anything needed to handle the db key field(s) as given by the @DBKey annotation
-  protected def handleDBKeys[AST, S](path: Path, ast: AST, members: List[ClassFieldMember[CC]])(implicit ops: AstOps[AST, S]): Either[DeserializationFailure, AST] = Right(ast)
+  protected def handleDBKeys[AST, S](path: Path, ast: AST, members: List[ClassLikeTypeAdapter.FieldMember[CC]])(implicit ops: AstOps[AST, S]): Either[DeserializationFailure, AST] = Right(ast)
 
   private def inferConcreteDeserializer[AST, S](path: Path, ast: AST)(implicit ops: AstOps[AST, S], guidance: SerializationGuidance): Option[Deserializer[_ <: CC]] =
     if (typeMembers.isEmpty) {
