@@ -50,7 +50,7 @@ case class DynamoFlavor(
   // No exceptions on failure -- Left return on Either for failures
   def readSafely[T](src: Item)(implicit tt: TypeTag[T]): Either[DeserializationFailure, T] = {
     val deserializationResult = try {
-      val Some(js) = ops.parser.parse(src)
+      val Some(js) = ops.parser._parse(src)
       val deserializer = context.typeAdapterOf[T].deserializer
       deserializer.deserialize(Path.Root, js)
     } catch {
@@ -90,7 +90,7 @@ case class DynamoFlavor(
   }
 
   def parseToAST(item: Item): JValue =
-    ops.parser.parse(item).getOrElse(JNull)
+    ops.parser._parse(item).getOrElse(JNull)
 
   def emitFromAST(ast: JValue): Item =
     Item.fromJSON(Json4sOps.renderCompact(ast, this))

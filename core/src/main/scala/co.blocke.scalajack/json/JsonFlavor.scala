@@ -34,11 +34,11 @@ case class JsonFlavor(
     else
       first
   }
-  implicit val ops: AstOps[JValue, String] = Json4sOps
+  implicit val ops: AstOps[JValue, String] = Json4sOps.asInstanceOf[AstOps[JValue, String]]
 
   def readSafely[T](json: String)(implicit tt: TypeTag[T]): Either[DeserializationFailure, T] = {
     val deserializationResult = try {
-      val Some(js) = JsonParser.parse(json)
+      val Some(js) = Json4sOps.parser._parse(json)
       val deserializer = context.typeAdapterOf[T].deserializer
       deserializer.deserialize(Path.Root, js)
     } catch {
@@ -64,7 +64,7 @@ case class JsonFlavor(
   }
 
   def parseToAST(json: String): JValue =
-    JsonParser.parse(json)(Json4sOps).getOrElse(JNull)
+    Json4sOps.parser._parse(json)(Json4sOps).getOrElse(JNull)
 
   def emitFromAST(ast: JValue): String =
     Json4sOps.renderCompact(ast, this)

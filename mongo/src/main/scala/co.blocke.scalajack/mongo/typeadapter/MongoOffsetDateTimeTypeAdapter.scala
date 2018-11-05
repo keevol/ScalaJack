@@ -8,14 +8,12 @@ import scala.reflect.runtime.universe.TypeTag
 
 object MongoOffsetDateTimeTypeAdapter extends TypeAdapterFactory.=:=[OffsetDateTime] {
 
-  override def create(next: TypeAdapterFactory)(implicit context: Context, tt: TypeTag[OffsetDateTime]): TypeAdapter[OffsetDateTime] = {
-    val now = OffsetDateTime.now() // get a Temporal in default time zone
-    MongoOffsetDateTimeTypeAdapter(now)
-  }
+  override def create(next: TypeAdapterFactory)(implicit context: Context, tt: TypeTag[OffsetDateTime]): TypeAdapter[OffsetDateTime] =
+    MongoOffsetDateTimeTypeAdapter()
 
 }
 
-case class MongoOffsetDateTimeTypeAdapter(now: OffsetDateTime) extends TypeAdapter[OffsetDateTime] {
+case class MongoOffsetDateTimeTypeAdapter() extends TypeAdapter[OffsetDateTime] {
   override val serializer: Serializer[OffsetDateTime] = new MongoOffsetDateTimeSerializer()
-  override val deserializer: Deserializer[OffsetDateTime] = new MongoOffsetDateTimeDeserializer(now)
+  override val deserializer: Deserializer[OffsetDateTime] = new MongoOffsetDateTimeDeserializer()
 }

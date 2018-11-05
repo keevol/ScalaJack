@@ -3,9 +3,9 @@ package json
 
 import org.apache.commons.text.StringEscapeUtils.escapeJava
 
-object JsonRenderer extends Renderer[String] {
+trait JsonRenderer extends Renderer[String] {
 
-  def renderCompact[AST](ast: AST, sj: ScalaJackLike[_, _])(implicit ops: AstOps[AST, String]): String = {
+  def _renderCompact[AST](ast: AST, sj: ScalaJackLike[_, _])(implicit ops: AstOps[AST, String]): String = {
     val builder = new StringBuilder
 
     def appendString(string: String): Unit = {

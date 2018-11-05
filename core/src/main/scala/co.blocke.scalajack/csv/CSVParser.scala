@@ -5,9 +5,9 @@ import org.apache.commons.text.StringTokenizer
 
 import scala.collection.JavaConverters._
 
-object CSVParser extends Parser[String] {
+trait CSVParser extends Parser[String] {
 
-  def parse[AST](source: String)(implicit ops: AstOps[AST, String]): Option[AST] =
+  def _parse[AST](source: String)(implicit ops: AstOps[AST, String]): Option[AST] =
     if (source.trim == "")
       Some(AstNull())
     else {

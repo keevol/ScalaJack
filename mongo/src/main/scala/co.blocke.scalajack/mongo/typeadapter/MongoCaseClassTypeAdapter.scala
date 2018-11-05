@@ -4,8 +4,6 @@ package typeadapter
 
 import co.blocke.scalajack.typeadapter.{ CaseClassTypeAdapter, ClassDeserializerUsingReflectedConstructor }
 
-import scala.reflect.runtime.currentMirror
-
 object MongoCaseClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
 
   val IdMemberName: MemberName = "_id"

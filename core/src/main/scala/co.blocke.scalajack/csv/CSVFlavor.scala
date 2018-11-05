@@ -100,7 +100,7 @@ case class CSVFlavor() extends {
     }
 
   def dematerialize[T](t: T)(implicit tt: TypeTag[T]): JValue = {
-    context.typeAdapterOf[T].serializer.serialize(TypeTagged(t, typeOf[T]))(Json4sOps, guidance) match {
+    context.typeAdapterOf[T].serializer.serialize(TypeTagged(t, typeOf[T]))(Json4sOps.asInstanceOf[AstOps[JValue, String]], guidance) match {
       case SerializationSuccess(ast)     => ast
       case fail: SerializationFailure[_] => throw new SerializationException(fail)
     }

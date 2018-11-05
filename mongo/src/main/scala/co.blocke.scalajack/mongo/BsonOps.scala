@@ -7,19 +7,20 @@ import org.bson._
 import org.mongodb.scala.bson.collection.immutable.Document
 import org.mongodb.scala.MongoClient
 
-object BsonOps extends AstOps[BsonValue, Document] {
+trait BsonParser extends Parser[Document] {
+  def _parse[AST](source: Document)(implicit ops: AstOps[AST, Document]): Option[AST] =
+    Some(source.toBsonDocument(classOf[BsonDocument], MongoClient.DEFAULT_CODEC_REGISTRY).asInstanceOf[AST])
+}
+
+trait BsonRenderer extends Renderer[Document] {
+  def _renderCompact[AST](ast: AST, sj: ScalaJackLike[_, _])(implicit ops: AstOps[AST, Document]): Document =
+    Document(ast.asInstanceOf[BsonValue].asDocument)
+}
+
+trait BsonBase extends AstBase[BsonValue] {
 
   override type ArrayElements = BsonArray
   override type ObjectFields = BsonDocument
-
-  val parser: Parser[Document] = new Parser[Document] {
-    def parse[AST](source: Document)(implicit ops: AstOps[AST, Document]): Option[AST] =
-      Some(source.toBsonDocument(classOf[BsonDocument], MongoClient.DEFAULT_CODEC_REGISTRY).asInstanceOf[AST])
-  }
-  val renderer: Renderer[Document] = new Renderer[Document] {
-    def renderCompact[AST](ast: AST, sj: ScalaJackLike[_, _])(implicit ops: AstOps[AST, Document]): Document =
-      Document(ast.asInstanceOf[BsonValue].asDocument)
-  }
 
   override def foreachArrayElement(bson: BsonArray, f: (Int, BsonValue) => Unit): Unit = {
     val iterator = bson.iterator
@@ -121,3 +122,5 @@ object BsonOps extends AstOps[BsonValue, Document] {
   override def isArray(bson: BsonValue): Boolean = bson.isInstanceOf[BsonArray]
 
 }
+
+object BsonOps extends AstOps[BsonValue, Document] with BsonBase with BsonParser with BsonRenderer

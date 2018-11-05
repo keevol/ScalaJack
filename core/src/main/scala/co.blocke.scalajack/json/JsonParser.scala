@@ -1,17 +1,17 @@
 package co.blocke.scalajack
 package json
 
-object JsonParser extends Parser[String] {
+trait JsonParser extends Parser[String] {
 
   private val NumberOfDigitsInMaxLongValue: Int = Long.MaxValue.toString.length
 
-  def parse[AST](source: String)(implicit ops: AstOps[AST, String]): Option[AST] =
-    parse[AST](source.toCharArray)
+  def _parse[AST](source: String)(implicit ops: AstOps[AST, String]): Option[AST] =
+    _parse[AST](source.toCharArray)
 
-  def parse[AST](source: Array[Char])(implicit ops: AstOps[AST, String]): Option[AST] =
-    parse[AST](source, 0, source.length)
+  def _parse[AST](source: Array[Char])(implicit ops: AstOps[AST, String]): Option[AST] =
+    _parse[AST](source, 0, source.length)
 
-  def parse[AST](source: Array[Char], offset: Int, length: Int)(implicit ops: AstOps[AST, String]): Option[AST] = {
+  def _parse[AST](source: Array[Char], offset: Int, length: Int)(implicit ops: AstOps[AST, String]): Option[AST] = {
     var position = offset
     val maxPosition = offset + length
 

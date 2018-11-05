@@ -6,7 +6,16 @@ package co.blocke.scalajack
  * @tparam AST the serialized form (AST)
  *  @tparam S the deserialized form (e.g. String for JSON)
  */
-trait AstOps[AST, S] {
+
+trait AstOps[AST, S] extends AstBase[AST] with Parser[S] with Renderer[S] {
+  val parser: Parser[S] = this
+  val renderer: Renderer[S] = this
+
+  def parse(src: S): AST = parser._parse[AST](src)(this).getOrElse(throw new IllegalArgumentException("Input is empty"))
+  def renderCompact(ast: AST, sj: ScalaJackLike[_, _]): S = renderer._renderCompact[AST](ast, sj)(this)
+}
+
+trait AstBase[AST] {
 
   /**
    * A representation of an array's elements suitable to this serialized form.
@@ -19,13 +28,6 @@ trait AstOps[AST, S] {
    * Other libraries may define a JSON object as a [[Map]] instead of a [[List]].
    */
   type ObjectFields
-
-  val parser: Parser[S]
-  val renderer: Renderer[S]
-
-  def parse(src: S): AST = parser.parse[AST](src)(this).getOrElse(throw new IllegalArgumentException("Input is empty"))
-
-  def renderCompact(ast: AST, sj: ScalaJackLike[_, _]): S = renderer.renderCompact[AST](ast, sj)(this)
 
   def foreachArrayElement(elements: ArrayElements, f: (Int, AST) => Unit): Unit
 

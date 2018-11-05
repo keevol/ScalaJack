@@ -3,7 +3,7 @@ package json
 
 import org.json4s.JsonAST.{ JArray, JBool, JDecimal, JDouble, JInt, JLong, JNothing, JNull, JObject, JString, JValue }
 
-trait Json4sOpsBase extends AstOps[JValue, String] {
+trait Json4sOpsBase extends AstBase[JValue] {
 
   override type ArrayElements = List[JValue]
   override type ObjectFields = List[(String, JValue)]
@@ -125,9 +125,4 @@ trait Json4sOpsBase extends AstOps[JValue, String] {
   override def isArray(json: JValue): Boolean = json.isInstanceOf[JArray]
 }
 
-object Json4sOps extends Json4sOpsBase {
-
-  val parser: Parser[String] = JsonParser
-  val renderer: Renderer[String] = JsonRenderer
-
-}
+object Json4sOps extends AstOps[JValue, String] with Json4sOpsBase with JsonParser with JsonRenderer

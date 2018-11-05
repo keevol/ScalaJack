@@ -4,8 +4,8 @@ package csv
 import scala.collection.mutable.StringBuilder
 import org.apache.commons.text.StringEscapeUtils
 
-object CSVRenderer extends Renderer[String] {
-  def renderCompact[AST](ast: AST, sj: ScalaJackLike[_, _])(implicit ops: AstOps[AST, String]): String =
+trait CSVRenderer extends Renderer[String] {
+  def _renderCompact[AST](ast: AST, sj: ScalaJackLike[_, _])(implicit ops: AstOps[AST, String]): String =
     ast match {
       case AstNull => ""
       case AstArray(a) =>
