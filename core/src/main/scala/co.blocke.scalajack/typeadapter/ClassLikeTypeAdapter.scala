@@ -32,7 +32,6 @@ object ClassLikeTypeAdapter {
     lazy val isOptional = valueTypeAdapter.isInstanceOf[OptionTypeAdapter[_]]
     def deserializer: Deserializer[Value] = valueTypeAdapter.deserializer
     def serializer: Serializer[Value] = valueTypeAdapter.serializer
-    def isStringValue: Boolean = valueTypeAdapter.isInstanceOf[StringKind]
 
     def deserializeValue[AST, S](path: Path, ast: AST)(implicit ops: AstOps[AST, S], guidance: SerializationGuidance): DeserializationResult[Value] =
       valueTypeAdapter.deserializer.deserialize(path, ast)

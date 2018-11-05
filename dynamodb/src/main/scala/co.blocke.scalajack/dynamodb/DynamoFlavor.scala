@@ -69,23 +69,17 @@ case class DynamoFlavor(
   // This is Dynamo-Only.  User will have to cast ScalaJack to DynamoFlavor to call this.
   def createTableRequest[T](provisionedThroughput: ProvisionedThroughput)(implicit tt: TypeTag[T]): CreateTableRequest = {
     val tpe = tt.tpe
+    val ta = context.typeAdapterOf[T].as[ClassLikeTypeAdapter[T]]
 
-    val (optionalTableName, keys) = context.typeAdapterOf[T] match { //context.typeAdapter(tpe) match {
-      case ta if (tpe.typeSymbol.asClass.isCaseClass) =>
-        val adapter = ta.as[CaseClassTypeAdapter[T]]
-        (adapter.collectionName, adapter.dbKeys)
-      case ta =>
-        val adapter = ta.as[ClassLikeTypeAdapter[T]]
-        (adapter.collectionName, adapter.dbKeys)
-    }
-    val tableName = optionalTableName.getOrElse(
+    val tableName = ta.collectionName.getOrElse(
       throw new java.lang.IllegalStateException(s"Class ${tpe.typeSymbol.fullName} must be annotated with @Collection to specify a table name."))
 
+    val keys = ta.dbKeys
     if (keys.isEmpty) throw new java.lang.IllegalStateException(s"Class ${tpe.typeSymbol.fullName} must define at least a primary key with @DBKey.")
     val attrDetail = keys.zipWithIndex.collect {
       case (key, idx) if (idx == 0) => (new AttributeDefinition(key.name, getAttrType(key)), new KeySchemaElement(key.name, KeyType.HASH))
       case (key, idx) if (idx == 1) => (new AttributeDefinition(key.name, getAttrType(key)), new KeySchemaElement(key.name, KeyType.RANGE))
-    }.toList
+    }
     new CreateTableRequest(attrDetail.map(_._1).asJava, tableName, attrDetail.map(_._2).asJava, provisionedThroughput)
   }
 
@@ -109,9 +103,9 @@ case class DynamoFlavor(
   }
 
   private def getAttrType(key: ClassLikeTypeAdapter.FieldMember[_]) =
-    if (key.isStringValue)
-      ScalarAttributeType.S
-    else
+    if (key.valueType.typeSymbol.asClass.isNumeric)
       ScalarAttributeType.N
+    else
+      ScalarAttributeType.S
 
 }
