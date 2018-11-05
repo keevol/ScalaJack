@@ -53,12 +53,4 @@ case class AnyTypeAdapter(
     listTypeAdapter:           TypeAdapter[List[Any]],
     stringTypeAdapter:         TypeAdapter[String],
     booleanTypeAdapter:        TypeAdapter[Boolean],
-    context:                   Context) extends TypeAdapter.=:=[Any] {
-
-  // For writes
-  def inspectStringKind(value: Any): Boolean = value match {
-    case _: String            => true
-    case _: Enumeration#Value => true
-    case _                    => false
-  }
-}
+    context:                   Context) extends TypeAdapter.=:=[Any]

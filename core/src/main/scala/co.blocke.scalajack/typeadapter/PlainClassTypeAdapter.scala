@@ -116,51 +116,82 @@ object PlainClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
         tpe.members.filter(p => p.isPublic && p.isMethod).collect {
           // Scala case
           case p if (dontIgnore(p) && tpe.member(TermName(p.name.toString + "_$eq")) != NoSymbol && p.owner != typeOf[SJCapture].typeSymbol) =>
-            val memberType = p.asMethod.returnType
-            val declaredMemberType = tpe.typeSymbol.asType.toType.member(p.name).asMethod.returnType
-            val memberTypeAdapter = context.typeAdapter(memberType).asInstanceOf[TypeAdapter[Any]]
-
-            val (derivedValueClassConstructorMirror2, memberClass) =
-              if (memberType.typeSymbol.isClass) {
-                val memberClassSymbol = memberType.typeSymbol.asClass
-
-                if (memberClassSymbol.isDerivedValueClass) {
-                  val memberClass = currentMirror.runtimeClass(memberClassSymbol)
-                  // The accessor will actually return the "inner" value, not the value class.
-                  val constructorMethodSymbol = memberClassSymbol.primaryConstructor.asMethod
-                  //              val innerClass = currentMirror.runtimeClass(constructorMethodSymbol.paramLists.flatten.head.info.typeSymbol.asClass)
-                  (Some(currentMirror.reflectClass(memberClassSymbol).reflectConstructor(constructorMethodSymbol)), Some(memberClass))
-                } else {
-                  (None, None)
-                }
-              } else {
-                (None, None)
-              }
-
-            // Exctract DBKey and MapName annotations if present (Note: Here the annotation is not on the getter/setter but the private backing variable!)
-            val foundPrivateVar = tpe.members.filter(z => z.isPrivate && !z.isMethod && z.name.toString.trim == p.name.toString.trim).headOption
-            val dbkeyAnno = foundPrivateVar.flatMap(_.annotations.find(_.tree.tpe =:= typeOf[DBKey])
-              .map(_.tree.children(1).productElement(1).asInstanceOf[scala.reflect.internal.Trees$Literal]
-                .value().value).asInstanceOf[Option[Int]])
-            val mapNameAnno = foundPrivateVar.flatMap(_.annotations.find(_.tree.tpe =:= typeOf[MapName])
-              .map(_.tree.children(1).productElement(1).asInstanceOf[scala.reflect.internal.Trees$Literal]
-                .value().value).asInstanceOf[Option[String]])
-
-            new PlainFieldMember[T] {
-              override type Value = Any
-              override implicit val ownerClassTag: ClassTag[T] = ClassTag(runtimeClassOf[T])
-              override val name: String = mapNameAnno.getOrElse(p.name.encodedName.toString)
-              override val valueType: Type = memberType
-              override val valueTypeAdapter: TypeAdapter[Value] = memberTypeAdapter
-              override val declaredValueType: Type = declaredMemberType
-              override val valueAccessorMethod: Method = Reflection.methodToJava(p.asMethod)
-              override val valueSetterMethodSymbol: Option[MethodSymbol] = Some(tpe.member(TermName(p.name.toString + "_$eq")).asMethod)
-              override val valueSetterMethod: Option[Method] = None
-              override val derivedValueClassConstructorMirror: Option[MethodMirror] = derivedValueClassConstructorMirror2
-              override val outerClass: Option[java.lang.Class[_]] = memberClass
-              override val dbKeyIndex: Option[Int] = dbkeyAnno
-            }
+            bakeScalaPlainFieldMember(p)
+          // Scala getter/setter style for private var
+          case ScalaGetter(p) => bakeScalaPlainFieldMember(p, true)
         }.toList
+
+      def bakeScalaPlainFieldMember(p: Symbol, isGetterSetter: Boolean = false): PlainFieldMember[T] = {
+        val memberType = p.asMethod.returnType
+        val declaredMemberType = tpe.typeSymbol.asType.toType.member(p.name).asMethod.returnType
+        val memberTypeAdapter = context.typeAdapter(memberType).asInstanceOf[TypeAdapter[Any]]
+
+        val (derivedValueClassConstructorMirror2, memberClass) =
+          if (memberType.typeSymbol.isClass) {
+            val memberClassSymbol = memberType.typeSymbol.asClass
+
+            if (memberClassSymbol.isDerivedValueClass) {
+              val memberClass = currentMirror.runtimeClass(memberClassSymbol)
+              // The accessor will actually return the "inner" value, not the value class.
+              val constructorMethodSymbol = memberClassSymbol.primaryConstructor.asMethod
+              //              val innerClass = currentMirror.runtimeClass(constructorMethodSymbol.paramLists.flatten.head.info.typeSymbol.asClass)
+              (Some(currentMirror.reflectClass(memberClassSymbol).reflectConstructor(constructorMethodSymbol)), Some(memberClass))
+            } else {
+              (None, None)
+            }
+          } else {
+            (None, None)
+          }
+
+        // Exctract DBKey and MapName annotations if present (Note: Here the annotation is not on the getter/setter but the private backing variable!)
+        val foundPrivateVar = tpe.members.filter(z => z.isPrivate && !z.isMethod && z.name.toString.trim == p.name.toString.trim).headOption
+        val dbkeyAnno = foundPrivateVar.flatMap(_.annotations.find(_.tree.tpe =:= typeOf[DBKey])
+          .map(_.tree.children(1).productElement(1).asInstanceOf[scala.reflect.internal.Trees$Literal]
+            .value().value).asInstanceOf[Option[Int]])
+        val mapNameAnno = foundPrivateVar.flatMap(_.annotations.find(_.tree.tpe =:= typeOf[MapName])
+          .map(_.tree.children(1).productElement(1).asInstanceOf[scala.reflect.internal.Trees$Literal]
+            .value().value).asInstanceOf[Option[String]])
+
+        new PlainFieldMember[T] {
+          override type Value = Any
+          override implicit val ownerClassTag: ClassTag[T] = ClassTag(runtimeClassOf[T])
+          override val name: String = mapNameAnno.getOrElse(p.name.encodedName.toString)
+          override val valueType: Type = memberType
+          override val valueTypeAdapter: TypeAdapter[Value] = memberTypeAdapter
+          override val declaredValueType: Type = declaredMemberType
+          override val valueAccessorMethod: Method = Reflection.methodToJava(p.asMethod)
+          override val valueSetterMethodSymbol: Option[MethodSymbol] =
+            // Gymnatsics to handle...
+            if (p.isMethod && isGetterSetter) {
+              // 1) Scala-stype getters/setters
+              tpe.members.filter(f => f.name.toString == p.name.toString + "_" && f.isMethod).headOption.map(_.asMethod)
+                // 2) Public var (no getter/setter)
+                .orElse(tpe.members.filter(f => f.name.toString == p.name.toString).headOption.map(_.asMethod))
+            } else
+              // 3) Constructor val
+              Some(tpe.member(TermName(p.name.toString + "_$eq")).asMethod)
+          override val valueSetterMethod: Option[Method] = None
+          override val derivedValueClassConstructorMirror: Option[MethodMirror] = derivedValueClassConstructorMirror2
+          override val outerClass: Option[java.lang.Class[_]] = memberClass
+          override val dbKeyIndex: Option[Int] = dbkeyAnno
+        }
+      }
+
+      object ScalaGetter {
+        def unapply(p: Symbol): Option[Symbol] = {
+          if (p.isMethod && p.name.toString.endsWith("_")) {
+            // Find getter and private var
+            val name = p.name.toString.reverse.tail.reverse
+            val found = tpe.members.filter(_.name.toString == name)
+            val dontIgnore = p.annotations.find(_.tree.tpe =:= typeOf[Ignore]).isEmpty && found.head.annotations.find(_.tree.tpe =:= typeOf[Ignore]).isEmpty
+            if (found.size > 0 && dontIgnore) {
+              Some(found.head) // obtain the getter method symbol
+            } else
+              None
+          } else
+            None
+        }
+      }
 
       def ignoreThisJavaProperty(pd: java.beans.PropertyDescriptor): Boolean = {
         def annoTypeMatches[A](a: Class[A]): Boolean = a.getTypeName == typeOf[Ignore].toString
@@ -205,8 +236,6 @@ object PlainClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
       val collectionAnnotation = classSymbol.annotations.find(_.tree.tpe =:= typeOf[Collection])
         .map(_.tree.children(1).productElement(1).asInstanceOf[scala.reflect.internal.Trees$Literal]
           .value().value).asInstanceOf[Option[String]]
-
-      //      def dbKeys[Owner](members: List[ClassLikeTypeAdapter.FieldMember[Owner]]): List[ClassLikeTypeAdapter.FieldMember[Owner]] = members.filter(_.dbKeyIndex.isDefined).sortBy(_.dbKeyIndex.get)
 
       val hasEmptyConstructor = constructorSymbol.typeSignatureIn(tpe).paramLists.flatten.isEmpty
       inferConstructorValFields match {

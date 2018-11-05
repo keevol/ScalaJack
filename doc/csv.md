@@ -13,7 +13,7 @@ val csv = sj.render(inst)
 // renders: "Hey, you","This ""life""","And now, ""Mike"" will sing."
 ```
 
-###Handling None and Null
+### Handling None and Null
 If an object has a field with value None, then ScalaJack will renders an empty field.  Note this is different than an empty String.  Consider the following CSV creation:
 
 ```scala

@@ -21,4 +21,4 @@ object EnumerationTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
 
 }
 
-case class EnumerationTypeAdapter[E <: Enumeration](override val deserializer: Deserializer[E#Value], override val serializer: Serializer[E#Value], enum: E) extends TypeAdapter[E#Value] with StringKind
+case class EnumerationTypeAdapter[E <: Enumeration](override val deserializer: Deserializer[E#Value], override val serializer: Serializer[E#Value], enum: E) extends TypeAdapter[E#Value]

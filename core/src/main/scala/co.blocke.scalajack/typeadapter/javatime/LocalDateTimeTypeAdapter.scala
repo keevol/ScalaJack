@@ -7,7 +7,7 @@ import java.time.format.DateTimeFormatter
 
 object LocalDateTimeTypeAdapter extends LocalDateTimeTypeAdapter(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
 
-class LocalDateTimeTypeAdapter(formatter: DateTimeFormatter) extends TypeAdapter.=:=[LocalDateTime] with StringKind {
+class LocalDateTimeTypeAdapter(formatter: DateTimeFormatter) extends TypeAdapter.=:=[LocalDateTime] {
   override val deserializer: Deserializer[LocalDateTime] = new LocalDateTimeDeserializer(formatter)
   override val serializer: Serializer[LocalDateTime] = new LocalDateTimeSerializer(formatter)
 }

@@ -4,7 +4,7 @@ package javatime
 
 import java.time.Period
 
-object PeriodTypeAdapter extends TypeAdapter.=:=[Period] with StringKind {
+object PeriodTypeAdapter extends TypeAdapter.=:=[Period] {
   override val deserializer: Deserializer[Period] = new PeriodDeserializer
   override val serializer: Serializer[Period] = new PeriodSerializer
 }

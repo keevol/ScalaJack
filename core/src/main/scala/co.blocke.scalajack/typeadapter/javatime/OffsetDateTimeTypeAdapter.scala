@@ -7,7 +7,7 @@ import java.time.format.DateTimeFormatter
 
 object OffsetDateTimeTypeAdapter extends OffsetDateTimeTypeAdapter(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
 
-class OffsetDateTimeTypeAdapter(formatter: DateTimeFormatter) extends TypeAdapter.=:=[OffsetDateTime] with StringKind {
+class OffsetDateTimeTypeAdapter(formatter: DateTimeFormatter) extends TypeAdapter.=:=[OffsetDateTime] {
   override val deserializer: Deserializer[OffsetDateTime] = new OffsetDateTimeDeserializer(formatter)
   override val serializer: Serializer[OffsetDateTime] = new OffsetDateTimeSerializer(formatter)
 }

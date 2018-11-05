@@ -26,8 +26,7 @@ class JavaMapDeserializer[K, V, M <: java.util.Map[K, V]](keyDeserializer: Deser
 
       case AstNull() => DeserializationSuccess(taggedNull)
 
-      case x =>
-        println("X: " + x)
+      case _ =>
         DeserializationFailure(path, DeserializationError.Unsupported("Expected a JSON object", reportedBy = self))
     }
 

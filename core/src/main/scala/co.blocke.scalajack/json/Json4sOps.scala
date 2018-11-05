@@ -5,26 +5,28 @@ import org.json4s.JsonAST.{ JArray, JBool, JDecimal, JDouble, JInt, JLong, JNoth
 
 trait Json4sOpsBase extends AstBase[JValue] {
 
-  override type ArrayElements = List[JValue]
-  override type ObjectFields = List[(String, JValue)]
+  override type ArrayElements = JArray
+  override type ObjectFields = JObject
 
-  override def foreachArrayElement(elements: List[JValue], f: (Int, JValue) => Unit): Unit = {
-    for ((element, index) <- elements.zipWithIndex if element != JNothing) {
+  override def foreachArrayElement(elements: ArrayElements, f: (Int, JValue) => Unit): Unit = {
+    for ((element, index) <- elements.arr.zipWithIndex if element != JNothing) {
       f(index, element)
     }
   }
 
-  override def foreachObjectField(fields: List[(String, JValue)], f: (String, JValue) => Unit): Unit = {
-    for ((name, value) <- fields if value != JNothing) {
+  override def foreachObjectField(fields: ObjectFields, f: (String, JValue) => Unit): Unit = {
+    for ((name, value) <- fields.obj if value != JNothing) {
       f(name, value)
     }
   }
 
-  override def getObjectField(fields: List[(String, JValue)], name: String): Option[JValue] =
-    fields.find(_._1 == name).map(_._2).filter(_ != JNothing)
+  override def getObjectField(fields: ObjectFields, name: String): Option[JValue] =
+    fields.obj.find(_._1 == name).map(_._2).filter(_ != JNothing)
 
-  override def partitionObjectFields(fields: ObjectFields, fieldNames: List[String]): (ObjectFields, ObjectFields) =
-    fields.partition(f => fieldNames.contains(f._1))
+  override def partitionObjectFields(fields: ObjectFields, fieldNames: List[String]): (ObjectFields, ObjectFields) = {
+    val (a, b) = fields.obj.partition(f => fieldNames.contains(f._1))
+    (JObject(a), JObject(b))
+  }
 
   override def applyArray(appendAllElements: (JValue => Unit) => Unit): JValue = {
     val elementsBuilder = List.newBuilder[JValue]
@@ -36,9 +38,9 @@ trait Json4sOpsBase extends AstBase[JValue] {
     JArray(elementsBuilder.result())
   }
 
-  override def unapplyArray(json: JValue): Option[List[JValue]] =
+  override def unapplyArray(json: JValue): Option[JArray] =
     json match {
-      case JArray(elements) => Some(elements)
+      case elements: JArray => Some(elements)
       case _                => None
     }
 
@@ -106,9 +108,9 @@ trait Json4sOpsBase extends AstBase[JValue] {
     JObject(fieldsBuilder.result())
   }
 
-  override def unapplyObject(json: JValue): Option[List[(String, JValue)]] =
+  override def unapplyObject(json: JValue): Option[JObject] =
     json match {
-      case JObject(fields) => Some(fields)
+      case fields: JObject => Some(fields)
       case _               => None
     }
 

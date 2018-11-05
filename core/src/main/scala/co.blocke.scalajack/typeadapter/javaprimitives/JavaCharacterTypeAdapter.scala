@@ -13,4 +13,4 @@ object JavaCharacterTypeAdapter extends TypeAdapterFactory.=:=[java.lang.Charact
 
 }
 
-class JavaCharacterTypeAdapter(override val deserializer: Deserializer[java.lang.Character], override val serializer: Serializer[java.lang.Character]) extends TypeAdapter.=:=[java.lang.Character] with StringKind
+class JavaCharacterTypeAdapter(override val deserializer: Deserializer[java.lang.Character], override val serializer: Serializer[java.lang.Character]) extends TypeAdapter.=:=[java.lang.Character]
