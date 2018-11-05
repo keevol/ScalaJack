@@ -2,7 +2,7 @@
 
 ScalaJack utilizes an AST (abstract syntax tree) internally to hold information learned by reflecting on your serialized class.  This allows more control over the serialization lifecycle, as shown in the graphic below.
 
-![Lifecycle](https://github.com/gzoller/ScalaJack/doc/lifecycle.jpg "Serialization Lifecycle")
+![Lifecycle](lifecycle.jpg "Serialization Lifecycle")
 
 Let's go through the different controls you have.
 
