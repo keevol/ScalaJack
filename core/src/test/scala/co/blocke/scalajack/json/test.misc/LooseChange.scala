@@ -30,7 +30,7 @@ class LooseChange extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
       adapter.collectionName should be(Some("myDefaults"))
       adapter.dbKeys.head.dbKeyIndex should be(Some(1))
     }
-    it("Can find collection and key annotations on plaub class") {
+    it("Can find collection and key annotations on plain class") {
       val adapter = sj.context.typeAdapter(typeOf[Plain]).as[PlainClassTypeAdapter[_]]
       adapter.collectionName should be(Some("plains"))
       adapter.dbKeys.head.dbKeyIndex should be(Some(1))

@@ -3,8 +3,11 @@ package typeadapter
 
 import java.lang.reflect.Method
 
+import co.blocke.scalajack.{ Symbol, TypeTag, typeOf }
+
+import scala.reflect.runtime.universe._
 import scala.language.existentials
-import scala.reflect.runtime.{ currentMirror, universe }
+import scala.reflect.runtime.currentMirror
 
 object CaseClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
 
@@ -23,11 +26,23 @@ object CaseClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
       outerClass:                         Option[java.lang.Class[_]],
       dbKeyIndex:                         Option[Int],
       fieldMapName:                       Option[String],
-      annotations:                        List[universe.Annotation]) extends ClassLikeTypeAdapter.FieldMember[Owner] {
+      annotations:                        List[Annotation]) extends ClassLikeTypeAdapter.FieldMember[Owner] {
 
     override type Value = T
 
     val defaultValue: Option[Value] = defaultValueMirror.map(_.apply().asInstanceOf[T]).orElse(valueTypeAdapter.defaultValue)
+  }
+
+  def getAnnotationValue[T, U](sym: Symbol, default: Option[U] = None)(implicit tt: TypeTag[T]): Option[U] = {
+    val annotation = sym.annotations.find(_.tree.tpe =:= typeOf[T])
+    annotation.flatMap { a =>
+      if (a.tree.children.tail.size == 0)
+        default
+      else
+        a.tree.children.tail.head.collect({
+          case Literal(Constant(value)) => value
+        }).headOption
+    }.asInstanceOf[Option[U]]
   }
 
   override def typeAdapterOf[T](classSymbol: ClassSymbol, next: TypeAdapterFactory)(implicit context: Context, tt: TypeTag[T]): TypeAdapter[T] =
@@ -90,19 +105,17 @@ object CaseClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
         val declaredMemberType = param2.asTerm.typeSignature
 
         // Exctract DBKey annotation if present
-        val optionalDbKeyIndex = member.annotations.find(_.tree.tpe =:= typeOf[DBKey])
-          .map { index =>
-            if (index.tree.children.size > 1)
-              index.tree.children(1).productElement(1).asInstanceOf[scala.reflect.internal.Trees$Literal].value().value
-            else
-              0
-          }.asInstanceOf[Option[Int]]
+        val optionalDbKeyIndex = getAnnotationValue[DBKey, Int](member, Some(0))
+        //          .annotations.find(_.tree.tpe =:= typeOf[DBKey])
+        //          .map { index =>
+        //            if (index.tree.children.size > 1)
+        //              index.tree.children(1).productElement(1).asInstanceOf[scala.reflect.internal.Trees$Literal].value().value
+        //            else
+        //              0
+        //          }.asInstanceOf[Option[Int]]
 
         // Extract MapName annotation if present
-        val optionalMapName: Option[String] = member.annotations.find(_.tree.tpe =:= typeOf[MapName])
-          .map { index =>
-            index.tree.children(1).productElement(1).asInstanceOf[scala.reflect.internal.Trees$Literal].value().value
-          }.asInstanceOf[Option[String]]
+        val optionalMapName = getAnnotationValue[MapName, String](member)
 
         val memberTypeAdapter = context.typeAdapter(memberType).asInstanceOf[TypeAdapter[Any]]
 
@@ -110,9 +123,7 @@ object CaseClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
       }
 
       // Exctract Collection name annotation if present
-      val collectionAnnotation = classSymbol.annotations.find(_.tree.tpe =:= typeOf[Collection])
-        .map(_.tree.children(1).productElement(1).asInstanceOf[scala.reflect.internal.Trees$Literal]
-          .value().value).asInstanceOf[Option[String]]
+      val collectionAnnotation = getAnnotationValue[Collection, String](classSymbol)
 
       CaseClassTypeAdapter[T](
         new ClassDeserializerUsingReflectedConstructor[T](

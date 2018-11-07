@@ -1,44 +1,54 @@
 package co.blocke.scalajack
 
-import co.blocke.scalajack.csv._
+import scala.reflect.runtime.universe._
 
-case class Maybe(one: String, two: Option[String], three: Boolean)
+case class MapFactorId(
+    @DBKey @MapName(name = "foo_bar") fooBar:String,
+    @MapName(name = "a_b") thingy:         Long,
+    count:                                 Int,
+    @MapName(name = "big_mac") bigMac:     String)
 
 object RunMe extends App {
 
-  val sj = ScalaJack(CSVFlavor())
+  val p = MapFactorId("Greg", 52L, 3, "ooo")
+  doSomething(p)
 
-  val inst = Maybe("yes", Some("This,test"), true)
-  val csv = sj.render(inst)
-  val i1 = sj.read[Maybe](csv)
-  // renders: yes,"This,test",true
+  def doSomething(x: MapFactorId)(implicit tt: TypeTag[MapFactorId]): Unit = {
+    val classSymbol = tt.tpe.typeSymbol.asClass
+    val constructorSymbol = classSymbol.primaryConstructor.asMethod
 
-  val inst2 = Maybe("yes", Some(""), true)
-  val csv2 = sj.render(inst2)
-  val i2 = sj.read[Maybe](csv2)
-  // renders: yes,"",true
+    val params1 = constructorSymbol.typeSignatureIn(tt.tpe).paramLists.flatten
 
-  val inst3 = Maybe("yes", None, true)
-  val csv3 = sj.render(inst3)
-  val i3 = sj.read[Maybe](csv3)
-  // renders: yes,,true
+    println(params1)
 
-  val inst4 = Maybe(null, null, true)
-  val csv4 = sj.render(inst4)
-  val i4 = sj.read[Maybe](csv4)
-  // renders: ,,true
-  // WARNING: Reconstitutes Maybe(null,None,true)
+    params1.map { member =>
+      println("DBKey: " + getAnnotationValue[DBKey, Int](member, 0))
 
-  val inst5 = Maybe("", null, true)
-  val csv5 = sj.render(inst5)
-  val i5 = sj.read[Maybe](csv5)
-  // renders: "",,true
+      val mapAnnotation = member.annotations.find(_.tree.tpe =:= typeOf[MapName])
+      val result2 = (member.name.toString, mapAnnotation.flatMap { a =>
+        a.tree.children.tail.head.collect({
+          case Literal(Constant(value)) => value
+        }).headOption
+      })
+      println(result2)
 
-  println(csv + "   -->   "+i1)
-  println(csv2 + "   -->   " + i2)
-  println(csv3 + "   -->   "+i3)
-  println(csv4 + "   -->   "+i4)
-  println(csv5 + "   -->   " + i5)
+      println("---------")
+    }
 
+    println("Collection: " + getAnnotationValue[Collection, String](classSymbol, "P"))
+
+  }
+
+  def getAnnotationValue[T, U](sym: Symbol, default: U)(implicit tt: TypeTag[T]): Option[U] = {
+    val annotation = sym.annotations.find(_.tree.tpe =:= typeOf[T])
+    annotation.flatMap { a =>
+      if (a.tree.children.tail.size == 0)
+        Some(default)
+      else
+        a.tree.children.tail.head.collect({
+          case Literal(Constant(value)) => value
+        }).headOption
+    }.asInstanceOf[Option[U]]
+  }
 }
 

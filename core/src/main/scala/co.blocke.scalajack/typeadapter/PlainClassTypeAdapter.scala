@@ -86,14 +86,10 @@ object PlainClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
               val memberType = member.asTerm.typeSignature
 
               // Exctract DBKey annotation if present
-              val dbkeyAnnotation = member.annotations.find(_.tree.tpe =:= typeOf[DBKey])
-                .map(_.tree.children(1).productElement(1).asInstanceOf[scala.reflect.internal.Trees$Literal]
-                  .value().value).asInstanceOf[Option[Int]]
+              val dbkeyAnnotation = CaseClassTypeAdapter.getAnnotationValue[DBKey, Int](member, Some(0))
 
               // Exctract MapName annotation if present
-              val mapNameAnnotation: Option[String] = member.annotations.find(_.tree.tpe =:= typeOf[MapName])
-                .map(_.tree.children(1).productElement(1).asInstanceOf[scala.reflect.internal.Trees$Literal]
-                  .value().value).asInstanceOf[Option[String]]
+              val mapNameAnnotation = CaseClassTypeAdapter.getAnnotationValue[MapName, String](member)
 
               val memberTypeAdapter = context.typeAdapter(memberType).asInstanceOf[TypeAdapter[Any]]
               FieldMember[T, Any](index, mapNameAnnotation.getOrElse(memberName), memberType, memberTypeAdapter, memberType /* FIXME */ , accessorMethodSymbol, accessorMethod, derivedValueClassConstructorMirror, None, memberClass, dbkeyAnnotation, mapNameAnnotation, member.annotations)
@@ -145,12 +141,9 @@ object PlainClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
 
         // Exctract DBKey and MapName annotations if present (Note: Here the annotation is not on the getter/setter but the private backing variable!)
         val foundPrivateVar = tpe.members.filter(z => z.isPrivate && !z.isMethod && z.name.toString.trim == p.name.toString.trim).headOption
-        val dbkeyAnno = foundPrivateVar.flatMap(_.annotations.find(_.tree.tpe =:= typeOf[DBKey])
-          .map(_.tree.children(1).productElement(1).asInstanceOf[scala.reflect.internal.Trees$Literal]
-            .value().value).asInstanceOf[Option[Int]])
-        val mapNameAnno = foundPrivateVar.flatMap(_.annotations.find(_.tree.tpe =:= typeOf[MapName])
-          .map(_.tree.children(1).productElement(1).asInstanceOf[scala.reflect.internal.Trees$Literal]
-            .value().value).asInstanceOf[Option[String]])
+        val dbkeyAnno = foundPrivateVar.flatMap(CaseClassTypeAdapter.getAnnotationValue[DBKey, Int](_, Some(0)))
+
+        val mapNameAnno = foundPrivateVar.flatMap(CaseClassTypeAdapter.getAnnotationValue[MapName, String](_))
 
         new PlainFieldMember[T] {
           override type Value = Any
@@ -233,9 +226,7 @@ object PlainClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
       }
 
       // Exctract Collection name annotation if present
-      val collectionAnnotation = classSymbol.annotations.find(_.tree.tpe =:= typeOf[Collection])
-        .map(_.tree.children(1).productElement(1).asInstanceOf[scala.reflect.internal.Trees$Literal]
-          .value().value).asInstanceOf[Option[String]]
+      val collectionAnnotation = CaseClassTypeAdapter.getAnnotationValue[Collection, String](classSymbol)
 
       val hasEmptyConstructor = constructorSymbol.typeSignatureIn(tpe).paramLists.flatten.isEmpty
       inferConstructorValFields match {
