@@ -58,9 +58,9 @@ When reading a numerical value, ScalaJack must infer what kind of numerical type
 |Short |Long
 |Int |Long
 |Long |Long
-|BigInt |BigDecimal (if value too big for Long)
+|BigInt |Long if it fits, else BigInt
 |Float |Double
 |Double |Double
-|BigDecimal |BigDecimal (if value too big for Double)
+|BigDecimal |Double if it fits, else BigDecimal
 
 Remember that when processing Any, there is no "wrong"--any returned thing is an Any!  There's just expected and unexpected.

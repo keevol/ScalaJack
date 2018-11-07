@@ -133,6 +133,10 @@ trait AstBase[AST] {
    */
   // String in tuple here is the field name
   def applyObject(appendAllFields: ((String, AST) => Unit) => Unit): AST
+  def applyObject(elements: List[(String, AST)]): AST =
+    applyObject { appendElement =>
+      elements.foreach { case (fname, fvalue) => appendElement(fname, fvalue) }
+    }
 
   def unapplyObject(ast: AST): Option[ObjectFields]
 

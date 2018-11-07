@@ -32,11 +32,6 @@ trait JsonParser extends Parser[String] {
       if (actual == expected) {
         position += 1
       } else {
-        //        println("ERROR: " + source.mkString)
-        //        print("@ pos: " + { (0 to position - 1).map(_ => "-").mkString })
-        //        println("^")
-        //        println("Skip " + actual + " but expected " + expected)
-        //        println(source.mkString)
         throw new IllegalArgumentException(s"Skipped '$actual', not '$expected'")
       }
     }

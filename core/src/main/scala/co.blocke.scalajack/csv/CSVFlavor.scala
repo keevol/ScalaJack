@@ -48,11 +48,7 @@ case class CSVFlavor() extends {
         ops.foreachArrayElement(e, { (pos, value) =>
           listBuf.append((fields(pos)._1, fixedValue(value, fields(pos)._2)))
         })
-        val objAst = ops.applyObject { appendField =>
-          for ((fieldName, fieldValue) <- listBuf) {
-            appendField(fieldName, fieldValue)
-          }
-        }
+        val objAst = ops.applyObject(listBuf.toList)
         ccta.deserializer.deserialize(Path.Root, objAst) match {
           case DeserializationSuccess(t)       => Right(t.get)
           case failure: DeserializationFailure => Left(failure)

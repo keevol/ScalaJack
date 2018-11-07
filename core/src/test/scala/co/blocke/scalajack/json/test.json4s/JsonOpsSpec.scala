@@ -137,11 +137,7 @@ trait JsonOpsSpec[AST, S] extends FunSpec {
       it("should create a JSON object") {
         val expectedFields: List[(String, AST)] = (for (i <- 1 to 10) yield ("key" + i, ops.applyString("value" + i))).toList
 
-        val json = ops.applyObject { appendField =>
-          for ((fieldName, fieldValue) <- expectedFields) {
-            appendField(fieldName, fieldValue)
-          }
-        }
+        val json = ops.applyObject(expectedFields)
 
         sniffJsonValueTypes(json) should be(Set(JsonValueType.JsonObjectType))
 

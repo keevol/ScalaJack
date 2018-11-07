@@ -1,35 +1,52 @@
 package co.blocke.scalajack
 package csv
 
-import org.apache.commons.text.StringTokenizer
-
-import scala.collection.JavaConverters._
-
 trait CSVParser extends Parser[String] {
 
-  def _parse[AST](source: String)(implicit ops: AstOps[AST, String]): Option[AST] =
-    if (source.trim == "")
+  def _parse[AST](source: String)(implicit ops: AstOps[AST, String]): Option[AST] = {
+    if (source == "")
       Some(AstNull())
     else {
-      val found = StringTokenizer.getCSVInstance(source).getTokenList.asScala.toList.map(inferKind(_))
-      val result = found.foldLeft(Some(List.empty[AST]).asInstanceOf[Option[List[AST]]]) {
-        case (acc, item) => if (item.isEmpty || acc.isEmpty) None else acc.map(_ :+ item.get)
+      val tokens = scala.collection.mutable.ListBuffer.empty[AST]
+      var inBlock: Boolean = false
+      var quoteTrigger: Boolean = false
+      val sb = new scala.collection.mutable.StringBuilder()
+      val carray = source.toCharArray :+ '|'
+      carray.zipWithIndex.foreach {
+        case (c, i) => c match {
+          case '"' =>
+            if (quoteTrigger) {
+              quoteTrigger = false
+              sb.append('"')
+            } else {
+              quoteTrigger = true
+              if (carray(i + 1) != '"')
+                inBlock = !inBlock
+            }
+          case ',' if (!inBlock) =>
+            quoteTrigger = false
+            tokens.append(inferType(sb.toString))
+            sb.clear
+          case _ =>
+            quoteTrigger = false
+            sb.append(c)
+        }
       }
-      result.map(r =>
-        ops.applyArray { appendElement =>
-          r.foreach(appendElement)
-        })
+      tokens.append(inferType(sb.toString.reverse.tail.reverse))
+      Some(ops.applyArray(tokens.toList))
     }
+  }
 
   // Infers Boolean, Double, Long, String, or Null
-  private def inferKind[AST](s: String)(implicit ops: AstOps[AST, String]): Option[AST] = {
-    val trimmed = s.trim
-    trimmed match {
-      case "true" | "false" => Some(ops.applyBoolean(trimmed.toBoolean))
-      case ""               => Some(ops.applyNull())
-      case IsLong(l)        => Some(ops.applyLong(l))
-      case IsDouble(d)      => Some(ops.applyDouble(d))
-      case _                => Some(ops.applyString(trimmed))
+  private def inferType[AST](s: String)(implicit ops: AstOps[AST, String]): AST = {
+    //    val trimmed = s.trim
+    s match {
+      case "\""             => ops.applyString("")
+      case "true" | "false" => ops.applyBoolean(s.toBoolean)
+      case ""               => ops.applyNull()
+      case IsLong(l)        => ops.applyLong(l)
+      case IsDouble(d)      => ops.applyDouble(d)
+      case _                => ops.applyString(s)
     }
   }
 }

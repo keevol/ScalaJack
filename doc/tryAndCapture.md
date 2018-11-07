@@ -26,16 +26,20 @@ In this instance we support a Try:
 
 ```scala
 val js = """{"one":"Thing","two":"another thing","three":"Last thing"}"""
-case class ThingsICareAbout(one:String, two:Try[String], three:String)
+
+case class ThingsICareAbout(one:String, two:Try[String], three:String) // <-- Note the Try!
+
 // materializes: ThingsICareAbout("Thing",Success("another thing"),"LastThing")
 
 val js2 = """{"one":"Thing","two":true,"three":"Last thing"}"""
 val myObj = sj.read[ThingsICareAbout](js)
+
 /*
-materializes: ThingsICareAbout("Thing",Failure("ThingsICareAbout(Thing,Failure(co.blocke.scalajack.UnreadableException: java.lang.IllegalStateException: Expected value token of type String, not True when reading String value.
-{"one":"Thing","two":true,"three":"Last thing"}
----------------------^),Last thing)","LastThing")
+Oops!  Materializes:
+ThingsICareAbout(Thing,Failure(co.blocke.scalajack.typeadapter.TryDeserializer$$anon$1: DeserializationException(1 error):
+  [$.two] Expected a JSON string (reported by: co.blocke.scalajack.typeadapter.StringDeserializer)),Last thing)
 */
+
 //
 // but...
 val rerendered = sj.render(myObj)
@@ -52,14 +56,16 @@ This case is along the lines of Case 3 except that here we don't care about any 
 We accomplish this behavior like this:
 
 ```scala
-case class ThingsICareAbout(one:String) extends SJCapture
+case class ThingsICareAbout(one:String) extends SJCapture  // <-- Note the extends SJCapture
+
 val js = """{"one":"thing","id":1234,"isOK":true}"""
 val myObj = sj.read[ThingsICareAbout](js)
 // myObj = ThingsICareAbout("thing")
+
 println(sj.render(myObj))
 // prints: {"one":"thing","id":1234,"isOK":true}
 ```
 
-Because your class extends SJCapture, all the "extra" incoming JSON fields are quietly captured verbatim and stored until such time as the object is rendered. 
+Because your class extends SJCapture, all the "extra" incoming JSON fields are quietly captured and stored until such time as the object is rendered.
 
 This is ideal for pass-through applications where the JSON formats are unstable.  Your code won't break if changes happen to any of the extra, captured fields.

@@ -8,16 +8,17 @@ The problem is... you may receive other kinds of messages--messages you don't "o
 
 How will you even deserialize an incoming message to determine if its one of yours?  Hmm.  That's a problem!
 
-This is the scenario ParseOrElse was designed for:  attempt to parse JSON (presumably into a trait).  If successful, very well, but if you can't parse (perhaps because you don't have a class file for the given type) then return a given default object.
+This is the scenario parseOrElse() was designed for:  attempt to parse JSON (presumably into a trait).  If successful, very well, but if you can't parse (perhaps because you don't have a class file for the given type) then return a given default object.
 
 ```scala
 package com.mycompany
-    
+
 import scala.reflect.runtime.universe.typeOf
 
 case class Wrapped(id:Long, src:String, msg:ActionMessage)
-    
+
 val sj = ScalaJack().parseOrElse((typeOf[ActionMessage] -> typeOf[DefaultAction]))
+
 val js = """{"id":123,"src":"main","msg":{"_hint":"com.mycompany.SpecialAction","contact":"fred"}}"""
 val myAction = sj.read[Wrapped](js)
 ```

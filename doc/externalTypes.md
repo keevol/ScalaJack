@@ -28,10 +28,10 @@ ScalaJack uses a type member in your class to specify a type hint of a contained
 So how would we use this feature?
 ```scala
     val inst: Message[Command] = Message("abc123", FieldCommand("pong"))
-    sj.render[Message[Command]](inst)
+    sj.render(inst)
     // {"payloadKind":"com.me.FieldCommand", "id":"abc123", "payload":{"ping":"pong"}}
 ```
-Basically this is the same render usage as normal, except we have to specify a type Message[Command] when calling render()--normally you don't need this.  Scala's type system needs a little bit of help when using type members this way.
+This is the same render usage as normal
 
 Reading is basically the same, again using a type in the call to read().  Here's an example of reading using a match statement to switch on the kinds of payload:
 ```scala
@@ -43,6 +43,8 @@ inbound.payload match {
 }
 ```
 
+__Bottom Line:__ If you specify a type member in your case class, ScalaJack will externalize that type hint, packaging it in the outer or wrapping class. Without a type member, ScalaJack will package the type hint normally inside the serialized class.
+
 #### Custom Type Modifiers
 Just like for type hints, we may receive 3rd party JSON where having the type value be a fully-qualified Scala class name may not be possible.  We have a limited ability to use the same modifiers we use for type hints.
 ```scala
@@ -53,7 +55,7 @@ val js = sjm.render[Message[Command]](inst)
 ```
 Note the class path has been modified and we now only see the trailing class name.  The other out-of-the-box modifier, StringMatchHintModifier, works here too, in case you need to completely divorce the value in the JSON from any notion of the class name.
 
-**WARNING:** There is currently two pretty big limitations on type modifiers.  
+**WARNING:** There is currently two pretty big limitations on type member modifiers.
  -  You can only specify one type modifier.
  -  The type modifier will apply to *all* your type member values!
 

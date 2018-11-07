@@ -44,11 +44,7 @@ class MongoCaseClassDeserializer[C](
             fields.append((fieldname, element))
         })
         if (keysFound.size == dbKeys.size)
-          Right(ops.applyObject { appendField =>
-            for ((fieldName, fieldValue) <- fields) {
-              appendField(fieldName, fieldValue)
-            }
-          })
+          Right(ops.applyObject(fields.toList))
         else {
           val missing = dbKeys.map(_.name).diff(keysFound).mkString("[", ",", "]")
           Left(DeserializationFailure(path, DeserializationError.Unexpected(s"Missing at least one required db key field (e.g. _id) component: $missing", this)))

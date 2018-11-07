@@ -1,9 +1,9 @@
 ## Non-Canonical JSON Support
 ScalaJack supports a form of "non-canonical" (non-standard) JSON.  In fact, because it doesn't follow the JSON spec, it isn't really JSON at all, but rather a JSON-like format.
 
-**WARNING:** Use of non-canonical JSON will not be standard or likely even work outside a ScalaJack-to-ScalaJack enivonrment!  You have been warned.
+**WARNING:** Use of non-canonical JSON will not likely even work outside a ScalaJack-to-ScalaJack enivonrment!  You have been warned.
 
-The reason for this feature is purely aesthetic and has to do with JSON keys.  Per the JSON spec, JSON object (aka Map) keys must be Strings, so non-String values are re-worked so that they become Strings.
+The reason for this feature is purely to tickle the aesthetic of one of the project authors, and has to do with JSON keys.  Per the JSON spec, JSON object (aka Map) keys must be Strings, so non-String values are re-worked so that they become Strings.
 
 This is of little consequence for primitive types:
 

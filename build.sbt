@@ -1,6 +1,6 @@
 import sbt._
 import sbt.Keys._
-import pl.project13.scala.sbt.JmhPlugin
+//import pl.project13.scala.sbt.JmhPlugin
 import com.typesafe.sbt.SbtScalariform._
 import scalariform.formatter.preferences._
 import scoverage.ScoverageKeys._
@@ -18,9 +18,9 @@ def compile   (deps: ModuleID*): Seq[ModuleID] = deps map (_ % "compile")
 def test      (deps: ModuleID*): Seq[ModuleID] = deps map (_ % "test")
 
 val mongo_scala     = "org.mongodb.scala"       %% "mongo-scala-driver"   % "2.4.2"
-val scalatest       = "org.scalatest"           %% "scalatest"            % "3.0.1"
+val scalatest       = "org.scalatest"           %% "scalatest"            % "3.0.5" // "3.2.0-SNAP10"
 val slf4j_simple    = "org.slf4j"               % "slf4j-simple"          % "1.7.25"
-val dynamo          = "com.amazonaws"           % "aws-java-sdk-dynamodb" % "1.11.43"
+val dynamo          = "com.amazonaws"           % "aws-java-sdk-dynamodb" % "1.11.443"
 
 def scalacOptionsVersion(scalaVersion: String) = {
   val xver =  CrossVersion.partialVersion(scalaVersion) match {
@@ -45,9 +45,9 @@ def scalacOptionsVersion(scalaVersion: String) = {
 lazy val basicSettings = Seq(
   organization                := "co.blocke",
   startYear                   := Some(2015),
-  crossScalaVersions          := Seq("2.11.12", "2.12.6"),
+  crossScalaVersions          := Seq("2.11.12", "2.12.3"),
   publishArtifact in (Compile, packageDoc) := false,  // disable scaladoc due to bug handling annotations
-  scalaVersion                := "2.12.3",
+  scalaVersion                := "2.12.3", //"2.13.0-M2",
   coverageMinimum             := 92,  // really this should be 96% but mongo isn't quite up to that yet
   coverageFailOnMinimum       := true,
   ScalariformKeys.preferences := ScalariformKeys.preferences.value
@@ -85,9 +85,9 @@ lazy val scalajack = project.in(file("core"))
   .settings(libraryDependencies ++=
     Seq("org.scala-lang" % "scala-reflect" % scalaVersion.value) ++
     Seq("org.scala-lang" % "scala-compiler" % scalaVersion.value) ++
-    Seq("org.apache.commons" % "commons-text" % "1.4") ++
-    Seq("org.json4s" %% "json4s-core" % "3.5.4") ++
-    Seq("org.json4s" %% "json4s-native" % "3.5.4" % Test) ++
+    Seq("org.apache.commons" % "commons-text" % "1.6") ++
+    Seq("org.json4s" %% "json4s-core" % "3.6.2") ++ // "3.6.0-M2"
+    Seq("org.json4s" %% "json4s-native" % "3.6.2" % Test) ++
       test(scalatest)
   )
 

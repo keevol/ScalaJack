@@ -83,8 +83,8 @@ class CSVTests() extends FunSpec with Matchers {
       it("Renders Some() - empty string") {
         val inst = Maybe("yes", Some(""), true)
         val csv = sj.render(inst)
-        assertResult("""yes,,true""") { csv }
-        assertResult(Maybe("yes", None, true)) {
+        assertResult("""yes,"",true""") { csv }
+        assertResult(Maybe("yes", Some(""), true)) {
           sj.read[Maybe](csv)
         }
       }
@@ -139,16 +139,16 @@ class CSVTests() extends FunSpec with Matchers {
       it("Renders null (empty field) - nullable 2") {
         val inst = Strings("", null, "three")
         val csv = sj.render(inst)
-        assertResult(",,three") { csv }
-        assertResult(Strings(null, null, "three")) { // null converts to empty String
+        assertResult(""""",,three""") { csv }
+        assertResult(Strings("", null, "three")) { // null converts to empty String
           sj.read[Strings](csv)
         }
       }
       it("Renders null (empty field) - nullable 3") {
         val inst = Strings("", "two", null)
         val csv = sj.render(inst)
-        assertResult(",two,") { csv }
-        assertResult(Strings(null, "two", null)) { // null converts to empty String
+        assertResult(""""",two,""") { csv }
+        assertResult(Strings("", "two", null)) { // null converts to empty String
           sj.read[Strings](csv)
         }
       }

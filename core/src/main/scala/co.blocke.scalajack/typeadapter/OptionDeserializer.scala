@@ -1,7 +1,7 @@
 package co.blocke.scalajack
 package typeadapter
 
-class OptionDeserializer[T](next: Deserializer[T]) extends Deserializer[Option[T]] {
+class OptionDeserializer[T](next: Deserializer[T])(implicit tt: TypeTag[T]) extends Deserializer[Option[T]] {
 
   private val SomeTypeConstructor: Type = typeOf[Some[_]].typeConstructor
   private val TaggedNone: TypeTagged[None.type] = TypeTagged(None, typeOf[None.type])
@@ -21,7 +21,20 @@ class OptionDeserializer[T](next: Deserializer[T]) extends Deserializer[Option[T
       case AstNull() =>
         DeserializationSuccess(TaggedNone)
       case AstString(s) if (s == "") =>
-        DeserializationSuccess(TaggedNone)
+        // Handle empty string.  If T is String type then conjure up Some("") else morph "" into None
+        typeOf[T] match {
+          case t if t == typeOf[String] && !guidance.isMapKey =>
+            next.deserialize(path, ast) map {
+              case tagged @ TypeTagged(value) =>
+                Option(value) match {
+                  case None =>
+                    TaggedNone
+                  case some @ Some(_) =>
+                    new TaggedSome(some, tagged)
+                }
+            }
+          case _ => DeserializationSuccess(TaggedNone)
+        }
       case _ =>
         next.deserialize(path, ast) map {
           case tagged @ TypeTagged(value) =>

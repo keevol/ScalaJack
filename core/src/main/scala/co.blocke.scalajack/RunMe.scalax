@@ -1,0 +1,44 @@
+package co.blocke.scalajack
+
+import co.blocke.scalajack.csv._
+
+case class Maybe(one: String, two: Option[String], three: Boolean)
+
+object RunMe extends App {
+
+  val sj = ScalaJack(CSVFlavor())
+
+  val inst = Maybe("yes", Some("This,test"), true)
+  val csv = sj.render(inst)
+  val i1 = sj.read[Maybe](csv)
+  // renders: yes,"This,test",true
+
+  val inst2 = Maybe("yes", Some(""), true)
+  val csv2 = sj.render(inst2)
+  val i2 = sj.read[Maybe](csv2)
+  // renders: yes,"",true
+
+  val inst3 = Maybe("yes", None, true)
+  val csv3 = sj.render(inst3)
+  val i3 = sj.read[Maybe](csv3)
+  // renders: yes,,true
+
+  val inst4 = Maybe(null, null, true)
+  val csv4 = sj.render(inst4)
+  val i4 = sj.read[Maybe](csv4)
+  // renders: ,,true
+  // WARNING: Reconstitutes Maybe(null,None,true)
+
+  val inst5 = Maybe("", null, true)
+  val csv5 = sj.render(inst5)
+  val i5 = sj.read[Maybe](csv5)
+  // renders: "",,true
+
+  println(csv + "   -->   "+i1)
+  println(csv2 + "   -->   " + i2)
+  println(csv3 + "   -->   "+i3)
+  println(csv4 + "   -->   "+i4)
+  println(csv5 + "   -->   " + i5)
+
+}
+
