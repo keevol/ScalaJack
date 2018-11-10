@@ -20,10 +20,10 @@ class BigIntDeserializer extends Deserializer[BigInt] {
         })
 
       case AstDouble(doubleValue) =>
-        DeserializationResult(path)(TypeTagged(BigInt(new java.math.BigDecimal(doubleValue).toBigIntegerExact), BigIntType), {
-          case e: ArithmeticException =>
-            DeserializationError.Malformed(e, reportedBy = self)
-        })
+        BigDecimal.apply(doubleValue).toBigIntExact match {
+          case Some(x) => DeserializationSuccess(TypeTagged(x, typeOf[BigInt]))
+          case None    => DeserializationFailure.apply(path, DeserializationError.Malformed(s"Can't create a BigInt from $doubleValue", self))
+        }
 
       case AstString(s) if (guidance.isMapKey) => this.deserialize(path, ops.parse(s.asInstanceOf[S]))(ops, guidance = guidance.copy(isMapKey = false))
 

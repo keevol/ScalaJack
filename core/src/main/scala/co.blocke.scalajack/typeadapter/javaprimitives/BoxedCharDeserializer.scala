@@ -13,8 +13,7 @@ class BoxedCharDeserializer(charDeserializer: Deserializer[Char]) extends Deseri
 
       case _ =>
         charDeserializer.deserialize(path, ast) map {
-          case TypeTaggedChar(charValue) => TypeTagged(java.lang.Character.valueOf(charValue), BoxedCharType)
-          case TypeTagged(charValue)     => TypeTagged(java.lang.Character.valueOf(charValue), BoxedCharType)
+          case TypeTagged(charValue) => TypeTagged(java.lang.Character.valueOf(charValue), BoxedCharType)
         }
     }
 

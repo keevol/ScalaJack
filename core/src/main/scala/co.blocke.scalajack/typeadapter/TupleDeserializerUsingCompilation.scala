@@ -1,6 +1,7 @@
 package co.blocke.scalajack
 package typeadapter
 
+// $COVERAGE-OFF$Experimental
 object Thing {
 
   def main(args: Array[String]): Unit = {
@@ -69,3 +70,5 @@ object TupleDeserializerUsingCompilation {
 trait TupleDeserializerUsingCompilation[Tuple] extends Deserializer[Tuple] {
 
 }
+// $COVERAGE-ON$
+

@@ -13,8 +13,7 @@ class BoxedLongDeserializer(longDeserializer: Deserializer[Long]) extends Deseri
 
       case _ =>
         longDeserializer.deserialize(path, ast) map {
-          case TypeTaggedLong(longValue) => TypeTagged(java.lang.Long.valueOf(longValue), BoxedLongType)
-          case TypeTagged(longValue)     => TypeTagged(java.lang.Long.valueOf(longValue), BoxedLongType)
+          case TypeTagged(longValue) => TypeTagged(java.lang.Long.valueOf(longValue), BoxedLongType)
         }
     }
 

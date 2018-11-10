@@ -13,8 +13,7 @@ class BoxedShortDeserializer(shortDeserializer: Deserializer[Short]) extends Des
 
       case _ =>
         shortDeserializer.deserialize(path, ast) map {
-          case TypeTaggedShort(shortValue) => TypeTagged(java.lang.Short.valueOf(shortValue), BoxedShortType)
-          case TypeTagged(shortValue)      => TypeTagged(java.lang.Short.valueOf(shortValue), BoxedShortType)
+          case TypeTagged(shortValue) => TypeTagged(java.lang.Short.valueOf(shortValue), BoxedShortType)
         }
     }
 

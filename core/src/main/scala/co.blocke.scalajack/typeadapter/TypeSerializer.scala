@@ -11,8 +11,9 @@ class TypeSerializer(typeToTypeName: Type => String = TypeSerializer.typeToTypeN
 
   override def serialize[AST, S](tagged: TypeTagged[Type])(implicit ops: AstOps[AST, S], guidance: SerializationGuidance): SerializationResult[AST] =
     tagged match {
-      case TypeTagged(null) => SerializationSuccess(AstNull())
-      case TypeTagged(tpe)  => SerializationSuccess(AstString(typeToTypeName(tpe)))
+      // Is there such a thing as a null type?  Not sure Scala lets you set a type to null...
+      //      case TypeTagged(null) => SerializationSuccess(AstNull())
+      case TypeTagged(tpe) => SerializationSuccess(AstString(typeToTypeName(tpe)))
     }
 
 }

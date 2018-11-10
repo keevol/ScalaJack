@@ -182,6 +182,10 @@ class CSVTests() extends FunSpec with Matchers {
         the[java.lang.UnsupportedOperationException] thrownBy
           ScalaJack(CSVFlavor()).withHints(null.asInstanceOf[(Type, String)]) should have message "Not available for CSV formatting"
       }
+      it("No withSecondLookParsing") {
+        the[java.lang.UnsupportedOperationException] thrownBy
+          ScalaJack(CSVFlavor()).withSecondLookParsing() should have message "Not available for CSV formatting"
+      }
       it("No withHintModifiers") {
         the[java.lang.UnsupportedOperationException] thrownBy
           ScalaJack(CSVFlavor()).withHintModifiers(null.asInstanceOf[(Type, HintModifier)]) should have message "Not available for CSV formatting"

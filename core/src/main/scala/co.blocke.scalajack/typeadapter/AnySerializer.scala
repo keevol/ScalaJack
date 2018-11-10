@@ -34,8 +34,6 @@ class AnySerializer(
 
       case TypeTagged(value) =>
         val valueType = staticClass(value.getClass.getName).toType
-        //    val valueType = currentMirror.reflectClass(currentMirror.classSymbol(value.getClass)).symbol.info
-        //    val valueType = currentMirror.reflect(value)(ClassTag(value.getClass)).symbol.info
 
         val valueSerializer = context.serializer(valueType).asInstanceOf[Serializer[Any]]
 

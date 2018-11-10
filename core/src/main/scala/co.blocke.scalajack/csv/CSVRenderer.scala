@@ -17,6 +17,8 @@ trait CSVRenderer extends Renderer[String] {
           builder.append(fieldRender(element))
         })
         builder.result
+      case _ =>
+        throw new SerializationException(SerializationFailure(SerializationError.ExceptionThrown(new UnsupportedOperationException(s"CSV serialization of input of type ${ast} is unsupported."))))
     }
 
   private def fieldRender[AST](ast: AST)(implicit ops: AstOps[AST, String]): String = {

@@ -97,14 +97,6 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         dbo.toJson should equal("""{ "a" : "A", "b" : 1.23, "c" : 15, "d" : 3 }""")
         mongoScalaJack.read[Loose](dbo) should equal(inst)
       }
-      it("DateTime support") {
-        val t = OffsetDateTime.parse("2018-10-30T18:04:58.874-05:00")
-        val thing = JodaThing("Foo", t, List(t, t, null.asInstanceOf[OffsetDateTime]), Some(t))
-        val dbo = mongoScalaJack.render(thing)
-        dbo.toJson should equal("""{ "name" : "Foo", "dt" : { "$date" : 1540940698874 }, "many" : [{ "$date" : 1540940698874 }, { "$date" : 1540940698874 }, null], "maybe" : { "$date" : 1540940698874 } }""")
-        val b = mongoScalaJack.read[JodaThing](dbo)
-        b should equal(thing)
-      }
       it("Must handle a case class with default values - defaults specified") {
         val wd = WithDefaults("Greg", 49, Some(5), Some(false), GrumpyPet(Cat("Fluffy"), "fish"))
         val dbo = mongoScalaJack.render(wd)

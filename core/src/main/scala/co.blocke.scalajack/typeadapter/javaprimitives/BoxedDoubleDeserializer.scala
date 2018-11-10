@@ -13,8 +13,7 @@ class BoxedDoubleDeserializer(doubleDeserializer: Deserializer[Double]) extends 
 
       case _ =>
         doubleDeserializer.deserialize(path, ast) map {
-          case TypeTaggedDouble(doubleValue) => TypeTagged(java.lang.Double.valueOf(doubleValue), BoxedDoubleType)
-          case TypeTagged(doubleValue)       => TypeTagged(java.lang.Double.valueOf(doubleValue), BoxedDoubleType)
+          case TypeTagged(doubleValue) => TypeTagged(java.lang.Double.valueOf(doubleValue), BoxedDoubleType)
         }
     }
 

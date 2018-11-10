@@ -22,28 +22,24 @@ import scala.reflect.ClassTag
 object TypeAdapter {
 
   abstract class ===[X](implicit ttFactory: TypeTag[X]) extends TypeAdapterFactory.===[X] with TypeAdapter[X] {
-
     override def create(next: TypeAdapterFactory)(implicit context: Context, tt: TypeTag[X]): TypeAdapter[X] = this
-
   }
 
   abstract class =:=[X](implicit ttFactory: TypeTag[X]) extends TypeAdapterFactory.=:=[X] with TypeAdapter[X] {
-
     override def create(next: TypeAdapterFactory)(implicit context: Context, tt: TypeTag[X]): TypeAdapter[X] = this
-
   }
 
+  /*  This doesn't appear to be used/needed at the moment?
   object =:= {
-
-    class constant[X](tagged: TypeTagged[X])(implicit ttFactory: TypeTag[X]) extends TypeAdapter.=:=[X] {
-      override val deserializer: Deserializer[X] = Deserializer.constant(tagged)
-      override val serializer: Serializer[X] = new Serializer[X] {
-        override def serialize[AST, S](tagged: TypeTagged[X])(implicit ops: AstOps[AST, S], guidance: SerializationGuidance): SerializationResult[AST] =
-          throw new UnsupportedOperationException(s"TypeAdapter.=:=.constant[${ttFactory.tpe}](...).serializer.serialize")
-      }
-    }
-
+        class constant[X](tagged: TypeTagged[X])(implicit ttFactory: TypeTag[X]) extends TypeAdapter.=:=[X] {
+          override val deserializer: Deserializer[X] = Deserializer.constant(tagged)
+          override val serializer: Serializer[X] = new Serializer[X] {
+            override def serialize[AST, S](tagged: TypeTagged[X])(implicit ops: AstOps[AST, S], guidance: SerializationGuidance): SerializationResult[AST] =
+              throw new UnsupportedOperationException(s"TypeAdapter.=:=.constant[${ttFactory.tpe}](...).serializer.serialize")
+          }
+        }
   }
+  */
 
   def apply[T](deserializer: Deserializer[T], serializer: Serializer[T]): TypeAdapter[T] = Fixed(deserializer, serializer)
 
@@ -81,8 +77,10 @@ trait TypeAdapter[T] {
       throw new NotImplementedError(s"$self.serializer.serialize")
   }
 
-  def andThen[U](f: BijectiveFunction[T, U])(implicit context: Context, ttB: TypeTag[U]): TransformedTypeAdapter[T, U] =
-    TransformedTypeAdapter(this, f)
+  // --- This doesn't appear to be used.  It had an intention (TransformedTypeAdapter), but even in that code, the function f
+  //     is never called!  Something looks like it was never fully realized.
+  //  def andThen[U](f: BijectiveFunction[T, U])(implicit context: Context, ttB: TypeTag[U]): TransformedTypeAdapter[T, U] =
+  //    TransformedTypeAdapter(this, f)
 
   // $COVERAGE-OFF$Tested in concrete classes, not here
   def defaultValue: Option[T] = None

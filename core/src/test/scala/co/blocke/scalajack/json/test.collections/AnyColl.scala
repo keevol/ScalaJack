@@ -56,5 +56,9 @@ class AnyColl() extends FunSpec with Matchers {
         sj.read[Any](js)
       }
     }
+    it("Map works from list of key/value pairs") {
+      val js = """[["a",1],["b",2],["c",3]]"""
+      sj.read[Map[String, Int]](js) should be(Map("a" -> 1, "b" -> 2, "c" -> 3))
+    }
   }
 }

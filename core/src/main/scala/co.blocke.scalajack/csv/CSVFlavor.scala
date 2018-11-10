@@ -81,7 +81,9 @@ case class CSVFlavor() extends {
           case AstNull()   => ""
           case _           => ""
         }
+      // $COVERAGE-OFF$SerializationFailure not fully socialized
       case SerializationFailure(f) if f == Seq(SerializationError.Nothing) => ""
+      // $COVERAGE-ON$
     }
   }
 
@@ -98,7 +100,9 @@ case class CSVFlavor() extends {
   def dematerialize[T](t: T)(implicit tt: TypeTag[T]): JValue = {
     context.typeAdapterOf[T].serializer.serialize(TypeTagged(t, typeOf[T]))(Json4sOps.asInstanceOf[AstOps[JValue, String]], guidance) match {
       case SerializationSuccess(ast)     => ast
+      // $COVERAGE-OFF$SerializationFailure not fully socialized
       case fail: SerializationFailure[_] => throw new SerializationException(fail)
+      // $COVERAGE-ON$
     }
   }
 }

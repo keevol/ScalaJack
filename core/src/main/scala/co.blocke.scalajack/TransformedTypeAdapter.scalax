@@ -1,5 +1,7 @@
 package co.blocke.scalajack
 
+// This class is deactivated but kept for now.  There was some intention here, but not sure what it was.
+
 case class TransformedTypeAdapter[A, B](
     typeAdapter: TypeAdapter[A],
     f:           BijectiveFunction[A, B])(implicit context: Context, ttB: TypeTag[B]) extends TypeAdapter[B] {

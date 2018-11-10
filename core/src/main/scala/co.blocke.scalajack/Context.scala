@@ -84,6 +84,8 @@ case class Context(defaultHint: String = "", factories: List[TypeAdapterFactory]
     @volatile
     private var phase: Phase = Uninitialized
 
+    override def toString(): String = tpe.toString()
+
     def typeAdapter: TypeAdapter[_] = {
       val attempt =
         phase match {
@@ -103,7 +105,6 @@ case class Context(defaultHint: String = "", factories: List[TypeAdapterFactory]
                     val head :: tail = factories
                     head.typeAdapterOf(next = TypeAdapterFactory(tail))(context, tt)
                   }
-
                   phase = Initialized(typeAdapterAttempt)
 
                   typeAdapterAttempt

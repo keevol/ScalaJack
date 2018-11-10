@@ -2,6 +2,7 @@ package co.blocke.scalajack
 
 import scala.tools.reflect.{ FrontEnd, ToolBox }
 
+//$COVERAGE-OFF$Experimental
 object ScalaCompiler {
 
   //  private lazy val toolBox = scala.tools.reflect.ToolBox(currentMirror).mkToolBox()
@@ -43,3 +44,4 @@ object ScalaCompiler {
   }
 
 }
+//$COVERAGE-ON

@@ -1,5 +1,23 @@
 package co.blocke.scalajack
 
+/*
+ All these comparators are confusing!  So let's define them...  First some setting:
+
+ type Phone = String
+ trait Foo
+ class Bar() extends Foo
+ class Blah() extends Foo
+ class Other() extends Bar
+
+ A === B -> Type A exactly matches type B.  Phone === String is false.
+
+ A =:= B -> Type A can be implicitly converted to type B.   Phone =:= String is true
+
+ A <:< B -> Type A is a subtype of type B (e.g. inheritance).   Other <:< Bar is true
+
+ In this examples Bar and Blah have no relation at all to each other--no comparison matches.
+
+ */
 object TypeAdapterFactory {
 
   def apply(factories: List[TypeAdapterFactory]): TypeAdapterFactory =
@@ -37,12 +55,19 @@ object TypeAdapterFactory {
 
     def create(next: TypeAdapterFactory)(implicit context: Context, tt: TypeTag[X]): TypeAdapter[X]
 
-    override def typeAdapterOf[T](next: TypeAdapterFactory)(implicit context: Context, tt: TypeTag[T]): TypeAdapter[T] =
-      if (tt.tpe == ttFactory.tpe) { // FIXME ensure this is the correct comparison
+    override def typeAdapterOf[T](next: TypeAdapterFactory)(implicit context: Context, tt: TypeTag[T]): TypeAdapter[T] = {
+      //      println("TA " + ttFactory.tpe + " trying to match " + tt.tpe)
+      if (tt.tpe.toString == ttFactory.tpe.toString) {
+
+        //        if (tt.tpe.typeSymbol == ttFactory.tpe.typeSymbol) {  DIDN't WORK
+        //    if (tt.tpe == ttFactory.tpe) { // FIXME ensure this is the correct comparison
+
+        //        println("  *** MATCHED!")
         create(next)(context, tt.asInstanceOf[TypeTag[X]]).asInstanceOf[TypeAdapter[T]]
       } else {
         next.typeAdapterOf[T]
       }
+    }
 
   }
 
@@ -52,7 +77,7 @@ object TypeAdapterFactory {
 
       def create[E, T <: X[E]](next: TypeAdapterFactory)(implicit context: Context, tt: TypeTag[T], ttX: TypeTag[X[E]], ttElement: TypeTag[E]): TypeAdapter[T]
 
-      override def typeAdapterOf[T](next: TypeAdapterFactory)(implicit context: Context, tt: TypeTag[T]): TypeAdapter[T] =
+      override def typeAdapterOf[T](next: TypeAdapterFactory)(implicit context: Context, tt: TypeTag[T]): TypeAdapter[T] = {
         if (tt.tpe == ttFactory.tpe) {
           type E = Any
           type TT = X[E]
@@ -61,6 +86,7 @@ object TypeAdapterFactory {
         } else {
           next.typeAdapterOf[T]
         }
+      }
 
     }
 
@@ -89,8 +115,10 @@ object TypeAdapterFactory {
 
     override def typeAdapterOf[T](next: TypeAdapterFactory)(implicit context: Context, tt: TypeTag[T]): TypeAdapter[T] =
       if (tt.tpe =:= ttFactory.tpe) {
+        //        println("TA " + ttFactory.tpe + " accepted " + tt.tpe)
         create(next)(context, tt.asInstanceOf[TypeTag[X]]).asInstanceOf[TypeAdapter[T]]
       } else {
+        //        println("TA " + ttFactory.tpe + " rejected " + tt.tpe)
         next.typeAdapterOf[T]
       }
 

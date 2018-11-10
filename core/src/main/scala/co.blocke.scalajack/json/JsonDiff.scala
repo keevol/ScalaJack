@@ -1,7 +1,7 @@
 package co.blocke.scalajack
 package json
 
-import org.json4s.JsonAST.{ JArray, JNothing, JObject, JValue }
+import org.json4s.JsonAST.{ JNothing, JObject, JValue }
 
 object JsonDiff {
 
@@ -15,12 +15,15 @@ object JsonDiff {
           compare(path \ fieldName, leftFieldValue, rightFieldValue, leftLabel, rightLabel)
         }
 
-      case (JArray(leftElements), JArray(rightElements)) =>
-        (0 until (leftElements.size max rightElements.size)) flatMap { elementIndex =>
-          val leftElement = leftElements.applyOrElse(elementIndex, (_: Int) => JNothing)
-          val rightElement = rightElements.applyOrElse(elementIndex, (_: Int) => JNothing)
-          compare(path \ elementIndex, leftElement, rightElement, leftLabel, rightLabel)
-        }
+      // ---- Not used/needed at present, and I have questions about the correct behavior here.  Exactly how do you
+      //      "diff" two arrays (not necessarily homogeneous typed)?
+      //
+      //      case (JArray(leftElements), JArray(rightElements)) =>
+      //        (0 until (leftElements.size max rightElements.size)) flatMap { elementIndex =>
+      //          val leftElement = leftElements.applyOrElse(elementIndex, (_: Int) => JNothing)
+      //          val rightElement = rightElements.applyOrElse(elementIndex, (_: Int) => JNothing)
+      //          compare(path \ elementIndex, leftElement, rightElement, leftLabel, rightLabel)
+      //        }
 
       case _ =>
         if (left == right) {

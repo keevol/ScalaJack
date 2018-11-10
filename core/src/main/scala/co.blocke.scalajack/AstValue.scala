@@ -57,6 +57,9 @@ object AstArray {
   @inline final def apply[AST, S](build: (AST => Unit) => Unit)(implicit ops: AstOps[AST, S]): AST =
     ops.applyArray(build)
 
+  //  @inline final def apply[AST, S](elements: List[AST])(implicit ops: AstOps[AST, S]): AST =
+  //    ops.applyArray(elements)
+
   @inline final def unapply[AST, S](ast: AST)(implicit ops: AstOps[AST, S]): Option[ops.ArrayElements] =
     ops.unapplyArray(ast)
 

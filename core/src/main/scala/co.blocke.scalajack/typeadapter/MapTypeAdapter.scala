@@ -21,9 +21,9 @@ object MapTypeAdapter extends TypeAdapterFactory.<:<.withTwoTypeParams[GenMap] {
         def newBuilder(): mutable.Builder[(K, V), M] = canBuildFrom()
 
         val mapDeserializer = new MapDeserializer[K, V, M](
-          keyDeserializer   = keyTypeAdapter.deserializer,
-          valueDeserializer = valueTypeAdapter.deserializer,
-          null,
+          keyDeserializer           = keyTypeAdapter.deserializer,
+          valueDeserializer         = valueTypeAdapter.deserializer,
+          keyValuePairsDeserializer = context.typeAdapterOf[List[Tuple2[K, V]]].deserializer,
           () => newBuilder)
 
         val mapSerializer = new MapSerializer[K, V, M](

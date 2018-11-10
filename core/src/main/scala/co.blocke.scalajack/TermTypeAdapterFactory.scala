@@ -17,8 +17,9 @@ class TermTypeAdapter[T](override val deserializer: Deserializer[T], override va
 
   self =>
 
-  override def as[U <: TypeAdapter[_]: ClassTag]: U =
-    maybeAs[U].getOrElse(throw new RuntimeException(s"Neither $self nor $next is an instance of ${implicitly[ClassTag[U]].runtimeClass}"))
+  // ----Apparently not used/needed!
+  //  override def as[U <: TypeAdapter[_]: ClassTag]: U =
+  //    maybeAs[U].getOrElse(throw new RuntimeException(s"Neither $self nor $next is an instance of ${implicitly[ClassTag[U]].runtimeClass}"))
 
   override def maybeAs[U <: TypeAdapter[_]: ClassTag]: Option[U] =
     super.maybeAs orElse next.maybeAs[U]

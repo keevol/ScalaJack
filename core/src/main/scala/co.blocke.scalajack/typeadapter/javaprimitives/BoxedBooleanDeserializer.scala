@@ -13,8 +13,7 @@ class BoxedBooleanDeserializer(booleanDeserializer: Deserializer[Boolean]) exten
 
       case _ =>
         booleanDeserializer.deserialize(path, ast) map {
-          case TypeTaggedBoolean(booleanValue) => TypeTagged(java.lang.Boolean.valueOf(booleanValue), BoxedBooleanType)
-          case TypeTagged(booleanValue)        => TypeTagged(java.lang.Boolean.valueOf(booleanValue), BoxedBooleanType)
+          case TypeTagged(booleanValue) => TypeTagged(java.lang.Boolean.valueOf(booleanValue), BoxedBooleanType)
         }
     }
 

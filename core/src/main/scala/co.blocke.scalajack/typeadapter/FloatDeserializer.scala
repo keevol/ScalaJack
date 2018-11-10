@@ -12,7 +12,7 @@ class FloatDeserializer extends Deserializer[Float] {
           case e: ArithmeticException =>
             DeserializationError.Malformed(e, reportedBy = self)
         })
-      case AstDecimal(_) => DeserializationFailure(path, DeserializationError.Unexpected("XFloat value out of range", reportedBy = self))
+      case AstDecimal(_) => DeserializationFailure(path, DeserializationError.Unexpected("Float value out of range", reportedBy = self))
 
       case AstDouble(doubleValue) =>
         DeserializationResult(path)(TypeTagged(doubleValue.toFloat), {

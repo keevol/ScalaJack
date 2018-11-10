@@ -13,8 +13,7 @@ class BoxedByteDeserializer(byteDeserializer: Deserializer[Byte]) extends Deseri
 
       case _ =>
         byteDeserializer.deserialize(path, ast) map {
-          case TypeTaggedByte(byteValue) => TypeTagged(java.lang.Byte.valueOf(byteValue), BoxedByteType)
-          case TypeTagged(byteValue)     => TypeTagged(java.lang.Byte.valueOf(byteValue), BoxedByteType)
+          case TypeTagged(byteValue) => TypeTagged(java.lang.Byte.valueOf(byteValue), BoxedByteType)
         }
     }
 

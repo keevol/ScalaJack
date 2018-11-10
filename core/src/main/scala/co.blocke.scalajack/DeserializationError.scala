@@ -18,7 +18,9 @@ object DeserializationError {
     override def message: String = s"Exception was thrown: $exception"
     override def reportedBy: Deserializer[_] = new Deserializer[Any] { // bogus Deserializer...exists to print "unnown" in error message
       override def toString: String = "unknown"
+      // $COVERAGE-OFF$Never used
       def deserialize[AST, S](path: Path, ast: AST)(implicit ops: AstOps[AST, S], guidance: SerializationGuidance): DeserializationResult[Any] = ???
+      // $COVERAGE-ON$
     }
   }
 

@@ -13,8 +13,7 @@ class BoxedFloatDeserializer(floatDeserializer: Deserializer[Float]) extends Des
 
       case _ =>
         floatDeserializer.deserialize(path, ast) map {
-          case TypeTaggedFloat(floatValue) => TypeTagged(java.lang.Float.valueOf(floatValue), BoxedFloatType)
-          case TypeTagged(floatValue)      => TypeTagged(java.lang.Float.valueOf(floatValue), BoxedFloatType)
+          case TypeTagged(floatValue) => TypeTagged(java.lang.Float.valueOf(floatValue), BoxedFloatType)
         }
     }
 

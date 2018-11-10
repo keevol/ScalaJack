@@ -13,8 +13,7 @@ class BoxedIntDeserializer(intDeserializer: Deserializer[Int]) extends Deseriali
 
       case _ =>
         intDeserializer.deserialize(path, ast) map {
-          case TypeTaggedInt(intValue) => TypeTagged(java.lang.Integer.valueOf(intValue), BoxedIntType)
-          case TypeTagged(intValue)    => TypeTagged(java.lang.Integer.valueOf(intValue), BoxedIntType)
+          case TypeTagged(intValue) => TypeTagged(java.lang.Integer.valueOf(intValue), BoxedIntType)
         }
     }
 

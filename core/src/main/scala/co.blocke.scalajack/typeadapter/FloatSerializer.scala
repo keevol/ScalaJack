@@ -12,8 +12,7 @@ class FloatSerializer extends Serializer[Float] {
 
   override def serialize[AST, S](tagged: TypeTagged[Float])(implicit ops: AstOps[AST, S], guidance: SerializationGuidance): SerializationResult[AST] = {
     tagged match {
-      case TypeTaggedFloat(floatValue) => SerializationSuccess(AstDouble(capFloat(floatValue)))
-      case TypeTagged(floatValue)      => SerializationSuccess(AstDouble(capFloat(floatValue)))
+      case TypeTagged(floatValue) => SerializationSuccess(AstDouble(capFloat(floatValue)))
     }
   }
 

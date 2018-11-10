@@ -5,15 +5,15 @@ import scala.collection.generic.CanBuildFrom
 
 object CanBuildFroms {
 
-  def main(args: Array[String]): Unit = {
-    val entries = CanBuildFroms.to[Map[_, _]]
-
-    for (entry <- entries) {
-      println(entry.canBuildFrom.apply().result())
-    }
-
-    println(entries)
-  }
+  //  def main(args: Array[String]): Unit = {
+  //    val entries = CanBuildFroms.to[Map[_, _]]
+  //
+  //    for (entry <- entries) {
+  //      println(entry.canBuildFrom.apply().result())
+  //    }
+  //
+  //    println(entries)
+  //  }
 
   trait Entry[To] {
 

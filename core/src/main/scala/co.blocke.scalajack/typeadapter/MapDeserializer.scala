@@ -98,7 +98,7 @@ class MapDeserializer[K, V, M <: GenMap[K, V]](
           new TaggedMapFromAstArray(map)
         }
 
-      case AstString(s) => // Parse and deserialize non-string Map key (embedded in a string, e.g. Map as a key to another Map)
+      case AstString(s) if (guidance.isMapKey) => // Parse and deserialize non-string Map key (embedded in a string, e.g. Map as a key to another Map)
         val deserializer = context.typeAdapterOf[M].deserializer
         deserializer.deserialize(Path.Root, ops.parse(s.asInstanceOf[S]))
 
