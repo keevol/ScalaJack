@@ -7,16 +7,20 @@ import org.bson._
 import org.mongodb.scala.bson.collection.immutable.Document
 import org.mongodb.scala.MongoClient
 
+import co.blocke.scalajack.json.{ Json4sOps, Json4sOpsBase }
+import org.json4s.JsonAST.JValue
+
 trait BsonParser extends Parser[Document] {
-  def _parse[AST](source: Document)(implicit ops: AstOps[AST, Document]): Option[AST] =
+  def _parse[AST](source: Document)(implicit ops: AstOps[AST, BsonValue]): Option[AST] =
     Some(source.toBsonDocument(classOf[BsonDocument], MongoClient.DEFAULT_CODEC_REGISTRY).asInstanceOf[AST])
 }
 
-trait BsonRenderer extends Renderer[Document] {
+trait BsonRenderer extends Renderer[BsonValue] {
   def _renderCompact[AST](ast: AST, sj: ScalaJackLike[_, _])(implicit ops: AstOps[AST, Document]): Document =
     Document(ast.asInstanceOf[BsonValue].asDocument)
 }
 
+/*
 trait BsonBase extends AstBase[BsonValue] {
 
   override type ArrayElements = BsonArray
@@ -122,5 +126,8 @@ trait BsonBase extends AstBase[BsonValue] {
   override def isArray(bson: BsonValue): Boolean = bson.isInstanceOf[BsonArray]
 
 }
+*/
 
-object BsonOps extends AstOps[BsonValue, Document] with BsonBase with BsonParser with BsonRenderer
+object BsonOps extends AstOps[JValue, BsonValue] with Json4sOpsBase with BsonParser with BsonRenderer
+
+//object BsonOps extends AstOps[BsonValue, Document] with BsonBase with BsonParser with BsonRenderer

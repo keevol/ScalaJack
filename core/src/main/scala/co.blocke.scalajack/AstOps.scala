@@ -69,6 +69,7 @@ trait AstBase[AST] {
   }
 
   def getObjectField(fields: ObjectFields, name: String): Option[AST]
+  def getArrayElement(arr: ArrayElements, index: Int): Option[AST]
 
   // (for SJCapture) Partition out fields we care about (those in the class) from those we just want to capture and hold "raw"
   def partitionObjectFields(fields: ObjectFields, fieldNames: List[String]): (ObjectFields, ObjectFields)

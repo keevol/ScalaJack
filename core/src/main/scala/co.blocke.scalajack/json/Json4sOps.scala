@@ -22,6 +22,8 @@ trait Json4sOpsBase extends AstBase[JValue] {
 
   override def getObjectField(fields: ObjectFields, name: String): Option[JValue] =
     fields.obj.find(_._1 == name).map(_._2).filter(_ != JNothing)
+  override def getArrayElement(arr: ArrayElements, index: Int): Option[JValue] =
+    if (arr.values.size < index && index >= 0) Some(arr(index)) else None
 
   override def partitionObjectFields(fields: ObjectFields, fieldNames: List[String]): (ObjectFields, ObjectFields) = {
     val (a, b) = fields.obj.partition(f => fieldNames.contains(f._1))

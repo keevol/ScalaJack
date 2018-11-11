@@ -1,0 +1,25 @@
+
+
+	Type Adapter...
+
+            ---------------------- -> render ---------------->
+			----> dematerialize ---->       -----> emit ----->
+	 object                            AST                      product
+	        <---- materialize <------       <----- parse <----
+	        <------------------------ read <------------------
+
+
+	AST has only type primitives:
+
+		Array
+		Boolean
+		Decimal
+		Double
+		Int
+		Long
+		Null
+		Object
+		String
+
+
+	TypeAdapter operations need to come from these primitives
