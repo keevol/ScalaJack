@@ -42,14 +42,14 @@ class CSVTests() extends FunSpec with Matchers {
         val csv = """123.45,123,true,64,Z,12.34,Large,12.34,5,5,54cab778-7b9e-4b07-9d37-87b97a011e55"""
         val msg = """DeserializationException(1 error):
                     |  [$.u] Required field missing (reported by: co.blocke.scalajack.typeadapter.UUIDDeserializer)""".stripMargin
-        the[DeserializationException] thrownBy
+        the[ReadException] thrownBy
           sj.read[BasicScala](csv) should have message msg
       }
       it("Fails when types of CSV field don't match ordered case class constructor arguments") {
         val csv = """123.45,"m123",true,64,Z,12.34,Large,12.34,5,5,wow,54cab778-7b9e-4b07-9d37-87b97a011e55"""
         val msg = """DeserializationException(1 error):
                     |  [$.bi] Expected a JSON number (integer value) (reported by: co.blocke.scalajack.typeadapter.BigIntDeserializer)""".stripMargin
-        the[DeserializationException] thrownBy
+        the[ReadException] thrownBy
           sj.read[BasicScala](csv) should have message msg
       }
     }

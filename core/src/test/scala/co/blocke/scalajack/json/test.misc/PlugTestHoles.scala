@@ -47,7 +47,7 @@ class PlugTestHoles extends FunSpec {
             }
             (fname, fixed)
         })
-        assertThrows[DeserializationException] {
+        assertThrows[ReadException] {
           sjCsv.materialize[Strs](yyy)
         }
         sjCsv.render(Strs(null, "a", "b")) should be(",a,b")
@@ -114,12 +114,12 @@ class PlugTestHoles extends FunSpec {
       it("'No errors' Failure (DeserializationException)") {
         // pick up some other test cases--from DeserializationResult actually, but hey...we're here
         val df = DeserializationFailure(Path.Root)
-        the[DeserializationException] thrownBy df.get should have message "DeserializationException(no errors)"
+        the[ReadException] thrownBy df.get should have message "DeserializationException(no errors)"
         val success = DeserializationSuccess(TypeTagged("x", typeOf[String]))
         df.flatMap(_ => success) should be(df.asInstanceOf[DeserializationResult[_]])
 
         df.isSuccess should be(false)
-        val fail = new DeserializationException(df)
+        val fail = new ReadException(df)
         fail.getMessage should be("DeserializationException(no errors)")
       }
       it("DeferredDeserializerReference") {
@@ -138,7 +138,7 @@ class PlugTestHoles extends FunSpec {
         z.toString should be("DeserializationFailure(Vector(($,Exception was thrown: java.lang.ArithmeticException: / by zero (reported by: unknown))))")
 
         val z2 = DeserializationResult.trapExceptions(Path.Root) {
-          throw new DeserializationException(DeserializationFailure(Path.Root))
+          throw new ReadException(DeserializationFailure(Path.Root))
           val x = "abc123".toLong
           val y = 1
           DeserializationSuccess(TypeTagged(y, typeOf[Int]))
@@ -157,7 +157,7 @@ class PlugTestHoles extends FunSpec {
         z3.toString should be("DeserializationFailure(Vector(($,Exception was thrown: java.lang.ArithmeticException: / by zero (reported by: unknown))))")
         val z4 = DeserializationResult(Path.Root) {
           val x = 0
-          throw new DeserializationException(DeserializationFailure(Path.Root))
+          throw new ReadException(DeserializationFailure(Path.Root))
           val y = 9 / x
           TypeTagged(y, typeOf[Int])
         }
@@ -242,7 +242,7 @@ class PlugTestHoles extends FunSpec {
         implicit val ops = Json4sOps
         implicit val guidance = SerializationGuidance()
         val ser = sj.context.typeAdapterOf[String].serializer
-        val ref = new SerializerReference(ser)
+        val ref = new IRTransceiverReference(ser)
         ref.toString.startsWith("SerializerReference(co.blocke.scalajack.TermSerializer@") should be(true)
         ref.referencedSerializer should be(ser)
         ref.referencedSerializer_=(ser)

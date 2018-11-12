@@ -33,7 +33,7 @@ class MongoCaseClassDeserializer[C](
         if (keyFound)
           Right(resultAST)
         else
-          Left(DeserializationFailure(path, DeserializationError.Unexpected(s"Did not find required db key field (e.g. _id)", this)))
+          Left(DeserializationFailure(path, ReadError.Unexpected(s"Did not find required db key field (e.g. _id)", this)))
       case _ =>
         val fields = scala.collection.mutable.ListBuffer.empty[(String, AST)]
         val keysFound = scala.collection.mutable.ListBuffer.empty[String]
@@ -47,7 +47,7 @@ class MongoCaseClassDeserializer[C](
           Right(ops.applyObject(fields.toList))
         else {
           val missing = dbKeys.map(_.name).diff(keysFound).mkString("[", ",", "]")
-          Left(DeserializationFailure(path, DeserializationError.Unexpected(s"Missing at least one required db key field (e.g. _id) component: $missing", this)))
+          Left(DeserializationFailure(path, ReadError.Unexpected(s"Missing at least one required db key field (e.g. _id) component: $missing", this)))
         }
     }
 

@@ -1,9 +1,11 @@
 package co.blocke.scalajack
 
+/*
 import typeadapter._
 import typeadapter.javatime._
 import typeadapter.javaprimitives._
 import typeadapter.javacollections._
+*/
 
 import scala.reflect.runtime.currentMirror
 import scala.util.{ Success, Try }
@@ -13,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap
 object Context {
 
   val StandardContext = Context()
+  /*
     .withFactory(AstParsingFallbackTypeAdapter)
     .withFactory(TermTypeAdapterFactory)
     .withFactory(TypeParameterTypeAdapter)
@@ -66,6 +69,7 @@ object Context {
     .withFactory(OffsetTimeTypeAdapter)
     .withFactory(PeriodTypeAdapter)
     .withFactory(ZonedDateTimeTypeAdapter)
+    */
 }
 
 case class Context(defaultHint: String = "", factories: List[TypeAdapterFactory] = Nil, sjFlavor: Option[ScalaJackLike[_, _]] = None) {
@@ -134,17 +138,11 @@ case class Context(defaultHint: String = "", factories: List[TypeAdapterFactory]
   def typeAdapterOf[T: TypeTag]: TypeAdapter[T] =
     typeAdapter(implicitly[TypeTag[T]].tpe).asInstanceOf[TypeAdapter[T]]
 
-  def deserializer(tpe: Type): Deserializer[_] =
-    typeAdapter(tpe).deserializer
+  def irTransceiver(tpe: Type): IRTransceiver[_] =
+    typeAdapter(tpe).irTransceiver
 
-  def deserializerOf[T: TypeTag]: Deserializer[T] =
-    typeAdapterOf[T].deserializer
-
-  def serializer(tpe: Type): Serializer[_] =
-    typeAdapter(tpe).serializer
-
-  def serializerOf[T: TypeTag]: Serializer[T] =
-    typeAdapterOf[T].serializer
+  def irTransceiverOf[T: TypeTag]: IRTransceiver[T] =
+    typeAdapterOf[T].irTransceiver
 
   def addTypeAdapterFactories(typeAdapterFactories: TypeAdapterFactory*): Context = copy(factories = typeAdapterFactories.toList ++ factories)
 

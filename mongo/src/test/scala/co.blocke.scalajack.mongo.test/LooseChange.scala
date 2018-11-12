@@ -40,7 +40,7 @@ class LooseChange extends FunSpec {
       val dbo = BsonDocument("name" -> "Fred", "stuff" -> BsonDocument("a" -> BsonJavaScript("code here")))
       val msg = """DeserializationException(1 error):
                   |  [$.stuff.a] Given value is of unknown type: BsonJavaScript{code='code here'} (reported by: co.blocke.scalajack.typeadapter.AnyDeserializer)""".stripMargin
-      the[DeserializationException] thrownBy sjM.read[Something](dbo) should have message msg
+      the[ReadException] thrownBy sjM.read[Something](dbo) should have message msg
     }
     it("No withTypeModifier") {
       the[java.lang.UnsupportedOperationException] thrownBy

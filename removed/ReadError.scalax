@@ -1,0 +1,31 @@
+package co.blocke.scalajack
+
+object ReadError {
+
+  case class Missing(reportedBy: IRTransceiver[_]) extends ReadError {
+    override def message: String = s"Required field missing"
+  }
+
+  case class ExceptionThrown(exception: Throwable) extends ReadError {
+    override def message: String = s"Exception was thrown: $exception"
+    override def reportedBy: IRTransceiver[_] = new IRTransceiver[Any] { // bogus Deserializer...exists to print "unnown" in error message
+      override def toString: String = "unknown"
+    }
+  }
+
+  case class Unsupported(message: String, reportedBy: IRTransceiver[_]) extends ReadError
+  case class Unexpected(message: String, reportedBy: IRTransceiver[_]) extends ReadError
+
+  object Malformed {
+    def apply(cause: Throwable, reportedBy: IRTransceiver[_]): ReadError =
+      new Malformed(message    = cause.getMessage, reportedBy = reportedBy)
+  }
+  case class Malformed(message: String, reportedBy: IRTransceiver[_]) extends ReadError
+
+}
+
+sealed trait ReadError {
+  def message: String
+  def reportedBy: IRTransceiver[_]
+  override def toString: String = s"$message (reported by: ${reportedBy.toString.split('@')(0)})"
+}

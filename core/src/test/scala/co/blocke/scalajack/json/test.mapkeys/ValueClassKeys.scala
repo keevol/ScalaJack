@@ -224,73 +224,73 @@ class ValueClassKeys() extends FunSpec with Matchers {
         val js = """{"m":{"true":56.78}}"""
         val msg = """DeserializationException(1 error):
                     |  [$.m.true] Expected a JSON number, not JBool(true) (reported by: co.blocke.scalajack.typeadapter.BigDecimalDeserializer)""".stripMargin
-        the[DeserializationException] thrownBy sj.read[SampleVCBigDecimal](js) should have message msg
+        the[ReadException] thrownBy sj.read[SampleVCBigDecimal](js) should have message msg
       }
       it("Bad BigInt Key") {
         val js = """{"m":{"12.5":56}}"""
         val msg = """DeserializationException(1 error):
                     |  [$.m.12.5] Rounding necessary (reported by: co.blocke.scalajack.typeadapter.BigIntDeserializer)""".stripMargin
-        the[DeserializationException] thrownBy sj.read[SampleVCBigInt](js) should have message msg
+        the[ReadException] thrownBy sj.read[SampleVCBigInt](js) should have message msg
       }
       it("Bad Byte Key") {
         val js = """{"m":{"12234":56}}"""
         val msg = """DeserializationException(1 error):
                     |  [$.m.12234] Byte value out of range (reported by: co.blocke.scalajack.typeadapter.ByteDeserializer)""".stripMargin
-        the[DeserializationException] thrownBy sj.read[SampleVCByte](js) should have message msg
+        the[ReadException] thrownBy sj.read[SampleVCByte](js) should have message msg
       }
       it("Bad Boolean Key") {
         val js = """{"m":{"1":false}}"""
         val msg = """DeserializationException(1 error):
                     |  [$.m.1] Expected a JSON boolean (reported by: co.blocke.scalajack.typeadapter.BooleanDeserializer)""".stripMargin
-        the[DeserializationException] thrownBy sj.read[SampleVCBoolean](js) should have message msg
+        the[ReadException] thrownBy sj.read[SampleVCBoolean](js) should have message msg
       }
       it("Bad Char Key") {
         val js = """{"m":{"null":"A"}}"""
         val msg = """DeserializationException(1 error):
                     |  [$.m.null] Expected a char (JSON string of length 1), not null (reported by: co.blocke.scalajack.typeadapter.CharDeserializer)""".stripMargin
-        the[DeserializationException] thrownBy sj.read[SampleVCChar](js) should have message msg
+        the[ReadException] thrownBy sj.read[SampleVCChar](js) should have message msg
       }
       it("Bad Double Key") {
         val js = """{"m":{"false":56.78}}"""
         val msg = """DeserializationException(1 error):
                     |  [$.m.false] Expected a JSON number, not JBool(false) (reported by: co.blocke.scalajack.typeadapter.DoubleDeserializer)""".stripMargin
-        the[DeserializationException] thrownBy sj.read[SampleVCDouble](js) should have message msg
+        the[ReadException] thrownBy sj.read[SampleVCDouble](js) should have message msg
       }
       it("Bad Enumeration Key") {
         val js = """{"m":{"\"Bogus\"":"Meat"}}"""
         val msg = """DeserializationException(1 error):
                     |  [$.m."Bogus"] Enumeration co.blocke.scalajack.json.test.mapkeys.Food$ does not contain a value named "Bogus" (reported by: co.blocke.scalajack.typeadapter.EnumerationValueDeserializer)""".stripMargin
-        the[DeserializationException] thrownBy sj.read[SampleVCEnumeration](js) should have message msg
+        the[ReadException] thrownBy sj.read[SampleVCEnumeration](js) should have message msg
       }
       it("Bad Float Key") {
         val js = """{"m":{"hey":56.2}}"""
         val msg = """DeserializationException(1 error):
                     |  [$.m.hey] Expected a JSON number (reported by: co.blocke.scalajack.typeadapter.FloatDeserializer)""".stripMargin
-        the[DeserializationException] thrownBy sj.read[SampleVCFloat](js) should have message msg
+        the[ReadException] thrownBy sj.read[SampleVCFloat](js) should have message msg
       }
       it("Bad Int Key") {
         val js = """{"m":{"12.5":56}}"""
         val msg = """DeserializationException(1 error):
                     |  [$.m.12.5] Expected a JSON int, not JDecimal(12.5) (reported by: co.blocke.scalajack.typeadapter.IntDeserializer)""".stripMargin
-        the[DeserializationException] thrownBy sj.read[SampleVCInt](js) should have message msg
+        the[ReadException] thrownBy sj.read[SampleVCInt](js) should have message msg
       }
       it("Bad Long Key") {
         val js = """{"m":{"12.5":56}}"""
         val msg = """DeserializationException(1 error):
                     |  [$.m.12.5] Expected a JSON number (long) (reported by: co.blocke.scalajack.typeadapter.LongDeserializer)""".stripMargin
-        the[DeserializationException] thrownBy sj.read[SampleVCLong](js) should have message msg
+        the[ReadException] thrownBy sj.read[SampleVCLong](js) should have message msg
       }
       it("Bad Short Key") {
         val js = """{"m":{"12.5":56}}"""
         val msg = """DeserializationException(1 error):
                     |  [$.m.12.5] Expected a JSON number (short), not JDecimal(12.5) (reported by: co.blocke.scalajack.typeadapter.ShortDeserializer)""".stripMargin
-        the[DeserializationException] thrownBy sj.read[SampleVCShort](js) should have message msg
+        the[ReadException] thrownBy sj.read[SampleVCShort](js) should have message msg
       }
       it("Bad UUID Key") {
         val js = """{"m":{"\"bogus\"":"54cab778-7b9e-4b07-9d37-87b97a011e55"}}"""
         val msg = """DeserializationException(1 error):
                     |  [$.m."bogus"] Invalid UUID string: "bogus" (reported by: co.blocke.scalajack.typeadapter.UUIDDeserializer)""".stripMargin
-        the[DeserializationException] thrownBy sj.read[SampleVCUUID](js) should have message msg
+        the[ReadException] thrownBy sj.read[SampleVCUUID](js) should have message msg
       }
     }
     describe("--- Negative Collection Tests ---") {
@@ -298,19 +298,19 @@ class ValueClassKeys() extends FunSpec with Matchers {
         val js = """{"m":{"[1,2,\"a\"]":[4,5,6]}}"""
         val msg = """DeserializationException(1 error):
                     |  [$.m.[1,2,"a"]] Expected a JSON array, not JString([1,2,"a"]) (reported by: co.blocke.scalajack.typeadapter.CollectionDeserializer)""".stripMargin
-        the[DeserializationException] thrownBy sj.read[SampleVCList](js) should have message msg
+        the[ReadException] thrownBy sj.read[SampleVCList](js) should have message msg
       }
       it("Bad Map Key") {
         val js = """{"m":{"{[true]:2}":{"3":4}}}"""
         val msg = """DeserializationException(1 error):
                     |  [$.[true]] Expected a JSON int, not JArray(List(JBool(true))) (reported by: co.blocke.scalajack.typeadapter.IntDeserializer)""".stripMargin
-        the[DeserializationException] thrownBy sj.read[SampleVCMap](js) should have message msg
+        the[ReadException] thrownBy sj.read[SampleVCMap](js) should have message msg
       }
       it("Bad Tupple Key") {
         val js = """{"m":{"[1,\"one\",true,1]":[2,"two",false]}}"""
         val msg = """DeserializationException(1 error):
                     |  [$.m.[1,"one",true,1]] Given JSON has too many elements for tuple (reported by: co.blocke.scalajack.typeadapter.TupleDeserializer)""".stripMargin
-        the[DeserializationException] thrownBy sj.read[SampleVCTuple](js) should have message msg
+        the[ReadException] thrownBy sj.read[SampleVCTuple](js) should have message msg
       }
     }
     describe("--- Negative Complex Tests ---") {
@@ -318,33 +318,33 @@ class ValueClassKeys() extends FunSpec with Matchers {
         val js = """{"m":{"{\"id\":\"1e6c2b31-4dfe-4bf6-a0a0-882caaff0e9c\",\"simple\":{\"bogus\":\"Larry\",\"age\":32,\"isOk\":true,\"favorite\":\"golf\"},\"allDone\":true}":{"id":"1e6c2b31-4dfe-4bf6-a0a0-882caaff0e9d","simple":{"name":"Mike","age":27,"isOk":false,"favorite":125},"allDone":false}}}"""
         val msg = """DeserializationException(1 error):
                     |  [$.simple.name] Required field missing (reported by: co.blocke.scalajack.typeadapter.StringDeserializer)""".stripMargin
-        the[DeserializationException] thrownBy sj.read[SampleVCClass](js) should have message msg
+        the[ReadException] thrownBy sj.read[SampleVCClass](js) should have message msg
       }
       it("Bad Trait Key") {
         val js = """{"m":{"{\"_hint\":\"co.blocke.scalajack.json.test.mapkeys.Bogus\",\"name\":\"Flipper\",\"food\":\"Veggies\",\"waterTemp\":74.33}":{"_hint":"co.blocke.scalajack.json.test.mapkeys.DogPet","name":"Fido","food":"Meat","numLegs":3}}}"""
         val msg = """DeserializationException(1 error):
                     |  [$.m] Exception was thrown: java.lang.ClassNotFoundException: Unable to find class named "co.blocke.scalajack.json.test.mapkeys.Bogus"
                     | (reported by: unknown)""".stripMargin
-        the[DeserializationException] thrownBy sj.read[SampleVCTrait](js) should have message msg
+        the[ReadException] thrownBy sj.read[SampleVCTrait](js) should have message msg
       }
       it("Bad Parameterized Case Class Key") {
         val js = """{"m":{"{\"a\":5.5,\"b\":\"wow\"}":{"a":6,"b":"zoom"}}}"""
         val msg = """DeserializationException(1 error):
                     |  [$.a] Expected a JSON int, not JDecimal(5.5) (reported by: co.blocke.scalajack.typeadapter.IntDeserializer)""".stripMargin
-        the[DeserializationException] thrownBy sj.read[SampleVCParamClass[String, Int]](js) should have message msg
+        the[ReadException] thrownBy sj.read[SampleVCParamClass[String, Int]](js) should have message msg
       }
       it("Bad Parameterized Trait Key") {
         val js = """{"m":{"{\"_hint\":\"co.blocke.scalajack.json.test.mapkeys.ZThing\",\"a\":5,\"b\":\"wow\"}":{"_hint":"co.blocke.scalajack.test.mapkeys.AThing","a":6,"b":"zoom"}}}"""
         val msg = """DeserializationException(1 error):
                     |  [$.m] Exception was thrown: java.lang.ClassNotFoundException: Unable to find class named "co.blocke.scalajack.json.test.mapkeys.ZThing"
                     | (reported by: unknown)""".stripMargin
-        the[DeserializationException] thrownBy sj.read[SampleVCParamTrait[Int, String]](js) should have message msg
+        the[ReadException] thrownBy sj.read[SampleVCParamTrait[Int, String]](js) should have message msg
       }
       it("Bad Nested Collection Key") {
         val js = """{"m":{"[{\"a\":\"b\"},{\"c\":9}]":[{"t":"u"},{"x":"y"}]}}"""
         val msg = """DeserializationException(1 error):
                     |  [$.m.[{"a":"b"},{"c":9}]] Expected a JSON array, not JString([{"a":"b"},{"c":9}]) (reported by: co.blocke.scalajack.typeadapter.CollectionDeserializer)""".stripMargin
-        the[DeserializationException] thrownBy sj.read[SampleVCNested](js) should have message msg
+        the[ReadException] thrownBy sj.read[SampleVCNested](js) should have message msg
       }
     }
   }

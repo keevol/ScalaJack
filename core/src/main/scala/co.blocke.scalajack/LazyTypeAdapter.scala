@@ -21,8 +21,5 @@ case class LazyTypeAdapter[T](context: Context, tpe: Type) extends TypeAdapter[T
     typeAdapter
   }
 
-  override val deserializer: Deserializer[T] = new DeferredDeserializerReference[T](() => resolved.deserializer)
-
-  override val serializer: Serializer[T] = new DeferredSerializerReference[T](() => resolved.serializer)
-
+  override val irTransceiver: IRTransceiver[T] = new DeferredIRTransceiverReference[T](() => resolved.irTransceiver)
 }

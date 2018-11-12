@@ -36,14 +36,14 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         dbo.toJson should equal("""{ "_id" : "Fred", "two" : { "bar" : true } }""")
         val msg = """DeserializationException(1 error):
                     |  [$.two.foo] Required field missing (reported by: co.blocke.scalajack.typeadapter.StringDeserializer)""".stripMargin
-        the[DeserializationException] thrownBy mongoScalaJack.read[Five](dbo) should have message msg
+        the[ReadException] thrownBy mongoScalaJack.read[Five](dbo) should have message msg
       }
       it("MongoKey Annotation (_id field generation) - single key -- Missing Key Field") {
         val dbo = Document("two" -> BsonDocument("foo" -> BsonString("blah"), "bar" -> BsonBoolean(true)))
         dbo.toJson should equal("""{ "two" : { "foo" : "blah", "bar" : true } }""")
         val msg = """DeserializationException(1 error):
                     |  [$] Did not find required db key field (e.g. _id) (reported by: co.blocke.scalajack.mongo.typeadapter.MongoCaseClassDeserializer)""".stripMargin
-        the[DeserializationException] thrownBy mongoScalaJack.read[Five](dbo) should have message msg
+        the[ReadException] thrownBy mongoScalaJack.read[Five](dbo) should have message msg
       }
       it("MongoKey Annotation (_id field generation) - compound key") {
         val six = Six("Fred", 12, Two("blah", true))
@@ -58,7 +58,7 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         val badDbo = dbo - "_id"
         val msg = """DeserializationException(1 error):
                     |  [$] Missing at least one required db key field (e.g. _id) component: [name,num] (reported by: co.blocke.scalajack.mongo.typeadapter.MongoCaseClassDeserializer)""".stripMargin
-        the[DeserializationException] thrownBy mongoScalaJack.read[Six](badDbo) should have message msg
+        the[ReadException] thrownBy mongoScalaJack.read[Six](badDbo) should have message msg
       }
       it("ObjectId support -- JSON") {
         val seven = Seven((new BsonObjectId()).getValue().toHexString, Two("blah", true))

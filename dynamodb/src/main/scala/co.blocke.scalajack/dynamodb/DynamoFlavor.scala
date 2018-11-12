@@ -55,7 +55,7 @@ case class DynamoFlavor(
       deserializer.deserialize(Path.Root, js)
     } catch {
       case e: Exception =>
-        DeserializationFailure(Path.Unknown, DeserializationError.ExceptionThrown(e))
+        DeserializationFailure(Path.Unknown, ReadError.ExceptionThrown(e))
     }
     deserializationResult match {
       case DeserializationSuccess(TypeTagged(result)) =>
@@ -92,7 +92,7 @@ case class DynamoFlavor(
   def materialize[T](ast: JValue)(implicit tt: TypeTag[T]): T =
     context.typeAdapterOf[T].deserializer.deserialize(Path.Root, ast) match {
       case DeserializationSuccess(ok)   => ok.get
-      case fail: DeserializationFailure => throw new DeserializationException(fail)
+      case fail: DeserializationFailure => throw new ReadException(fail)
     }
 
   def dematerialize[T](t: T)(implicit tt: TypeTag[T]): JValue = {

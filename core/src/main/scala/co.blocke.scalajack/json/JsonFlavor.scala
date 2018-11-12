@@ -1,7 +1,7 @@
 package co.blocke.scalajack
 package json
 
-import org.json4s.JsonAST.{ JNull, JValue }
+import org.json4s.JsonAST.JValue
 
 import scala.reflect.runtime.universe.Type
 
@@ -34,51 +34,29 @@ case class JsonFlavor(
     else
       first
   }
-  implicit val ops: AstOps[JValue, String] = Json4sOps.asInstanceOf[AstOps[JValue, String]]
 
-  def readSafely[T](json: String)(implicit tt: TypeTag[T]): Either[DeserializationFailure, T] = {
-    val deserializationResult = try {
-      val Some(js) = Json4sOps.parser._parse(json)
-      val deserializer = context.typeAdapterOf[T].deserializer
-      deserializer.deserialize(Path.Root, js)
-    } catch {
-      case e: Exception =>
-        DeserializationFailure(Path.Unknown, DeserializationError.ExceptionThrown(e))
-    }
-    deserializationResult match {
-      case DeserializationSuccess(TypeTagged(result)) =>
-        Right(result)
+  implicit val ops: Ops[JValue, String] = Json4sOps
 
-      case failure @ DeserializationFailure(_) =>
-        Left(failure)
+  def readSafely[T](json: String)(implicit tt: TypeTag[T]): Either[ReadFailure, T] =
+    Json4sOps.deserialize(json) match {
+      case DeserializationFailure(df) => Left(ReadFailure(Path.Root, df: _*))
+      case DeserializationSuccess(ir) =>
+        context.typeAdapterOf[T].irTransceiver.read(Path.Root, ir) match {
+          case rf: ReadFailure    => Left(rf)
+          case ReadSuccess(scala) => Right(scala.get)
+        }
     }
-  }
 
   def render[T](value: T)(implicit valueTypeTag: TypeTag[T]): String = {
     val typeAdapter = context.typeAdapterOf[T]
-    val serializer = typeAdapter.serializer
-    serializer.serialize[JValue, String](TypeTagged(value, valueTypeTag.tpe)) match {
-      case SerializationSuccess(json)                                      => Json4sOps.renderCompact(json, this)
-      case SerializationFailure(f) if f == Seq(SerializationError.Nothing) => ""
+    typeAdapter.irTransceiver.write(TypeTagged(value, valueTypeTag.tpe)) match {
+      case WriteSuccess(json)                              => Json4sOps.serialize(json, this)
+      case WriteFailure(f) if f == Seq(WriteError.Nothing) => ""
     }
   }
 
-  def parseToAST(json: String): JValue =
-    Json4sOps.parser._parse(json)(Json4sOps).getOrElse(JNull)
-
-  def emitFromAST(ast: JValue): String =
-    Json4sOps.renderCompact(ast, this)
-
-  def materialize[T](ast: JValue)(implicit tt: TypeTag[T]): T =
-    context.typeAdapterOf[T].deserializer.deserialize(Path.Root, ast) match {
-      case DeserializationSuccess(ok)   => ok.get
-      case fail: DeserializationFailure => throw new DeserializationException(fail)
-    }
-
-  def dematerialize[T](t: T)(implicit tt: TypeTag[T]): JValue = {
-    context.typeAdapterOf[T].serializer.serialize(TypeTagged(t, typeOf[T])) match {
-      case SerializationSuccess(ast)     => ast
-      case fail: SerializationFailure[_] => throw new SerializationException(fail)
-    }
-  }
+  def parseToAST(json: String): DeserializationResult[JValue] = Json4sOps.deserialize(json)
+  def emitFromAST(ir: JValue): String = Json4sOps.serialize(ir, this)
+  def materialize[T](ir: JValue)(implicit tt: TypeTag[T]): ReadResult[T] = context.typeAdapterOf[T].irTransceiver.read(Path.Root, ir)
+  def dematerialize[T](t: T)(implicit tt: TypeTag[T]): WriteResult[JValue] = context.typeAdapterOf[T].irTransceiver.write(TypeTagged(t, typeOf[T]))
 }

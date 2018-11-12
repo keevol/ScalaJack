@@ -6,7 +6,7 @@ import org.json4s.JsonAST.{ JArray, JBool, JDecimal, JLong, JNull, JObject, JStr
 import org.scalatest.FunSpec
 import org.scalatest.Matchers._
 
-class JsonParserSpec extends FunSpec {
+class JsonDeserializerSpec extends FunSpec {
 
   val sj = ScalaJack()
 

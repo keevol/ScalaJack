@@ -2,13 +2,13 @@ package co.blocke.scalajack
 
 import co.blocke.scalajack.BijectiveFunctions._
 import co.blocke.scalajack.json.JsonFlavor
-import co.blocke.scalajack.typeadapter._
+//import co.blocke.scalajack.typeadapter._
 
 object ScalaJack {
-  def apply[AST, S](kind: ScalaJackLike[AST, S] = JsonFlavor()): ScalaJackLike[AST, S] = kind
+  def apply[IR, WIRE](kind: ScalaJackLike[IR, WIRE] = JsonFlavor()): ScalaJackLike[IR, WIRE] = kind
 }
 
-abstract class ScalaJackLike[AST, S] extends JackFlavor[AST, S] {
+abstract class ScalaJackLike[IR, WIRE] extends JackFlavor[IR, WIRE] {
   val customAdapters: List[TypeAdapterFactory]
   val hintMap: Map[Type, String]
   val hintModifiers: Map[Type, HintModifier]
@@ -20,14 +20,14 @@ abstract class ScalaJackLike[AST, S] extends JackFlavor[AST, S] {
 
   val context: Context = bakeContext()
 
-  def withAdapters(ta: TypeAdapterFactory*): ScalaJackLike[AST, S]
-  def withHints(h: (Type, String)*): ScalaJackLike[AST, S]
-  def withHintModifiers(hm: (Type, HintModifier)*): ScalaJackLike[AST, S]
-  def withDefaultHint(hint: String): ScalaJackLike[AST, S]
-  def withTypeModifier(tm: HintModifier): ScalaJackLike[AST, S]
-  def parseOrElse(poe: (Type, Type)*): ScalaJackLike[AST, S]
-  def isCanonical(canonical: Boolean): ScalaJackLike[AST, S]
-  def withSecondLookParsing(): ScalaJackLike[AST, S]
+  def withAdapters(ta: TypeAdapterFactory*): ScalaJackLike[IR, WIRE]
+  def withHints(h: (Type, String)*): ScalaJackLike[IR, WIRE]
+  def withHintModifiers(hm: (Type, HintModifier)*): ScalaJackLike[IR, WIRE]
+  def withDefaultHint(hint: String): ScalaJackLike[IR, WIRE]
+  def withTypeModifier(tm: HintModifier): ScalaJackLike[IR, WIRE]
+  def parseOrElse(poe: (Type, Type)*): ScalaJackLike[IR, WIRE]
+  def isCanonical(canonical: Boolean): ScalaJackLike[IR, WIRE]
+  def withSecondLookParsing(): ScalaJackLike[IR, WIRE]
 
   /**
    * Project fields from given master object to a view object of type T.  Field names/types must match master
@@ -37,7 +37,13 @@ abstract class ScalaJackLike[AST, S] extends JackFlavor[AST, S] {
    */
   def view[T](master: Any)(implicit tt: TypeTag[T]): T =
     if (tt.tpe.typeSymbol.asClass.isCaseClass)
-      materialize[T](dematerialize(master))
+      materialize[T](dematerialize(master) match {
+        case WriteSuccess(w)      => w
+        case wf: WriteFailure[IR] => throw new ViewException(wf.toString)
+      }) match {
+        case ReadSuccess(t)  => t.get
+        case rf: ReadFailure => throw new ViewException(rf.toString)
+      }
     else
       throw new ViewException(s"Output of view() must be a case class, not ${tt.tpe}")
 
@@ -48,23 +54,28 @@ abstract class ScalaJackLike[AST, S] extends JackFlavor[AST, S] {
    * @return the master object with the view object's corresponding fields merged/overlayed
    */
   def spliceInto[T, U](view: T, master: U)(implicit tt: TypeTag[T], tu: TypeTag[U]): U = {
-    val viewFields = scala.collection.mutable.Map.empty[String, AST]
-    val viewAST = dematerialize(view) match {
-      case AstObject(x) => x.asInstanceOf[ops.ObjectFields]
-      case _            => throw new ViewException(s"View must be a case class, not ${tt.tpe}")
+    val viewIR = (dematerialize(view) match {
+      case WriteSuccess(ws) => ws match {
+        case IRObject(x) => x
+        case _           => throw new ViewException(s"View must be a case class, not ${tt.tpe}")
+      }
+      case wf: WriteFailure[IR] => throw new ViewException(wf.toString)
+    }).toMap
+    val masterIR = (dematerialize(master) match {
+      case WriteSuccess(ws) => ws match {
+        case IRObject(x) => x
+        case _           => throw new ViewException(s"Master must be a case class, not ${tt.tpe}")
+      }
+      case wf: WriteFailure[IR] => throw new ViewException(wf.toString)
+    }).toMap
+    val newMaster = masterIR.map { case (name, value) => (name, viewIR.getOrElse(name, value)) }.toSeq
+    materialize[U](ops.applyObject(newMaster)) match {
+      case ReadSuccess(t)  => t.get
+      case rf: ReadFailure => throw new ViewException(rf.toString)
     }
-    val masterAST = dematerialize(master) match {
-      case AstObject(x) => x.asInstanceOf[ops.ObjectFields]
-      case _            => throw new ViewException(s"Master must be a case class, not ${tu.tpe}")
-    }
-    ops.foreachObjectField(viewAST, { (fname, value) => viewFields.put(fname, value) })
-    materialize[U](ops.mapObjectFields(masterAST, { (fname, fast) =>
-      (fname, viewFields.getOrElse(fname, fast))
-    }).asInstanceOf[AST])
   }
 
   protected def bakeContext(): Context = {
-
     // Types where either the label or the type value (or both) are modified
     val polymorphicTypes: Set[Type] = hintModifiers.keySet ++ hintMap.keySet
 
@@ -127,8 +138,7 @@ abstract class ScalaJackLike[AST, S] extends JackFlavor[AST, S] {
         }
     }.toList
 
-    intermediateContext.copy(
-      factories = parseOrElseFactories ::: intermediateContext.factories)
+    intermediateContext.copy(factories = parseOrElseFactories ::: intermediateContext.factories)
   }
 }
 

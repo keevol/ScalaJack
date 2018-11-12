@@ -16,7 +16,7 @@ class BsonObjectIdDeserializer() extends Deserializer[ObjectId] {
       case AstString(oid) if (ops != BsonOps) =>
         DeserializationSuccess(TypeTagged(oid, typeOf[ObjectId]))
       case _ =>
-        DeserializationFailure(path, DeserializationError.Unexpected("Expected a Bson ObjectId value", reportedBy = self))
+        DeserializationFailure(path, ReadError.Unexpected("Expected a Bson ObjectId value", reportedBy = self))
     }
 
 }

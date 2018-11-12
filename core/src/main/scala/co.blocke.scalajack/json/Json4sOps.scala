@@ -3,124 +3,79 @@ package json
 
 import org.json4s.JsonAST.{ JArray, JBool, JDecimal, JDouble, JInt, JLong, JNothing, JNull, JObject, JString, JValue }
 
-trait Json4sOpsBase extends AstBase[JValue] {
+trait Json4sOpsBase extends OpsBase[JValue] {
 
-  override type ArrayElements = JArray
-  override type ObjectFields = JObject
+  override type ArrayType = JArray
+  override type ObjectType = JObject
 
-  override def foreachArrayElement(elements: ArrayElements, f: (Int, JValue) => Unit): Unit = {
-    for ((element, index) <- elements.arr.zipWithIndex if element != JNothing) {
-      f(index, element)
-    }
-  }
-
-  override def foreachObjectField(fields: ObjectFields, f: (String, JValue) => Unit): Unit = {
-    for ((name, value) <- fields.obj if value != JNothing) {
-      f(name, value)
-    }
-  }
-
-  override def getObjectField(fields: ObjectFields, name: String): Option[JValue] =
-    fields.obj.find(_._1 == name).map(_._2).filter(_ != JNothing)
-  override def getArrayElement(arr: ArrayElements, index: Int): Option[JValue] =
-    if (arr.values.size < index && index >= 0) Some(arr(index)) else None
-
-  override def partitionObjectFields(fields: ObjectFields, fieldNames: List[String]): (ObjectFields, ObjectFields) = {
-    val (a, b) = fields.obj.partition(f => fieldNames.contains(f._1))
-    (JObject(a), JObject(b))
-  }
-
-  override def applyArray(appendAllElements: (JValue => Unit) => Unit): JValue = {
-    val elementsBuilder = List.newBuilder[JValue]
-
-    appendAllElements { element =>
-      elementsBuilder += element
+  override def getObjectField(obj: JObject, name: String): Option[JValue] =
+    obj \ name match {
+      case JNothing => None
+      case v        => Some(v)
     }
 
-    JArray(elementsBuilder.result())
-  }
+  override def getArrayElement(arr: JArray, index: Int): Option[JValue] =
+    if (index >= 0 && arr.values.size < index) Some(arr(index)) else None
 
-  override def unapplyArray(json: JValue): Option[JArray] =
-    json match {
-      case elements: JArray => Some(elements)
+  override def applyArray(values: Seq[JValue]): JValue = new JArray(values.toList)
+  override def unapplyArray(ir: JValue): Option[Seq[JValue]] =
+    ir match {
+      case elements: JArray => Some(elements.children)
       case _                => None
     }
 
-  override def applyBoolean(value: Boolean): JValue =
-    JBool(value)
-
-  override def unapplyBoolean(json: JValue): Option[Boolean] =
-    json match {
+  override def applyBoolean(value: Boolean): JValue = JBool(value)
+  override def unapplyBoolean(ir: JValue): Option[Boolean] =
+    ir match {
       case JBool(value) => Some(value)
       case _            => None
     }
 
-  override def applyDecimal(value: BigDecimal): JValue =
-    JDecimal(value)
-
-  override def unapplyDecimal(json: JValue): Option[BigDecimal] =
-    json match {
+  override def applyDecimal(value: BigDecimal): JValue = JDecimal(value)
+  override def unapplyDecimal(ir: JValue): Option[BigDecimal] =
+    ir match {
       case JDecimal(value) => Some(value)
       case _               => None
     }
 
-  override def applyDouble(value: Double): JValue =
-    JDouble(value)
-
-  override def unapplyDouble(json: JValue): Option[Double] =
-    json match {
+  override def applyDouble(value: Double): JValue = JDouble(value)
+  override def unapplyDouble(ir: JValue): Option[Double] =
+    ir match {
       case JDouble(value) => Some(value)
       case _              => None
     }
 
-  override def applyInt(value: BigInt): JValue =
-    JInt(value)
-
-  override def unapplyInt(json: JValue): Option[BigInt] =
-    json match {
+  override def applyInt(value: BigInt): JValue = JInt(value)
+  override def unapplyInt(ir: JValue): Option[BigInt] =
+    ir match {
       case JInt(value) => Some(value)
       case _           => None
     }
 
-  override def applyLong(value: Long): JValue =
-    JLong(value)
-
-  override def unapplyLong(json: JValue): Option[Long] =
-    json match {
+  override def applyLong(value: Long): JValue = JLong(value)
+  override def unapplyLong(ir: JValue): Option[Long] =
+    ir match {
       case JLong(value) => Some(value)
       case _            => None
     }
 
-  override def applyNull(): JValue =
-    JNull
-
-  override def unapplyNull(json: JValue): Boolean =
-    json match {
+  override def applyNull(): JValue = JNull
+  override def unapplyNull(ir: JValue): Boolean =
+    ir match {
       case JNull => true
       case _     => false
     }
 
-  override def applyObject(appendAllFields: ((String, JValue) => Unit) => Unit): JValue = {
-    val fieldsBuilder = List.newBuilder[(String, JValue)]
-
-    appendAllFields { (fieldName, fieldValue) =>
-      fieldsBuilder += fieldName -> fieldValue
+  override def applyObject(elements: Seq[(String, JValue)]): JValue = new JObject(elements.toList)
+  override def unapplyObject(ir: JValue): Option[Seq[(String, JValue)]] =
+    ir match {
+      case JObject(elements) => Some(elements)
+      case _                 => None
     }
 
-    JObject(fieldsBuilder.result())
-  }
-
-  override def unapplyObject(json: JValue): Option[JObject] =
-    json match {
-      case fields: JObject => Some(fields)
-      case _               => None
-    }
-
-  override def applyString(string: String): JValue =
-    JString(string)
-
-  override def unapplyString(json: JValue): Option[String] =
-    json match {
+  override def applyString(string: String): JValue = JString(string)
+  override def unapplyString(ir: JValue): Option[String] =
+    ir match {
       case JString(value) => Some(value)
       case _              => None
     }
@@ -129,4 +84,4 @@ trait Json4sOpsBase extends AstBase[JValue] {
   override def isArray(json: JValue): Boolean = json.isInstanceOf[JArray]
 }
 
-object Json4sOps extends AstOps[JValue, String] with Json4sOpsBase with JsonParser with JsonRenderer
+object Json4sOps extends Ops[JValue, String] with Json4sOpsBase with JsonDeserializer[JValue] with JsonSerializer[JValue]

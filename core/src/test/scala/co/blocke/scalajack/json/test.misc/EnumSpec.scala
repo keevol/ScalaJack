@@ -99,19 +99,19 @@ class EnumSpec extends FunSpec with Matchers {
         val js = """{"e1":"Bogus","e2":null}"""
         val msg = """DeserializationException(1 error):
                     |  [$.e1] Enumeration co.blocke.scalajack.json.test.misc.Size$ does not contain a value named Bogus (reported by: co.blocke.scalajack.typeadapter.EnumerationValueDeserializer)""".stripMargin
-        the[DeserializationException] thrownBy sj.read[SampleEnum](js) should have message msg
+        the[ReadException] thrownBy sj.read[SampleEnum](js) should have message msg
       }
       it("Value not known in case objects for sealed trait") {
         val js = """{"e1":"Bogus","e2":null}"""
         val msg = """DeserializationException(1 error):
                     |  [$.e1] Expected a valid subclass of co.blocke.scalajack.json.test.misc.Weekday (reported by: co.blocke.scalajack.typeadapter.CaseObjectDeserializer)""".stripMargin
-        the[DeserializationException] thrownBy sj.read[SampleEnum2](js) should have message msg
+        the[ReadException] thrownBy sj.read[SampleEnum2](js) should have message msg
       }
       it("Value not known in case objects for custom enum") {
         val js = """{"e1":"Bogus","e2":null}"""
         val msg = """DeserializationException(1 error):
                     |  [$.e1] Expected a valid subclass of co.blocke.scalajack.json.test.misc.Currency (reported by: co.blocke.scalajack.typeadapter.CaseObjectDeserializer)""".stripMargin
-        the[DeserializationException] thrownBy sj.read[SampleEnum3](js) should have message msg
+        the[ReadException] thrownBy sj.read[SampleEnum3](js) should have message msg
       }
     }
   }

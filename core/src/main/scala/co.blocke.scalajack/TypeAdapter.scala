@@ -29,21 +29,9 @@ object TypeAdapter {
     override def create(next: TypeAdapterFactory)(implicit context: Context, tt: TypeTag[X]): TypeAdapter[X] = this
   }
 
-  /*  This doesn't appear to be used/needed at the moment?
-  object =:= {
-        class constant[X](tagged: TypeTagged[X])(implicit ttFactory: TypeTag[X]) extends TypeAdapter.=:=[X] {
-          override val deserializer: Deserializer[X] = Deserializer.constant(tagged)
-          override val serializer: Serializer[X] = new Serializer[X] {
-            override def serialize[AST, S](tagged: TypeTagged[X])(implicit ops: AstOps[AST, S], guidance: SerializationGuidance): SerializationResult[AST] =
-              throw new UnsupportedOperationException(s"TypeAdapter.=:=.constant[${ttFactory.tpe}](...).serializer.serialize")
-          }
-        }
-  }
-  */
+  def apply[IR, T](irTransceiver: IRTransceiver[IR]): TypeAdapter[T] = Fixed(irTransceiver)
 
-  def apply[T](deserializer: Deserializer[T], serializer: Serializer[T]): TypeAdapter[T] = Fixed(deserializer, serializer)
-
-  private case class Fixed[T](override val deserializer: Deserializer[T], override val serializer: Serializer[T]) extends TypeAdapter[T]
+  private case class Fixed[IR, T](override val irTransceiver: IRTransceiver[IR]) extends TypeAdapter[T]
 
 }
 
@@ -67,6 +55,9 @@ trait TypeAdapter[T] {
     }
   }
 
+  val irTransceiver: IRTransceiver[T] = new IRTransceiver[T] {}
+
+  /*
   val deserializer: Deserializer[T] = new Deserializer[T] {
     override def deserialize[AST, S](path: Path, ast: AST)(implicit ops: AstOps[AST, S], guidance: SerializationGuidance): DeserializationResult[T] =
       throw new NotImplementedError(s"$self.deserializer.deserialize")
@@ -76,17 +67,10 @@ trait TypeAdapter[T] {
     override def serialize[AST, S](tagged: TypeTagged[T])(implicit ops: AstOps[AST, S], guidance: SerializationGuidance): SerializationResult[AST] =
       throw new NotImplementedError(s"$self.serializer.serialize")
   }
+  */
 
-  // --- This doesn't appear to be used.  It had an intention (TransformedTypeAdapter), but even in that code, the function f
-  //     is never called!  Something looks like it was never fully realized.
-  //  def andThen[U](f: BijectiveFunction[T, U])(implicit context: Context, ttB: TypeTag[U]): TransformedTypeAdapter[T, U] =
-  //    TransformedTypeAdapter(this, f)
-
-  // $COVERAGE-OFF$Tested in concrete classes, not here
   def defaultValue: Option[T] = None
-  // $COVERAGE-ON$
 
   def resolved: TypeAdapter[T] = this
-
 }
 

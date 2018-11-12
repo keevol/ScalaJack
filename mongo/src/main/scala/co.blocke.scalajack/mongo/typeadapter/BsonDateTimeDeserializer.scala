@@ -15,7 +15,7 @@ class BsonDateTimeDeserializer() extends Deserializer[MongoTime] {
       case AstLong(dt) if (ops != BsonOps) =>
         DeserializationSuccess(TypeTagged(dt, typeOf[MongoTime]))
       case _ =>
-        DeserializationFailure(path, DeserializationError.Unexpected("Expected a BsonDateTime value", reportedBy = self))
+        DeserializationFailure(path, ReadError.Unexpected("Expected a BsonDateTime value", reportedBy = self))
     }
 
 }

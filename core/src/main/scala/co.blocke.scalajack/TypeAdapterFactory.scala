@@ -131,12 +131,10 @@ object TypeAdapterFactory {
         override def create(next: TypeAdapterFactory)(implicit context: Context, tt: TypeTag[T]): TypeAdapter[T] = typeAdapter
       }
 
-    def apply[T: TypeTag](deserializer: Deserializer[T]): TypeAdapterFactory = {
-      val deser = deserializer
-
+    def apply[T: TypeTag](irTransceiver: IRTransceiver[T]): TypeAdapterFactory = {
       new TypeAdapterFactory.=:=[T] {
         private val typeAdapter = new TypeAdapter[T] {
-          override val deserializer: Deserializer[T] = deser
+          override val irTransceiver: IRTransceiver[T] = irTransceiver
         }
 
         override def create(next: TypeAdapterFactory)(implicit context: Context, tt: TypeTag[T]): TypeAdapter[T] = typeAdapter

@@ -16,6 +16,6 @@ class MongoZonedDateTimeDeserializer() extends Deserializer[ZonedDateTime] {
         val result = ZonedDateTime.ofInstant(Instant.ofEpochMilli(bsonDateTime.getValue()), ZoneId.ofOffset("UTC", ZoneOffset.UTC))
         DeserializationSuccess(TypeTagged(result, typeOf[ZonedDateTime]))
       case _ =>
-        DeserializationFailure(path, DeserializationError.Unexpected("Expected a ZonedDateTime value", reportedBy = self))
+        DeserializationFailure(path, ReadError.Unexpected("Expected a ZonedDateTime value", reportedBy = self))
     }
 }

@@ -55,7 +55,7 @@ case class MongoFlavor(
   def materialize[T](ast: BsonValue)(implicit tt: TypeTag[T]): T =
     context.typeAdapterOf[T].deserializer.deserialize(Path.Root, ast) match {
       case DeserializationSuccess(ok)   => ok.get
-      case fail: DeserializationFailure => throw new DeserializationException(fail)
+      case fail: DeserializationFailure => throw new ReadException(fail)
     }
 
   def dematerialize[T](t: T)(implicit tt: TypeTag[T]): BsonValue = {
