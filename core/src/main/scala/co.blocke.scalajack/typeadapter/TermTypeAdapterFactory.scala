@@ -1,10 +1,11 @@
 package co.blocke.scalajack
+package typeadapter
 
 import scala.reflect.ClassTag
 
 class TermIRTransceiver[T](next: IRTransceiver[T])(implicit tt: TypeTag[T]) extends IRTransceiver[T] {
 
-  override def read[IR](path: Path, ir: IR)(implicit ops: OpsBase[IR], guidance: SerializationGuidance): ReadResult[T] =
+  override def read[IR, WIRE](path: Path, ir: IR)(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): ReadResult[T] =
     next.read(path, ir) match {
       case success @ ReadSuccess(_) =>
         success
@@ -31,7 +32,7 @@ class TermIRTransceiver[T](next: IRTransceiver[T])(implicit tt: TypeTag[T]) exte
       case failure @ ReadFailure(_) => failure
     }
 
-  override def readFromNothing[IR](path: Path)(implicit ops: OpsBase[IR]): ReadResult[T] =
+  override def readFromNothing[IR, WIRE](path: Path)(implicit ops: Ops[IR, WIRE]): ReadResult[T] =
     next.readFromNothing(path)
 
   override def write[IR](tagged: TypeTagged[T])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =

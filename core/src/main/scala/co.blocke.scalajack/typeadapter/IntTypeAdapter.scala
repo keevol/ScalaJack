@@ -1,0 +1,22 @@
+package co.blocke.scalajack
+package typeadapter
+
+object IntTypeAdapter extends TypeAdapter.=:=[Int] {
+  override val irTransceiver: IRTransceiver[Int] = new IRTransceiver[Int] {
+
+    self =>
+
+    import NumberConverters._
+    override def read[IR, WIRE](path: Path, ir: IR)(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): ReadResult[Int] =
+      ir match {
+        case IRLong(longValue) if (longValue >= -2147483648 && longValue <= 2147483647) => ReadResult(path)(TypeTagged(longValue.toIntExact))
+        case IRLong(_) => ReadFailure(path, ReadError.Unexpected("Int value out of range", reportedBy = self))
+        case IRInt(bigInt) => ReadSuccess(TypeTagged(bigInt.intValue))
+        case IRString(s) if (guidance.isMapKey) => this.read(path, ops.deserialize(s.asInstanceOf[WIRE]).get)(ops, guidance = guidance.copy(isMapKey = false))
+        case _ => ReadFailure(path, ReadError.Unexpected(s"Expected a JSON int, not $ir", reportedBy = self))
+      }
+
+    override def write[IR](tagged: TypeTagged[Int])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =
+      WriteSuccess(IRInt(tagged.get.intValue))
+  }
+}

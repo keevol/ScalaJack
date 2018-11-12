@@ -2,7 +2,7 @@ package co.blocke.scalajack
 
 import co.blocke.scalajack.BijectiveFunctions._
 import co.blocke.scalajack.json.JsonFlavor
-//import co.blocke.scalajack.typeadapter._
+import co.blocke.scalajack.typeadapter._
 
 object ScalaJack {
   def apply[IR, WIRE](kind: ScalaJackLike[IR, WIRE] = JsonFlavor()): ScalaJackLike[IR, WIRE] = kind
@@ -88,8 +88,7 @@ abstract class ScalaJackLike[IR, WIRE] extends JackFlavor[IR, WIRE] {
           if (typeTag.tpe.typeSymbol == polymorphicType.typeSymbol) {
             val typeTypeAdapter = context.typeAdapterOf[Type]
             TraitTypeAdapter[T](
-              new TraitDeserializer[T](hintLabel, typeTypeAdapter.deserializer, Some(hintToType.memoized)),
-              new TraitSerializer[T](hintLabel, typeTypeAdapter.serializer, Some(hintToType.memoized)),
+              new TraitIRTransceiver[T](hintLabel, typeTypeAdapter.irTransceiver, Some(hintToType.memoized)),
               typeTag.tpe)
           } else
             next.typeAdapterOf[T]
@@ -101,8 +100,7 @@ abstract class ScalaJackLike[IR, WIRE] extends JackFlavor[IR, WIRE] {
       override def typeAdapterOf[T](next: TypeAdapterFactory)(implicit context: Context, tt: TypeTag[T]): TypeAdapter[T] = {
         if (tt.tpe =:= typeOf[Type]) {
           TypeTypeAdapter(
-            new TypeDeserializer(mod.apply),
-            new TypeSerializer(mod.unapply),
+            new TypeIRTransceiver(mod.unapply, mod.apply),
             tt.mirror,
             Some(mod)).asInstanceOf[TypeAdapter[T]]
         } else {
@@ -119,7 +117,7 @@ abstract class ScalaJackLike[IR, WIRE] extends JackFlavor[IR, WIRE] {
 
     // ParseOrElse functionality
     val parseOrElseFactories = parseOrElseMap.map {
-      case (attemptedType, fallbackType) =>
+      case (attemptedType, fallbackType @ _) =>
         val attemptedTypeAdapter = intermediateContext.typeAdapter(attemptedType)
         val fallbackTypeAdapter = intermediateContext.typeAdapter(fallbackType)
 
@@ -129,8 +127,7 @@ abstract class ScalaJackLike[IR, WIRE] extends JackFlavor[IR, WIRE] {
               val primary = attemptedTypeAdapter.asInstanceOf[TypeAdapter[T]]
               val secondary = fallbackTypeAdapter.asInstanceOf[TypeAdapter[T]]
               FallbackTypeAdapter[T](
-                new FallbackDeserializer[T](primary.deserializer, secondary.deserializer),
-                primary.serializer,
+                new FallBackIRTransceiver[T](primary.irTransceiver, secondary.irTransceiver),
                 primary, secondary)
             } else {
               next.typeAdapterOf[T]
