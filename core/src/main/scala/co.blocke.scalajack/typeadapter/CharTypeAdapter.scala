@@ -11,7 +11,7 @@ object CharTypeAdapter extends TypeAdapter.=:=[Char] {
       ir match {
         case IRString(string) if string.length == 1 => ReadSuccess(TypeTagged(string.charAt(0)))
         case IRString(string)                       => ReadFailure(path, ReadError.Malformed(s"Expected a char (JSON string of length 1), not $string", reportedBy = self))
-        case _                                       => ReadFailure(path, ReadError.Unexpected("Expected a char (JSON string of length 1)", reportedBy = self))
+        case _                                      => ReadFailure(path, ReadError.Unexpected("Expected a char (JSON string of length 1)", reportedBy = self))
       }
 
     override def write[IR](tagged: TypeTagged[Char])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =

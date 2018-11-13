@@ -12,7 +12,7 @@ class MongoCaseClassDeserializer[C](
     typeDeserializer:  Deserializer[Type],
     typeMembers:       List[CaseClassTypeAdapter.TypeMember[C]],
     fieldMembers:      List[ClassLikeTypeAdapter.FieldMember[C]],
-    isSJCapture:       Boolean)(implicit tt: TypeTag[C]) extends ClassDeserializerUsingReflectedConstructor[C](
+    isSJCapture:       Boolean)(implicit tt: TypeTag[C]) extends ClassReaderUsingReflectedConstructor[C](
   context, constructorMirror, typeDeserializer, typeMembers, fieldMembers, isSJCapture
 ) {
 

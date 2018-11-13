@@ -29,9 +29,9 @@ object TypeAdapter {
     override def create(next: TypeAdapterFactory)(implicit context: Context, tt: TypeTag[X]): TypeAdapter[X] = this
   }
 
-  def apply[IR, T](irTransceiver: IRTransceiver[IR]): TypeAdapter[T] = Fixed(irTransceiver)
+  def apply[IR, T](irTransceiver: IRTransceiver[T]): TypeAdapter[T] = Fixed(irTransceiver)
 
-  private case class Fixed[IR, T](override val irTransceiver: IRTransceiver[IR]) extends TypeAdapter[T]
+  private case class Fixed[IR, T](override val irTransceiver: IRTransceiver[T]) extends TypeAdapter[T]
 
 }
 

@@ -9,6 +9,15 @@ import scala.reflect.runtime.universe._
 import scala.language.existentials
 import scala.reflect.runtime.currentMirror
 
+case class CaseClassIRTransceiver[T](
+    val context:           Context,
+    val constructorMirror: MethodMirror,
+    val typeTransceiver:   IRTransceiver[Type],
+    val typeMembers:       List[CaseClassTypeAdapter.TypeMember[T]],
+    val fieldMembers:      List[ClassLikeTypeAdapter.FieldMember[T]],
+    val isSJCapture:       Boolean,
+    val tt:                TypeTag[T]) extends IRTransceiver[T] with ClassReaderUsingReflectedConstructor[T] with ClassWriter[T]
+
 object CaseClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
 
   case class TypeMember[Owner](name: MemberName, typeSignature: Type, baseType: Type) extends ClassLikeTypeAdapter.TypeMember[Owner]
@@ -106,13 +115,6 @@ object CaseClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
 
         // Exctract DBKey annotation if present
         val optionalDbKeyIndex = getAnnotationValue[DBKey, Int](member, Some(0))
-        //          .annotations.find(_.tree.tpe =:= typeOf[DBKey])
-        //          .map { index =>
-        //            if (index.tree.children.size > 1)
-        //              index.tree.children(1).productElement(1).asInstanceOf[scala.reflect.internal.Trees$Literal].value().value
-        //            else
-        //              0
-        //          }.asInstanceOf[Option[Int]]
 
         // Extract MapName annotation if present
         val optionalMapName = getAnnotationValue[MapName, String](member)
@@ -125,20 +127,17 @@ object CaseClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
       // Exctract Collection name annotation if present
       val collectionAnnotation = getAnnotationValue[Collection, String](classSymbol)
 
+      val ccTransceiver = CaseClassIRTransceiver(
+        context,
+        constructorMirror,
+        context.typeAdapterOf[Type].irTransceiver,
+        typeMembers,
+        fieldMembers,
+        isSJCapture,
+        tt)
+
       CaseClassTypeAdapter[T](
-        new ClassDeserializerUsingReflectedConstructor[T](
-          context,
-          constructorMirror,
-          context.typeAdapterOf[Type].deserializer,
-          typeMembers,
-          fieldMembers,
-          isSJCapture),
-        new ClassSerializer[T](
-          context,
-          context.typeAdapterOf[Type].serializer,
-          typeMembers,
-          fieldMembers,
-          isSJCapture),
+        ccTransceiver,
         typeMembers,
         fieldMembers,
         collectionAnnotation)
@@ -149,9 +148,8 @@ object CaseClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
 }
 
 case class CaseClassTypeAdapter[T](
-    override val deserializer: Deserializer[T],
-    override val serializer:   Serializer[T],
-    typeMembers:               List[ClassLikeTypeAdapter.TypeMember[T]],
-    fieldMembers:              List[ClassLikeTypeAdapter.FieldMember[T]],
-    collectionName:            Option[String]                            = None) extends ClassLikeTypeAdapter[T] {
+    override val irTransceiver: IRTransceiver[T],
+    typeMembers:                List[ClassLikeTypeAdapter.TypeMember[T]],
+    fieldMembers:               List[ClassLikeTypeAdapter.FieldMember[T]],
+    collectionName:             Option[String]                            = None) extends ClassLikeTypeAdapter[T] {
 }

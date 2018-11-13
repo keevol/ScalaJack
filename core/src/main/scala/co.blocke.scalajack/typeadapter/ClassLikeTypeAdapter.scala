@@ -30,15 +30,14 @@ object ClassLikeTypeAdapter {
 
     // Conveniences
     lazy val isOptional = valueTypeAdapter.isInstanceOf[OptionTypeAdapter[_]]
-    def deserializer: Deserializer[Value] = valueTypeAdapter.deserializer
-    def serializer: Serializer[Value] = valueTypeAdapter.serializer
+    def irTransceiver: IRTransceiver[Value] = valueTypeAdapter.irTransceiver
 
-    def deserializeValue[AST, S](path: Path, ast: AST)(implicit ops: AstOps[AST, S], guidance: SerializationGuidance): DeserializationResult[Value] =
-      valueTypeAdapter.deserializer.deserialize(path, ast)
-    def deserializeValueFromNothing[AST, S](path: Path)(implicit ops: AstOps[AST, S]): DeserializationResult[Value] =
-      valueTypeAdapter.deserializer.deserializeFromNothing(path)
-    def serializeValue[AST, S](tagged: TypeTagged[Value])(implicit ops: AstOps[AST, S], guidance: SerializationGuidance): SerializationResult[AST] =
-      valueTypeAdapter.serializer.serialize(tagged)
+    def readValue[IR, WIRE](path: Path, ir: IR)(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): ReadResult[Value] =
+      irTransceiver.read(path, ir)
+    def readValueFromNothing[IR, WIRE](path: Path)(implicit ops: Ops[IR, WIRE]): ReadResult[Value] =
+      irTransceiver.readFromNothing(path)
+    def writeValue[IR](tagged: TypeTagged[Value])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =
+      irTransceiver.write(tagged)
 
     def valueIn(tagged: TypeTagged[Owner]): TypeTagged[Value] = {
       val TypeTagged(owner) = tagged

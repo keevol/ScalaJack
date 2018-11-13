@@ -7,8 +7,6 @@ import scala.util.control.NonFatal
 
 object ReadError {
 
-  case object Nothing extends ReadError
-
   case class Missing(reportedBy: IRTransceiver[_]) extends ReadError {
     override def message: String = s"Required field missing"
   }
@@ -72,14 +70,6 @@ object ReadResult {
       case e: ReadException => e.readFailure
       case NonFatal(e)      => ReadFailure(path, readError.applyOrElse(e, ReadError.ExceptionThrown))
     }
-
-  /* This doesn't feel materially different from the above!  See if we can live without it
-  def trapExceptions[T](path: Path)(body: => ReadResult[T], deserializationError: PartialFunction[Throwable, ReadError] = PartialFunction.empty): ReadResult[T] =
-    try body catch {
-      case e: ReadException => e.ReadFailure
-      case NonFatal(e) => ReadFailure(path, readError.applyOrElse(e, ReadError.ExceptionThrown))
-    }
-  */
 }
 
 sealed trait ReadResult[+T] {

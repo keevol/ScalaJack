@@ -67,8 +67,7 @@ class TraitIRTransceiver[T](
           case IRObject(concreteFields) =>
             val WriteSuccess(typeIR) = f.map(bij =>
               stringTransceiver.write(TypeTagged(bij.unapply(concreteType), TypeType))).getOrElse(
-              typeIRTransceiver.write(TypeTagged(concreteType, TypeType))
-            )
+              typeIRTransceiver.write(TypeTagged(concreteType, TypeType)))
             IRObject((typeFieldName, typeIR) +: concreteFields)
           case json => json
         }
@@ -95,5 +94,4 @@ case class TraitTypeAdapterFactory(hintLabel: String, specificType: Option[Type]
 
 case class TraitTypeAdapter[T](
     override val irTransceiver: IRTransceiver[T],
-    polymorphicType:            Type
-) extends TypeAdapter[T]
+    polymorphicType:            Type) extends TypeAdapter[T]

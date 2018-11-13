@@ -232,23 +232,28 @@ object PlainClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
       inferConstructorValFields match {
         case members if (!members.isEmpty) =>
           // Because all the val fields were found in the constructor we can use a normal CaseClassTypeAdapter
+          val ccTransceiver = CaseClassIRTransceiver(
+            context,
+            constructorMirror,
+            context.typeAdapterOf[Type].irTransceiver,
+            Nil,
+            members,
+            isSJCapture,
+            typeTag)
           CaseClassTypeAdapter[T](
-            new ClassDeserializerUsingReflectedConstructor[T](context, constructorMirror, context.typeAdapterOf[Type].deserializer, Nil, members, isSJCapture),
-            new ClassSerializer[T](context, context.typeAdapterOf[Type].serializer, Nil, members, isSJCapture),
+            ccTransceiver,
             List.empty[ClassLikeTypeAdapter.TypeMember[T]], members,
             collectionAnnotation)
         case _ if (!classSymbol.isJava && hasEmptyConstructor) =>
           val members = reflectScalaGetterSetterFields
           PlainClassTypeAdapter[T](
-            new PlainClassDeserializer[T](members, (() => newInstance()), isSJCapture), // FIXME
-            new PlainClassSerializer[T](members, isSJCapture),
+            new PlainClassIRTransceiver[T](members, (() => newInstance()), isSJCapture), // FIXME
             members,
             collectionAnnotation)
         case _ if (classSymbol.isJava && hasEmptyConstructor) =>
           val members = reflectJavaGetterSetterFields
           PlainClassTypeAdapter[T](
-            new PlainClassDeserializer[T](members, (() => newInstance()), isSJCapture), // FIXME
-            new PlainClassSerializer[T](members, isSJCapture),
+            new PlainClassIRTransceiver[T](members, (() => newInstance()), isSJCapture), // FIXME
             members,
             collectionAnnotation)
         // There's no support for Java classes with non-empty constructors.  If multiple, which one to use?
@@ -265,9 +270,8 @@ object PlainClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
 }
 
 case class PlainClassTypeAdapter[T](
-    override val deserializer: Deserializer[T],
-    override val serializer:   Serializer[T],
-    fieldMembers:              List[ClassLikeTypeAdapter.FieldMember[T]],
-    collectionName:            Option[String]                            = None) extends ClassLikeTypeAdapter[T] {
+    override val irTransceiver: IRTransceiver[T],
+    fieldMembers:               List[ClassLikeTypeAdapter.FieldMember[T]],
+    collectionName:             Option[String]                            = None) extends ClassLikeTypeAdapter[T] {
   val typeMembers = List.empty[ClassLikeTypeAdapter.TypeMember[T]]
 }

@@ -99,8 +99,7 @@ class PlugTestHoles extends FunSpec {
           AstLong(5L),
           AstNull(),
           ops.applyObject(objstuff),
-          AstString("wow")
-        )
+          AstString("wow"))
         val result = AstValue.transform[JValue, JValue, String, String](ops.applyArray(jsonStuff))(Json4sOps, CSVOps)
         result.toString() should be("""JArray(List(JArray(List(JInt(1), JInt(2), JInt(3))), JBool(true), JDecimal(123.45), JDouble(12.34), JInt(5), JLong(5), JNull, JObject(List((a,JInt(5)), (b,JInt(6)))), JString(wow)))""")
       }

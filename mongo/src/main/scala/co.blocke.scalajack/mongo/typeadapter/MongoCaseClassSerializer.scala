@@ -11,7 +11,7 @@ class MongoCaseClassSerializer[C](
     typeSerializer: Serializer[Type],
     typeMembers:    List[CaseClassTypeAdapter.TypeMember[C]],
     fieldMembers:   List[ClassLikeTypeAdapter.FieldMember[C]],
-    isSJCapture:    Boolean)(implicit tt: TypeTag[C]) extends ClassSerializer[C](context, typeSerializer, typeMembers, fieldMembers, isSJCapture) {
+    isSJCapture:    Boolean)(implicit tt: TypeTag[C]) extends ClassWriter[C](context, typeSerializer, typeMembers, fieldMembers, isSJCapture) {
 
   override protected def handleDBKeys[AST, S](ast: AST, members: List[ClassLikeTypeAdapter.FieldMember[C]])(implicit ops: AstOps[AST, S]): AST = {
 

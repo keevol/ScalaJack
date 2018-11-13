@@ -1,11 +1,9 @@
 package co.blocke.scalajack
 
-/*
 import typeadapter._
-import typeadapter.javatime._
-import typeadapter.javaprimitives._
-import typeadapter.javacollections._
-*/
+//import typeadapter.javatime._
+//import typeadapter.javaprimitives._
+//import typeadapter.javacollections._
 
 import scala.reflect.runtime.currentMirror
 import scala.util.{ Success, Try }
@@ -15,25 +13,23 @@ import java.util.concurrent.ConcurrentHashMap
 object Context {
 
   val StandardContext = Context()
-  /*
-    .withFactory(AstParsingFallbackTypeAdapter)
+    //    .withFactory(AstParsingFallbackTypeAdapter)
     .withFactory(TermTypeAdapterFactory)
-    .withFactory(TypeParameterTypeAdapter)
-    .withFactory(AnyTypeAdapter)
+    //    .withFactory(TypeParameterTypeAdapter)
+    //    .withFactory(AnyTypeAdapter)
     .withFactory(TypeTypeAdapter)
-    .withFactory(MapTypeAdapter)
-    //    .withFactory(CollectionTypeAdapter) // <-- Deprecated???
-    .withFactory(CanBuildFromTypeAdapter)
-    .withFactory(TupleTypeAdapter)
+    //    .withFactory(MapTypeAdapter)
+    //    .withFactory(CanBuildFromTypeAdapter)
+    //    .withFactory(TupleTypeAdapter)
 
-    .withFactory(DerivedValueClassAdapter) // <-- WARNING: This must preceed CaseClassTypeAdapter or all
+    //    .withFactory(DerivedValueClassAdapter) // <-- WARNING: This must preceed CaseClassTypeAdapter or all
     //              ValueClasses will be interpreted as case classes!
 
     .withFactory(CaseClassTypeAdapter)
     .withFactory(OptionTypeAdapter)
-    .withFactory(TryTypeAdapter)
-    .withFactory(EitherTypeAdapter)
-    .withFactory(SealedTraitTypeAdapter)
+    //    .withFactory(TryTypeAdapter)
+    //    .withFactory(EitherTypeAdapter)
+    //    .withFactory(SealedTraitTypeAdapter)
     .withFactory(BooleanTypeAdapter)
     .withFactory(CharTypeAdapter)
     .withFactory(ByteTypeAdapter)
@@ -42,9 +38,10 @@ object Context {
     .withFactory(LongTypeAdapter)
     .withFactory(FloatTypeAdapter)
     .withFactory(DoubleTypeAdapter)
-    .withFactory(BigDecimalTypeAdapter)
-    .withFactory(BigIntTypeAdapter)
+    //    .withFactory(BigDecimalTypeAdapter)
+    //    .withFactory(BigIntTypeAdapter)
     .withFactory(StringTypeAdapter)
+  /*
     .withFactory(EnumerationTypeAdapter)
     .withFactory(JavaNumberTypeAdapter)
     .withFactory(JavaBooleanTypeAdapter)

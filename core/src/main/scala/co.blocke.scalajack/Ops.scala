@@ -103,12 +103,12 @@ trait IRAndOps {
 }
 
 object IRAndOps {
-  def apply[IR, WIRE, OBJ](captured: OBJ)(implicit ops: Ops.Aux[IR, WIRE, OBJ]): IRAndOps =
+  def apply[IR, WIRE, OBJ](captured: OBJ)(implicit opsx: Ops.Aux[IR, WIRE, OBJ]): IRAndOps =
     new IRAndOps {
       override type ObjectType = OBJ
       override type IRType = IR
       override type WireType = WIRE
       override val capturedFields: ObjectType = captured
-      override implicit val ops: Ops[IRType, WireType] = ops
+      override implicit val ops: Ops[IRType, WireType] = opsx
     }
 }

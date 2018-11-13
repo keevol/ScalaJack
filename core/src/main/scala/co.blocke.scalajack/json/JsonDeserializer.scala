@@ -327,7 +327,7 @@ trait JsonDeserializer[IR] extends WireDeserializer[IR, String] {
 
     skipWhitespace()
     if (position == maxPosition) {
-      DeserializationFailure(ReadError.Nothing) // Nothing to parse!
+      DeserializationSuccess(IRNull()) // Nothing to parse!
     } else {
       val result = DeserializationResult {
         readJsonValue()

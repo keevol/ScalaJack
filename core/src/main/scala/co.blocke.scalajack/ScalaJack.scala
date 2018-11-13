@@ -100,7 +100,7 @@ abstract class ScalaJackLike[IR, WIRE] extends JackFlavor[IR, WIRE] {
       override def typeAdapterOf[T](next: TypeAdapterFactory)(implicit context: Context, tt: TypeTag[T]): TypeAdapter[T] = {
         if (tt.tpe =:= typeOf[Type]) {
           TypeTypeAdapter(
-            new TypeIRTransceiver(mod.unapply, mod.apply),
+            new TypeTypeIRTransceiver(mod.unapply, mod.apply),
             tt.mirror,
             Some(mod)).asInstanceOf[TypeAdapter[T]]
         } else {
@@ -112,8 +112,7 @@ abstract class ScalaJackLike[IR, WIRE] extends JackFlavor[IR, WIRE] {
     val intermediateContext = Context(
       defaultHint,
       factories = customAdapters ::: typeModFactories ::: polymorphicTypeAdapterFactories ::: Context.StandardContext.factories ::: List(TraitTypeAdapterFactory(defaultHint), PlainClassTypeAdapter),
-      Some(this)
-    )
+      Some(this))
 
     // ParseOrElse functionality
     val parseOrElseFactories = parseOrElseMap.map {

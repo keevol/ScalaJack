@@ -2,7 +2,7 @@ package co.blocke.scalajack
 package mongo
 package typeadapter
 
-import co.blocke.scalajack.typeadapter.{ CaseClassTypeAdapter, ClassDeserializerUsingReflectedConstructor }
+import co.blocke.scalajack.typeadapter.{ CaseClassTypeAdapter, ClassReaderUsingReflectedConstructor }
 
 object MongoCaseClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
 
@@ -24,7 +24,7 @@ object MongoCaseClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
           next.typeAdapterOf[T]
         case _ =>
           val ccta = next.typeAdapterOf[T].as[CaseClassTypeAdapter[T]]
-          val constructorMirror = ccta.deserializer.asInstanceOf[ClassDeserializerUsingReflectedConstructor[T]].constructorMirror
+          val constructorMirror = ccta.deserializer.asInstanceOf[ClassReaderUsingReflectedConstructor[T]].constructorMirror
 
           ccta.copy(
             serializer   = new MongoCaseClassSerializer(

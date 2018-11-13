@@ -13,7 +13,7 @@ object DoubleTypeAdapter extends TypeAdapter.=:=[Double] {
         case IRDouble(doubleValue)              => ReadSuccess(TypeTagged(doubleValue))
         case IRString(s) if (guidance.isMapKey) => this.read(path, ops.deserialize(s.asInstanceOf[WIRE]).get)(ops, guidance = guidance.copy(isMapKey = false))
         // TODO handle other JSON types
-        case _                                   => ReadFailure(path, ReadError.Unexpected(s"Expected a JSON number, not $ir", reportedBy = self))
+        case _                                  => ReadFailure(path, ReadError.Unexpected(s"Expected a JSON number, not $ir", reportedBy = self))
       }
 
     override def write[IR](tagged: TypeTagged[Double])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =
