@@ -53,7 +53,6 @@ object CanBuildFromTypeAdapter extends TypeAdapterFactory.<:<.withOneTypeParam[G
 
       if (tt.tpe <:< typeOf[GenMapLike[_, _, _]] && elementTypeAfterSubstitution <:< typeOf[(_, _)]) {
         /*
-
         I'm not 100% sure what this clause is supposed to do, or what case it handles!  Cutting it out doesn't
         break any tests so remvoing it for now...
 
@@ -91,8 +90,7 @@ object CanBuildFromTypeAdapter extends TypeAdapterFactory.<:<.withOneTypeParam[G
         def newBuilder(): mutable.Builder[E, T] = canBuildFrom.asInstanceOf[CanBuildFrom[Any, E, T]]()
 
         Some(CanBuildFromTypeAdapter[E, T](
-          new CollectionDeserializer[E, T](elementTypeAdapter.deserializer.asInstanceOf[Deserializer[E]], () => newBuilder),
-          new CollectionSerializer[E, T](elementTypeAdapter.serializer.asInstanceOf[Serializer[E]]),
+          new CollectionIRTransceiver[E, T](elementTypeAdapter.irTransceiver.asInstanceOf[IRTransceiver[E]], () => newBuilder),
           canBuildFrom.asInstanceOf[CanBuildFrom[_, E, T]],
           elementTypeAdapter.asInstanceOf[TypeAdapter[E]]))
       }
@@ -104,14 +102,80 @@ object CanBuildFromTypeAdapter extends TypeAdapterFactory.<:<.withOneTypeParam[G
 }
 
 case class CanBuildMapTypeAdapter[Key, Value, To <: GenMapLike[Key, Value, To]](
-    override val deserializer: Deserializer[To],
-    override val serializer:   Serializer[To],
+    override val irTransceiver: IRTransceiver[To],
     canBuildFrom:              CanBuildFrom[_, (Key, Value), To],
     keyTypeAdapter:            TypeAdapter[Key],
     valueTypeAdapter:          TypeAdapter[Value]) extends TypeAdapter[To]
 
 case class CanBuildFromTypeAdapter[Elem, To <: GenTraversableOnce[Elem]](
-    override val deserializer: Deserializer[To],
-    override val serializer:   Serializer[To],
+    override val irTransceiver: IRTransceiver[To],
     canBuildFrom:              CanBuildFrom[_, Elem, To],
     elementTypeAdapter:        TypeAdapter[Elem])(implicit tt: TypeTag[To]) extends TypeAdapter[To]
+
+
+class CollectionIRTransceiver[E, C <: GenTraversableOnce[E]](elementTransceiver: IRTransceiver[E], newBuilder: () => mutable.Builder[E, C])(implicit tt: TypeTag[C]) extends IRTransceiver[C] {
+
+  self =>
+
+  private val taggedNull: TypeTagged[C] = TypeTagged(null.asInstanceOf[C], tt.tpe)
+
+  private class TaggedCollection(override val get: C, taggedElements: List[TypeTagged[E]]) extends TypeTagged[C] {
+    override lazy val tpe: Type = {
+      //      val elementType = lub(taggedElements.map(_.tpe))
+      typeOf[C]
+    }
+  }
+
+  private val GenTraversableOnceTypeSymbol: TypeSymbol = symbolOf[GenTraversableOnce[_]]
+
+  override def read[IR, WIRE](path: Path, ir: IR)(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): ReadResult[C] =
+    ir match {
+      case IRNull() =>
+        ReadSuccess(taggedNull)
+
+      case IRArray(elements) =>
+        val elementsBuilder = newBuilder()
+        val taggedElementsBuilder = List.newBuilder[TypeTagged[E]]
+        val errorSequencesBuilder = Seq.newBuilder[Seq[(Path, ReadError)]]
+
+        elements.zipWithIndex.foreach{ case(elementIR, index) =>
+          elementTransceiver.read(path \ index, elementIR) match {
+            case ReadSuccess(taggedElement @ TypeTagged(element)) =>
+              elementsBuilder += element
+              taggedElementsBuilder += taggedElement
+
+            case ReadFailure(errorSequence) =>
+              errorSequencesBuilder += errorSequence
+          }
+        }
+
+        val errorSequences: Seq[Seq[(Path, ReadError)]] = errorSequencesBuilder.result()
+        if (errorSequences.isEmpty) {
+          val taggedElements = taggedElementsBuilder.result()
+          ReadSuccess(new TaggedCollection(elementsBuilder.result(), taggedElements))
+        } else {
+          ReadFailure(errorSequences.flatten.to[collection.immutable.Seq])
+        }
+
+      case _ =>
+        ReadFailure(path, ReadError.Unexpected(s"Expected a JSON array, not $ir", reportedBy = self))
+    }
+
+  override def write[IR](tagged: TypeTagged[C])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =
+    tagged match {
+      case TypeTagged(null) =>
+        WriteSuccess(IRNull())
+
+      case TypeTagged(collection) =>
+        lazy val elementType: Type = tagged.tpe.baseType(GenTraversableOnceTypeSymbol).typeArgs.head
+
+        class TaggedElement(override val get: E) extends TypeTagged[E] {
+          override def tpe: Type = elementType
+        }
+
+       WriteSuccess(IRArray(collection.asInstanceOf[GenTraversableOnce[E]].toList.map{ oneElement =>
+         elementTransceiver.write(new TaggedElement(oneElement))(ops, guidance.withSeq()).get
+       }))
+    }
+
+}

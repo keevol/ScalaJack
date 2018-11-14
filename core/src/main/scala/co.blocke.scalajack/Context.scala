@@ -13,23 +13,23 @@ import java.util.concurrent.ConcurrentHashMap
 object Context {
 
   val StandardContext = Context()
-    //    .withFactory(AstParsingFallbackTypeAdapter)
+    .withFactory(IRParsingFallbackTypeAdapter)
     .withFactory(TermTypeAdapterFactory)
-    //    .withFactory(TypeParameterTypeAdapter)
+    .withFactory(TypeParameterTypeAdapter)
     //    .withFactory(AnyTypeAdapter)
     .withFactory(TypeTypeAdapter)
     //    .withFactory(MapTypeAdapter)
     //    .withFactory(CanBuildFromTypeAdapter)
-    //    .withFactory(TupleTypeAdapter)
+    .withFactory(TupleTypeAdapter)
 
     //    .withFactory(DerivedValueClassAdapter) // <-- WARNING: This must preceed CaseClassTypeAdapter or all
     //              ValueClasses will be interpreted as case classes!
 
     .withFactory(CaseClassTypeAdapter)
     .withFactory(OptionTypeAdapter)
-    //    .withFactory(TryTypeAdapter)
-    //    .withFactory(EitherTypeAdapter)
-    //    .withFactory(SealedTraitTypeAdapter)
+    .withFactory(TryTypeAdapter)
+    .withFactory(EitherTypeAdapter)
+    .withFactory(SealedTraitTypeAdapter)
     .withFactory(BooleanTypeAdapter)
     .withFactory(CharTypeAdapter)
     .withFactory(ByteTypeAdapter)
@@ -41,8 +41,9 @@ object Context {
     //    .withFactory(BigDecimalTypeAdapter)
     //    .withFactory(BigIntTypeAdapter)
     .withFactory(StringTypeAdapter)
-  /*
     .withFactory(EnumerationTypeAdapter)
+    .withFactory(UUIDTypeAdapter)
+  /*
     .withFactory(JavaNumberTypeAdapter)
     .withFactory(JavaBooleanTypeAdapter)
     .withFactory(JavaByteTypeAdapter)
@@ -56,7 +57,6 @@ object Context {
     .withFactory(JavaBigIntegerTypeAdapter)
     .withFactory(JavaMapTypeAdapter)
     .withFactory(JavaCollectionTypeAdapter)
-    .withFactory(UUIDTypeAdapter)
     .withFactory(DurationTypeAdapter)
     .withFactory(InstantTypeAdapter)
     .withFactory(LocalDateTimeTypeAdapter)
