@@ -16,7 +16,7 @@ object DoubleTypeAdapter extends TypeAdapter.=:=[Double] {
         case _                                  => ReadFailure(path, ReadError.Unexpected(s"Expected a JSON number, not $ir", reportedBy = self))
       }
 
-    override def write[IR](tagged: TypeTagged[Double])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =
+    override def write[IR, WIRE](tagged: TypeTagged[Double])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =
       WriteSuccess(IRDouble(tagged.get.doubleValue()))
   }
 }

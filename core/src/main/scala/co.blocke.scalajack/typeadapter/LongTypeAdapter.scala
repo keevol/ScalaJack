@@ -14,7 +14,7 @@ object LongTypeAdapter extends TypeAdapter.=:=[Long] {
           ReadFailure(path, ReadError.Unexpected("Expected a JSON number (long)", reportedBy = self))
       }
 
-    override def write[IR](tagged: TypeTagged[Long])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =
+    override def write[IR, WIRE](tagged: TypeTagged[Long])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =
       WriteSuccess(IRLong(tagged.get.longValue()))
   }
 }

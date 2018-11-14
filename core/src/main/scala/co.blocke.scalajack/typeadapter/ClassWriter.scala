@@ -18,7 +18,7 @@ trait ClassWriter[C] extends IRWriter[C] {
   // Hook for subclasses (e.g. Mongo) do to anything needed to handle the db key field(s) as given by the @DBKey annotation
   protected def handleDBKeys[IR](ir: IR, members: List[ClassLikeTypeAdapter.FieldMember[C]])(implicit ops: OpsBase[IR]): IR = ir
 
-  override def write[IR](tagged: TypeTagged[C])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =
+  override def write[IR, WIRE](tagged: TypeTagged[C])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =
     tagged match {
       case TypeTagged(null) =>
         WriteSuccess(IRNull())

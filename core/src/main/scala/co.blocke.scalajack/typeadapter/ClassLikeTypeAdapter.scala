@@ -36,7 +36,7 @@ object ClassLikeTypeAdapter {
       irTransceiver.read(path, ir)
     def readValueFromNothing[IR, WIRE](path: Path)(implicit ops: Ops[IR, WIRE]): ReadResult[Value] =
       irTransceiver.readFromNothing(path)
-    def writeValue[IR](tagged: TypeTagged[Value])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =
+    def writeValue[IR, WIRE](tagged: TypeTagged[Value])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =
       irTransceiver.write(tagged)
 
     def valueIn(tagged: TypeTagged[Owner]): TypeTagged[Value] = {

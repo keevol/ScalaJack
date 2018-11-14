@@ -47,7 +47,7 @@ class EnumerationIRTransceiver[E <: Enumeration](enumeration: E)(implicit tt: Ty
         ReadFailure(path, ReadError.Unexpected("Expected a JSON string or int", reportedBy = self))
     }
 
-  override def write[IR](tagged: TypeTagged[E#Value])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =
+  override def write[IR, WIRE](tagged: TypeTagged[E#Value])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =
     tagged match {
       case TypeTagged(null)             => WriteSuccess(IRNull())
       case TypeTagged(enumerationValue) => WriteSuccess(IRString(enumerationValue.toString))

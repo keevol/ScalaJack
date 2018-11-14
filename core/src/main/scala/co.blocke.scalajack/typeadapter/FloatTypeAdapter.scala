@@ -47,7 +47,7 @@ object FloatTypeAdapter extends TypeAdapter.=:=[Float] {
       f - diff
     }
 
-    override def write[IR](tagged: TypeTagged[Float])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =
+    override def write[IR, WIRE](tagged: TypeTagged[Float])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =
       WriteSuccess(IRDouble(capFloat(tagged.get.floatValue())))
   }
 }

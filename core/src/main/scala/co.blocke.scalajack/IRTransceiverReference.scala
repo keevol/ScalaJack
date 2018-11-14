@@ -20,6 +20,6 @@ class IRTransceiverReference[T](initialTransceiver: IRTransceiver[T]) extends IR
   override def read[IR, WIRE](path: Path, ir: IR)(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): ReadResult[T] =
     ref.get().read[IR, WIRE](path, ir)
 
-  override def write[IR](tagged: TypeTagged[T])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =
-    ref.get().write[IR](tagged)
+  override def write[IR, WIRE](tagged: TypeTagged[T])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =
+    ref.get().write(tagged)
 }

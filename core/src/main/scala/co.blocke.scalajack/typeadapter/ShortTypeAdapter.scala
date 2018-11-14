@@ -17,7 +17,7 @@ object ShortTypeAdapter extends TypeAdapter.=:=[Short] {
         case _ => ReadFailure(path, ReadError.Unexpected(s"Expected a JSON number (short), not $ir", reportedBy = self))
       }
 
-    override def write[IR](tagged: TypeTagged[Short])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =
+    override def write[IR, WIRE](tagged: TypeTagged[Short])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =
       WriteSuccess(IRInt(tagged.get.intValue))
   }
 }

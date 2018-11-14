@@ -26,7 +26,7 @@ class TypeTypeIRTransceiver(
       case IRString(typeName) => ReadSuccess(TypeTagged(typeNameToType(typeName), TypeType))
     }
 
-  override def write[IR](tagged: TypeTagged[Type])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =
+  override def write[IR, WIRE](tagged: TypeTagged[Type])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =
     tagged match {
       // Is there such a thing as a null type?  Not sure Scala lets you set a type to null...
       //      case TypeTagged(null) => SerializationSuccess(AstNull())

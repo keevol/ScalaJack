@@ -28,8 +28,7 @@ class PlugTestHoles extends FunSpec {
         AstLong(5L),
         AstNull(),
         ops.applyObject(objstuff),
-        AstString("wow")
-      )
+        AstString("wow"))
       val result = AstValue.transform[JValue, BsonValue, String, Document](ops.applyArray(jsonStuff))(Json4sOps, BsonOps)
       val wrapper = Document("m" -> result)
       assertResult("""{ "m" : [[1, 2, 3], true, { "$numberDecimal" : "123.45" }, 12.34, 5, { "$numberLong" : "5" }, null, { "a" : 5, "b" : 6 }, "wow"] }""")(wrapper.toJson())

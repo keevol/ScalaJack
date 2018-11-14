@@ -13,8 +13,7 @@ class MongoCaseClassDeserializer[C](
     typeMembers:       List[CaseClassTypeAdapter.TypeMember[C]],
     fieldMembers:      List[ClassLikeTypeAdapter.FieldMember[C]],
     isSJCapture:       Boolean)(implicit tt: TypeTag[C]) extends ClassReaderUsingReflectedConstructor[C](
-  context, constructorMirror, typeDeserializer, typeMembers, fieldMembers, isSJCapture
-) {
+  context, constructorMirror, typeDeserializer, typeMembers, fieldMembers, isSJCapture) {
 
   override protected def handleDBKeys[AST, S](path: Path, ast: AST, members: List[ClassLikeTypeAdapter.FieldMember[C]])(implicit ops: AstOps[AST, S]): Either[DeserializationFailure, AST] =
     dbKeys.size match {

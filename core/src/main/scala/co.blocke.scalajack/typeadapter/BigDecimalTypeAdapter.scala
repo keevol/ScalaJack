@@ -20,7 +20,7 @@ object BigDecimalTypeAdapter extends TypeAdapter.=:=[BigDecimal] {
         case _                                  => ReadFailure(path, ReadError.Unexpected(s"Expected a JSON number, not $ir", reportedBy = self))
       }
 
-    override def write[IR](tagged: TypeTagged[BigDecimal])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =
+    override def write[IR, WIRE](tagged: TypeTagged[BigDecimal])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =
       tagged match {
         case TypeTagged(null)       => WriteSuccess(IRNull())
         case TypeTagged(bigDecimal) => WriteSuccess(IRDecimal(bigDecimal))

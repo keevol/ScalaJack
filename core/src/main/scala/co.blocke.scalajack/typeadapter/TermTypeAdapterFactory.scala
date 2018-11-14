@@ -35,7 +35,7 @@ class TermIRTransceiver[T](next: IRTransceiver[T])(implicit tt: TypeTag[T]) exte
   override def readFromNothing[IR, WIRE](path: Path)(implicit ops: Ops[IR, WIRE]): ReadResult[T] =
     next.readFromNothing(path)
 
-  override def write[IR](tagged: TypeTagged[T])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =
+  override def write[IR, WIRE](tagged: TypeTagged[T])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =
     next.write(tagged) // TODO implement this method
 }
 
@@ -49,7 +49,7 @@ object TermTypeAdapterFactory extends TypeAdapterFactory {
 
 }
 
-class TermTypeAdapter[T](override val irTransceiver: IRTransceiver[T], next: TypeAdapter[T]) extends TypeAdapter[T] {
+class TermTypeAdapter[T](override val irTransceiver: IRTransceiver[T], val next: TypeAdapter[T]) extends TypeAdapter[T] {
 
   self =>
 

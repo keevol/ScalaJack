@@ -40,6 +40,10 @@ object IRParsingFallbackTypeAdapter extends TypeAdapterFactory {
 
             case readFailure @ ReadFailure(_) => readFailure
           }
+
+        override def write[IR, WIRE](tagged: TypeTagged[T])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =
+          next.write(tagged)
+
       }, nextTypeAdapter)
   }
 

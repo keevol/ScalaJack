@@ -1,66 +1,70 @@
 package co.blocke.scalajack
 package typeadapter
 
-import scala.collection.{GenMap, immutable}
+import scala.collection.{ GenMap, immutable, mutable }
 import scala.util.control.NonFatal
 
-class MapSerializer[K, V, M <: GenMap[K, V]](keySerializer: Serializer[K], valueSerializer: Serializer[V], context: Context) extends Serializer[M] {
+//class MapSerializer[K, V, M <: GenMap[K, V]](keySerializer: Serializer[K], valueSerializer: Serializer[V], context: Context) extends Serializer[M] {
+//
+//  class MapDeserializer[K, V, M <: GenMap[K, V]](
+//                                                  keyDeserializer:           Deserializer[K],
+//                                                  valueDeserializer:         Deserializer[V],
+//                                                  keyValuePairsDeserializer: Deserializer[List[(K, V)]],
+//                                                  newBuilder:                () => mutable.Builder[(K, V), M])
+//                                                (implicit tt: TypeTag[M], ttk: TypeTag[K], ttv: TypeTag[V], context: Context) extends Deserializer[M] {
+//
 
-  class MapDeserializer[K, V, M <: GenMap[K, V]](
-                                                  keyDeserializer:           Deserializer[K],
-                                                  valueDeserializer:         Deserializer[V],
-                                                  keyValuePairsDeserializer: Deserializer[List[(K, V)]],
-                                                  newBuilder:                () => mutable.Builder[(K, V), M])
-                                                (implicit tt: TypeTag[M], ttk: TypeTag[K], ttv: TypeTag[V], context: Context) extends Deserializer[M] {
-
-    class MapIRTransceiver[K, V, M <: GenMap[K, V]](keyTransceiver: IRTransceiver[K], valueTransceiver: IRTransceiver[V])(implicit tt: TypeTag[M], ttk: TypeTag[K], ttv: TypeTag[V], context: Context) extends IRTransceiver[M] {
+class MapIRTransceiver[K, V, M <: GenMap[K, V]](
+    keyTransceiver:          IRTransceiver[K],
+    valueTransceiver:        IRTransceiver[V],
+    keyValuePairTransceiver: IRTransceiver[List[(K, V)]],
+    newBuilder:              () => mutable.Builder[(K, V), M])(implicit tt: TypeTag[M], ttk: TypeTag[K], ttv: TypeTag[V], context: Context) extends IRTransceiver[M] {
 
   self =>
 
   private val taggedNull: TypeTagged[M] = TypeTagged(null.asInstanceOf[M], tt.tpe)
 
-  def read[IR, WIRE](path: Path, ir: IR)(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): ReadResult[M] =
-    ast match {
-      case AstNull() =>
-        DeserializationSuccess(taggedNull)
+  override def read[IR, WIRE](path: Path, ir: IR)(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): ReadResult[M] =
+    ir match {
+      case IRNull() =>
+        ReadSuccess(taggedNull)
 
-      case AstObject(x) =>
+      case IRObject(objectFields) =>
         try {
-          val objectFields = x.asInstanceOf[ops.ObjectFields]
-
           val builder = newBuilder()
           val taggedKeysBuilder = List.newBuilder[TypeTagged[K]]
           val taggedValuesBuilder = List.newBuilder[TypeTagged[V]]
 
-          val errorsBuilder = immutable.Seq.newBuilder[(Path, DeserializationError)]
+          val errorsBuilder = immutable.Seq.newBuilder[(Path, ReadError)]
 
-          ops.foreachObjectField(objectFields, { (fieldName, fieldValueAst) =>
-            val keyDeserializationResult = keyDeserializer.deserialize(path \ fieldName, AstString[AST, S](fieldName))(ops, guidance.withMapKey())
-            val valueDeserializationResult = valueDeserializer.deserialize(path \ fieldName, fieldValueAst)(ops, guidance.withMapValue())
+          objectFields.foreach {
+            case (fieldName, fieldValueAst) =>
+              val keyReadResult = keyTransceiver.read(path \ fieldName, IRString(fieldName))(ops, guidance.withMapKey())
+              val valueReadResult = valueTransceiver.read(path \ fieldName, fieldValueAst)(ops, guidance.withMapValue())
 
-            //            println("K: " + keyDeserializationResult)
-            //            println("V: " + valueDeserializationResult)
-            //            println("--------------")
-            (keyDeserializationResult, valueDeserializationResult) match {
-              case (DeserializationSuccess(taggedKey), DeserializationSuccess(taggedValue)) =>
-                val TypeTagged(key) = taggedKey
-                taggedKeysBuilder += taggedKey
+              //            println("K: " + keyDeserializationResult)
+              //            println("V: " + valueDeserializationResult)
+              //            println("--------------")
+              (keyReadResult, valueReadResult) match {
+                case (ReadSuccess(taggedKey), ReadSuccess(taggedValue)) =>
+                  val TypeTagged(key) = taggedKey
+                  taggedKeysBuilder += taggedKey
 
-                val TypeTagged(value) = taggedValue
-                taggedValuesBuilder += taggedValue
+                  val TypeTagged(value) = taggedValue
+                  taggedValuesBuilder += taggedValue
 
-                builder += key -> value
+                  builder += key -> value
 
-              case _ =>
-                errorsBuilder ++= keyDeserializationResult.errors
-                errorsBuilder ++= valueDeserializationResult.errors
-            }
-          })
+                case _ =>
+                  errorsBuilder ++= keyReadResult.errors
+                  errorsBuilder ++= valueReadResult.errors
+              }
+          }
 
           val errors = errorsBuilder.result()
 
           if (errors.nonEmpty) {
-            DeserializationFailure(errors)
+            ReadFailure(errors)
           } else {
             val map = builder.result()
 
@@ -68,16 +72,16 @@ class MapSerializer[K, V, M <: GenMap[K, V]](keySerializer: Serializer[K], value
               override lazy val tpe: Type = tt.tpe
             }
 
-            DeserializationSuccess(new TaggedMapFromAstObject(map, taggedKeysBuilder.result(), taggedValuesBuilder.result()))
+            ReadSuccess(new TaggedMapFromAstObject(map, taggedKeysBuilder.result(), taggedValuesBuilder.result()))
           }
         } catch {
           case NonFatal(e) =>
-            DeserializationFailure(path, DeserializationError.ExceptionThrown(e))
+            ReadFailure(path, ReadError.ExceptionThrown(e))
         }
 
-      case AstArray(_) =>
-        DeserializationResult(path) {
-          val DeserializationSuccess(taggedKeyValuePairs) = keyValuePairsDeserializer.deserialize(path, ast)
+      case IRArray(_) =>
+        ReadResult(path) {
+          val ReadSuccess(taggedKeyValuePairs) = keyValuePairTransceiver.read(path, ir)
           val TypeTagged(keyValuePairs) = taggedKeyValuePairs
 
           lazy val keyValuePairType: Type = taggedKeyValuePairs.tpe.baseType(symbolOf[List[_]]).typeArgs.head
@@ -103,15 +107,76 @@ class MapSerializer[K, V, M <: GenMap[K, V]](keySerializer: Serializer[K], value
           new TaggedMapFromAstArray(map)
         }
 
-      case AstString(s) if (guidance.isMapKey) => // Parse and deserialize non-string Map key (embedded in a string, e.g. Map as a key to another Map)
-        val deserializer = context.typeAdapterOf[M].deserializer
-        deserializer.deserialize(Path.Root, ops.parse(s.asInstanceOf[S]))
+      case IRString(s) if (guidance.isMapKey) => // Parse and deserialize non-string Map key (embedded in a string, e.g. Map as a key to another Map)
+        context.typeAdapterOf[M].irTransceiver.read(Path.Root, ops.deserialize(s.asInstanceOf[WIRE]).get)
 
       case _ =>
-        DeserializationFailure(path, DeserializationError.Unsupported("Expected a JSON object", reportedBy = self))
+        ReadFailure(path, ReadError.Unsupported("Expected a JSON object", reportedBy = self))
     }
-}
 
-  def write[IR](tagged: TypeTagged[T])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =
+  override def write[IR, WIRE](tagged: TypeTagged[M])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =
+    tagged match {
+      case TypeTagged(null) => WriteSuccess(IRNull())
+      case TypeTagged(map) =>
+        lazy val mapType: Type = tagged.tpe.baseType(symbolOf[GenMap[_, _]])
 
+        lazy val keyType: Type = {
+          val k :: _ :: Nil = mapType.typeArgs
+          k
+        }
+
+        lazy val valueType: Type = {
+          val _ :: v :: Nil = mapType.typeArgs
+          v
+        }
+
+        class TaggedKey(override val get: K) extends TypeTagged[K] {
+          override def tpe: Type = keyType
+        }
+
+        class TaggedValue(override val get: V) extends TypeTagged[V] {
+          override def tpe: Type = valueType
+        }
+
+        val errorsBuilder = immutable.Seq.newBuilder[WriteError]
+
+        val fields = mutable.ListBuffer.empty[(String, IR)]
+        map foreach {
+          case (key, value) =>
+            val keyWriteResult = keyTransceiver.write(new TaggedKey(key))(ops, guidance.withMapKey())
+            val valueWriteResult = valueTransceiver.write(new TaggedValue(value))(ops, guidance.withMapValue())
+
+            (keyWriteResult, valueWriteResult) match {
+              case (WriteSuccess(keyAst), WriteSuccess(valueIR)) =>
+                val keyString =
+                  keyAst match {
+                    // Problem:  Map keys are strings in Ast, but we don't want to presume the same for
+                    // non-json Map representations!  Therefor keyAst needs to be a dependent value, either String or ???
+                    case IRString(s)                 => s
+                    case _ if (guidance.isCanonical) => ops.serialize(keyAst, context.sjFlavor.get).asInstanceOf[String]
+                    case _                           => No_Quote_Marker + ops.serialize(keyAst, context.sjFlavor.get).toString
+                  }
+                fields += ((keyString, valueIR))
+
+              case (WriteSuccess(keyAst), WriteFailure(Seq(WriteError.Nothing))) =>
+                val keyString =
+                  keyAst match {
+                    case IRString(s) => s
+                    case _           => ops.serialize(keyAst, context.sjFlavor.get).toString
+                  }
+                fields += ((keyString, IRNull()))
+
+              case _ =>
+                errorsBuilder ++= keyWriteResult.errors
+                errorsBuilder ++= valueWriteResult.errors
+            }
+        }
+
+        val errors = errorsBuilder.result()
+        if (errors.nonEmpty) {
+          WriteFailure(errors)
+        } else {
+          WriteSuccess(IRObject(fields))
+        }
+    }
 }

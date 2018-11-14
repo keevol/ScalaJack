@@ -133,7 +133,7 @@ class TupleIRTransceiver[Tuple](fields: IndexedSeq[Field[Tuple]], tupleConstruct
       case _                                  => ReadFailure(path, ReadError.Unexpected(s"Expected a JSON array, not $ir", reportedBy = self))
     }
 
-  override def write[IR](taggedTuple: TypeTagged[Tuple])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =
+  override def write[IR, WIRE](taggedTuple: TypeTagged[Tuple])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =
     taggedTuple match {
       case TypeTagged(null) =>
         WriteSuccess(IRNull())

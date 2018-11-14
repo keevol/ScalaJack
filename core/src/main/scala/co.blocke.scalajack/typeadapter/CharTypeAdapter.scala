@@ -14,7 +14,7 @@ object CharTypeAdapter extends TypeAdapter.=:=[Char] {
         case _                                      => ReadFailure(path, ReadError.Unexpected("Expected a char (JSON string of length 1)", reportedBy = self))
       }
 
-    override def write[IR](tagged: TypeTagged[Char])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =
+    override def write[IR, WIRE](tagged: TypeTagged[Char])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =
       WriteSuccess(IRString("" + tagged.get))
   }
 }

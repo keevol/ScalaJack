@@ -11,7 +11,7 @@ object BooleanTypeAdapter extends TypeAdapter.=:=[Boolean] {
         case _                                  => ReadFailure(path, ReadError.Unexpected("Expected a JSON boolean", reportedBy = self))
       }
 
-    override def write[IR](tagged: TypeTagged[Boolean])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =
+    override def write[IR, WIRE](tagged: TypeTagged[Boolean])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =
       WriteSuccess(IRBoolean(tagged.get.booleanValue()))
   }
 }

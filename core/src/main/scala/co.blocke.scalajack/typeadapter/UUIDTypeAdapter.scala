@@ -19,7 +19,7 @@ object UUIDTypeAdapter extends TypeAdapter.=:=[UUID] {
         case _ => ReadFailure(path, ReadError.Unexpected("Expected a JSON string", reportedBy = self))
       }
 
-    override def write[IR](tagged: TypeTagged[UUID])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =
+    override def write[IR, WIRE](tagged: TypeTagged[UUID])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =
       tagged match {
         case TypeTagged(null) => WriteSuccess(IRNull())
         case TypeTagged(uuid) => WriteSuccess(IRString(uuid.toString))

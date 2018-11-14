@@ -16,13 +16,13 @@ object Context {
     .withFactory(IRParsingFallbackTypeAdapter)
     .withFactory(TermTypeAdapterFactory)
     .withFactory(TypeParameterTypeAdapter)
-    //    .withFactory(AnyTypeAdapter)
+    .withFactory(AnyTypeAdapter)
     .withFactory(TypeTypeAdapter)
-    //    .withFactory(MapTypeAdapter)
-    //    .withFactory(CanBuildFromTypeAdapter)
+    .withFactory(MapTypeAdapter)
+    .withFactory(CanBuildFromTypeAdapter)
     .withFactory(TupleTypeAdapter)
 
-    //    .withFactory(DerivedValueClassAdapter) // <-- WARNING: This must preceed CaseClassTypeAdapter or all
+    .withFactory(DerivedValueClassTypeAdapter) // <-- WARNING: This must preceed CaseClassTypeAdapter or all
     //              ValueClasses will be interpreted as case classes!
 
     .withFactory(CaseClassTypeAdapter)
@@ -38,8 +38,8 @@ object Context {
     .withFactory(LongTypeAdapter)
     .withFactory(FloatTypeAdapter)
     .withFactory(DoubleTypeAdapter)
-    //    .withFactory(BigDecimalTypeAdapter)
-    //    .withFactory(BigIntTypeAdapter)
+    .withFactory(BigDecimalTypeAdapter)
+    .withFactory(BigIntTypeAdapter)
     .withFactory(StringTypeAdapter)
     .withFactory(EnumerationTypeAdapter)
     .withFactory(UUIDTypeAdapter)
@@ -143,4 +143,8 @@ case class Context(defaultHint: String = "", factories: List[TypeAdapterFactory]
 
   def addTypeAdapterFactories(typeAdapterFactories: TypeAdapterFactory*): Context = copy(factories = typeAdapterFactories.toList ++ factories)
 
+  // Unwind the wrapping magic of IRParsingFallback and Term type adapters to get to the "real" adapter.
+  // (for debugging principally--assumptions made, so be warned!)
+  def resolvedTypeAdapterOf[T: TypeTag]: TypeAdapter[T] =
+    typeAdapterOf[T].as[IRParsingFallbackTypeAdapter[T]].decorated.as[typeadapter.TermTypeAdapter[T]].next
 }

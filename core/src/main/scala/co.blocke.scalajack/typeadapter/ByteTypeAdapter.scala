@@ -18,7 +18,7 @@ object ByteTypeAdapter extends TypeAdapter.=:=[Byte] {
           ReadFailure(path, ReadError.Unexpected("Expected a JSON number (byte)", reportedBy = self))
       }
 
-    override def write[IR](tagged: TypeTagged[Byte])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =
+    override def write[IR, WIRE](tagged: TypeTagged[Byte])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =
       WriteSuccess(IRInt(tagged.get.intValue))
   }
 }

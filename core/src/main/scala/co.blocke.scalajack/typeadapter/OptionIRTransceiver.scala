@@ -53,7 +53,7 @@ class OptionIRTransceiver[T](next: IRTransceiver[T])(implicit tt: TypeTag[T]) ex
   override def readFromNothing[IR, WIRE](path: Path)(implicit ops: Ops[IR, WIRE]): ReadResult[Option[T]] =
     ReadSuccess(TaggedNone)
 
-  override def write[IR](tagged: TypeTagged[Option[T]])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =
+  override def write[IR, WIRE](tagged: TypeTagged[Option[T]])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =
     tagged match {
       case TypeTagged(null) => WriteSuccess(IRNull())
       case TypeTagged(None) if (guidance.isMapKey) => WriteSuccess(IRString(""))

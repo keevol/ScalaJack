@@ -83,7 +83,7 @@ object SealedTraitTypeAdapter extends TypeAdapterFactory {
                         case TypeTagged(null) => false
                         case TypeTagged(x)    => runtimeClass.isInstance(x)
                       }
-                    override def write[IR](tagged: TypeTagged[T])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =
+                    override def write[IR, WIRE](tagged: TypeTagged[T])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =
                       irTransceiver.write(tagged)
                   }
                 }).toSet)
@@ -125,7 +125,7 @@ class CaseObjectIRTransceiver[T](subclasses: List[String])(implicit tt: TypeTag[
       case _ => ReadFailure(path, ReadError.Unexpected(s"Expected a valid subclass of $CaseObjectType", reportedBy = self))
     }
 
-  override def write[IR](tagged: TypeTagged[T])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =
+  override def write[IR, WIRE](tagged: TypeTagged[T])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =
     tagged match {
       case TypeTagged(null) => WriteSuccess(IRNull())
       case TypeTagged(c)    => WriteSuccess(IRString(c.toString))
@@ -137,7 +137,7 @@ object SealedTraitIRTransceiver {
     val fieldNames: immutable.Set[String]
     val irTransceiver: IRTransceiver[T]
     def isInstance(tagged: TypeTagged[T]): Boolean
-    def write[IR](tagged: TypeTagged[T])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR]
+    def write[IR, WIRE](tagged: TypeTagged[T])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR]
   }
 }
 
@@ -165,7 +165,7 @@ class SealedTraitIRTransceiver[T](implementations: immutable.Set[SealedTraitIRTr
         ReadFailure(path, ReadError.Unexpected("Expected a JSON object", reportedBy = self))
     }
 
-  override def write[IR](tagged: TypeTagged[T])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =
+  override def write[IR, WIRE](tagged: TypeTagged[T])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =
     tagged match {
       case TypeTagged(null) => WriteSuccess(IRNull())
       case TypeTagged(_) =>

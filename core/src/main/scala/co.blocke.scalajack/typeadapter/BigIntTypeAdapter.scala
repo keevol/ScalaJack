@@ -31,7 +31,7 @@ object BigIntTypeAdapter extends TypeAdapter.=:=[BigInt] {
         case _                                  => ReadFailure(path, ReadError.Unexpected("Expected a JSON number (integer value)", reportedBy = self))
       }
 
-    override def write[IR](tagged: TypeTagged[BigInt])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =
+    override def write[IR, WIRE](tagged: TypeTagged[BigInt])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =
       tagged match {
         case TypeTagged(null)   => WriteSuccess(IRNull())
         case TypeTagged(bigInt) => WriteSuccess(IRInt(bigInt))

@@ -93,21 +93,21 @@ lazy val scalajack = project.in(file("core"))
       test(scalatest)
   )
 
-lazy val scalajack_dynamodb = project.in(file("dynamodb"))
-  .settings(basicSettings: _*)
-  .settings(pubSettings: _*)
-  .settings(libraryDependencies ++=
-    compile( dynamo ) ++
-      test( scalatest, slf4j_simple )
-  ).dependsOn( scalajack )
-
-lazy val scalajack_mongo = project.in(file("mongo"))
-  .settings(basicSettings: _*)
-  .settings(pubSettings: _*)
-  .settings(libraryDependencies ++=
-    compile( mongo_scala ) ++
-      test( scalatest, slf4j_simple )
-  ).dependsOn( scalajack )
+//lazy val scalajack_dynamodb = project.in(file("dynamodb"))
+//  .settings(basicSettings: _*)
+//  .settings(pubSettings: _*)
+//  .settings(libraryDependencies ++=
+//    compile( dynamo ) ++
+//      test( scalatest, slf4j_simple )
+//  ).dependsOn( scalajack )
+//
+//lazy val scalajack_mongo = project.in(file("mongo"))
+//  .settings(basicSettings: _*)
+//  .settings(pubSettings: _*)
+//  .settings(libraryDependencies ++=
+//    compile( mongo_scala ) ++
+//      test( scalatest, slf4j_simple )
+//  ).dependsOn( scalajack )
 
 
 //lazy val scalajack_benchmarks = project.in(file("benchmarks"))

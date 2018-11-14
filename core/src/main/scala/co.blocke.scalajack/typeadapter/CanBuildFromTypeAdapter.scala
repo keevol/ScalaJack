@@ -103,15 +103,14 @@ object CanBuildFromTypeAdapter extends TypeAdapterFactory.<:<.withOneTypeParam[G
 
 case class CanBuildMapTypeAdapter[Key, Value, To <: GenMapLike[Key, Value, To]](
     override val irTransceiver: IRTransceiver[To],
-    canBuildFrom:              CanBuildFrom[_, (Key, Value), To],
-    keyTypeAdapter:            TypeAdapter[Key],
-    valueTypeAdapter:          TypeAdapter[Value]) extends TypeAdapter[To]
+    canBuildFrom:               CanBuildFrom[_, (Key, Value), To],
+    keyTypeAdapter:             TypeAdapter[Key],
+    valueTypeAdapter:           TypeAdapter[Value]) extends TypeAdapter[To]
 
 case class CanBuildFromTypeAdapter[Elem, To <: GenTraversableOnce[Elem]](
     override val irTransceiver: IRTransceiver[To],
-    canBuildFrom:              CanBuildFrom[_, Elem, To],
-    elementTypeAdapter:        TypeAdapter[Elem])(implicit tt: TypeTag[To]) extends TypeAdapter[To]
-
+    canBuildFrom:               CanBuildFrom[_, Elem, To],
+    elementTypeAdapter:         TypeAdapter[Elem])(implicit tt: TypeTag[To]) extends TypeAdapter[To]
 
 class CollectionIRTransceiver[E, C <: GenTraversableOnce[E]](elementTransceiver: IRTransceiver[E], newBuilder: () => mutable.Builder[E, C])(implicit tt: TypeTag[C]) extends IRTransceiver[C] {
 
@@ -138,15 +137,16 @@ class CollectionIRTransceiver[E, C <: GenTraversableOnce[E]](elementTransceiver:
         val taggedElementsBuilder = List.newBuilder[TypeTagged[E]]
         val errorSequencesBuilder = Seq.newBuilder[Seq[(Path, ReadError)]]
 
-        elements.zipWithIndex.foreach{ case(elementIR, index) =>
-          elementTransceiver.read(path \ index, elementIR) match {
-            case ReadSuccess(taggedElement @ TypeTagged(element)) =>
-              elementsBuilder += element
-              taggedElementsBuilder += taggedElement
+        elements.zipWithIndex.foreach {
+          case (elementIR, index) =>
+            elementTransceiver.read(path \ index, elementIR) match {
+              case ReadSuccess(taggedElement @ TypeTagged(element)) =>
+                elementsBuilder += element
+                taggedElementsBuilder += taggedElement
 
-            case ReadFailure(errorSequence) =>
-              errorSequencesBuilder += errorSequence
-          }
+              case ReadFailure(errorSequence) =>
+                errorSequencesBuilder += errorSequence
+            }
         }
 
         val errorSequences: Seq[Seq[(Path, ReadError)]] = errorSequencesBuilder.result()
@@ -161,7 +161,7 @@ class CollectionIRTransceiver[E, C <: GenTraversableOnce[E]](elementTransceiver:
         ReadFailure(path, ReadError.Unexpected(s"Expected a JSON array, not $ir", reportedBy = self))
     }
 
-  override def write[IR](tagged: TypeTagged[C])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =
+  override def write[IR, WIRE](tagged: TypeTagged[C])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =
     tagged match {
       case TypeTagged(null) =>
         WriteSuccess(IRNull())
@@ -173,9 +173,9 @@ class CollectionIRTransceiver[E, C <: GenTraversableOnce[E]](elementTransceiver:
           override def tpe: Type = elementType
         }
 
-       WriteSuccess(IRArray(collection.asInstanceOf[GenTraversableOnce[E]].toList.map{ oneElement =>
-         elementTransceiver.write(new TaggedElement(oneElement))(ops, guidance.withSeq()).get
-       }))
+        WriteSuccess(IRArray(collection.asInstanceOf[GenTraversableOnce[E]].toList.map { oneElement =>
+          elementTransceiver.write(new TaggedElement(oneElement))(ops, guidance.withSeq()).get
+        }))
     }
 
 }

@@ -64,7 +64,7 @@ class TryIRTransceiver[T](next: IRTransceiver[T])(implicit tt: TypeTag[T]) exten
         ReadSuccess(TypeTagged(Failure(e), failureType))
     }
 
-  override def write[IR](tagged: TypeTagged[Try[T]])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =
+  override def write[IR, WIRE](tagged: TypeTagged[Try[T]])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =
     tagged match {
       case TypeTagged(Success(value))              => next.write(new TaggedSuccessValue(value, tagged))
       case TypeTagged(Failure(e: BackedByIRValue)) => WriteSuccess(e.backingAstValueAs[IR])

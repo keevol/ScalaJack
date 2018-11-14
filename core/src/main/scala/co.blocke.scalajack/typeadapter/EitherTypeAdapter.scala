@@ -71,7 +71,7 @@ case class EitherIRTransceiver[L, R](leftTransciever: IRTransceiver[L], rightTra
         }
     }
 
-  override def write[IR](taggedEither: TypeTagged[Either[L, R]])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =
+  override def write[IR, WIRE](taggedEither: TypeTagged[Either[L, R]])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =
     taggedEither match {
       case TypeTagged(Left(leftValue)) =>
         leftTransciever.write(new TaggedLeftValue(leftValue, taggedEither))

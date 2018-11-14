@@ -34,8 +34,7 @@ object MongoCaseClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
               context.typeAdapterOf[Type].serializer,
               ccta.typeMembers.asInstanceOf[List[CaseClassTypeAdapter.TypeMember[T]]],
               ccta.fieldMembers,
-              false
-            ),
+              false),
             deserializer = new MongoCaseClassDeserializer(
               ccta.dbKeys,
               IdMemberName,
@@ -44,8 +43,7 @@ object MongoCaseClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
               context.typeAdapterOf[Type].deserializer,
               ccta.typeMembers.asInstanceOf[List[CaseClassTypeAdapter.TypeMember[T]]],
               ccta.fieldMembers,
-              false
-            ))
+              false))
       }
     } else
       next.typeAdapterOf[T]

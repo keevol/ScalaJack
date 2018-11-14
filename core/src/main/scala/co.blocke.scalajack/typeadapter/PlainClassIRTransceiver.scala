@@ -59,7 +59,7 @@ class PlainClassIRTransceiver[T](members: List[PlainFieldMember[T]], newInstance
         ReadFailure(path, ReadError.Unexpected("Expected a JSON object", reportedBy = self))
     }
 
-  override def write[IR](tagged: TypeTagged[T])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =
+  override def write[IR, WIRE](tagged: TypeTagged[T])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =
     tagged match {
       case TypeTagged(null) =>
         WriteSuccess(IRNull())

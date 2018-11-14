@@ -5,7 +5,6 @@ import scala.collection.GenMap
 import scala.collection.mutable
 import scala.collection.generic.CanBuildFrom
 
-
 object MapTypeAdapter extends TypeAdapterFactory.<:<.withTwoTypeParams[GenMap] {
 
   override def create[K, V, M <: GenMap[K, V]](next: TypeAdapterFactory)(implicit context: Context, tt: TypeTag[M], ttMap: TypeTag[GenMap[K, V]], ttKey: TypeTag[K], ttValue: TypeTag[V]): TypeAdapter[M] = {
@@ -21,24 +20,19 @@ object MapTypeAdapter extends TypeAdapterFactory.<:<.withTwoTypeParams[GenMap] {
 
         def newBuilder(): mutable.Builder[(K, V), M] = canBuildFrom()
 
-        val mapDeserializer = new MapDeserializer[K, V, M](
-          keyDeserializer           = keyTypeAdapter.deserializer,
-          valueDeserializer         = valueTypeAdapter.deserializer,
-          keyValuePairsDeserializer = context.typeAdapterOf[List[Tuple2[K, V]]].deserializer,
+        val mapIRTransceiver = new MapIRTransceiver[K, V, M](
+          keyTransceiver          = keyTypeAdapter.irTransceiver,
+          valueTransceiver        = valueTypeAdapter.irTransceiver,
+          keyValuePairTransceiver = context.typeAdapterOf[List[Tuple2[K, V]]].irTransceiver,
           () => newBuilder)
 
-        val mapSerializer = new MapSerializer[K, V, M](
-          keySerializer   = keyTypeAdapter.serializer,
-          valueSerializer = valueTypeAdapter.serializer,
-          context)
-
-        MapTypeAdapter[K, V, M](mapDeserializer, mapSerializer)
+        MapTypeAdapter[K, V, M](mapIRTransceiver)
     }
   }
 
 }
 
-case class MapTypeAdapter[K, V, M <: GenMap[K, V]](override val deserializer: Deserializer[M], override val serializer: Serializer[M]) extends TypeAdapter[M]
+case class MapTypeAdapter[K, V, M <: GenMap[K, V]](override val irTransceiver: IRTransceiver[M]) extends TypeAdapter[M]
 
 object CanBuildFroms {
 

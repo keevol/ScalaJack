@@ -12,7 +12,7 @@ trait IRReader[T] {
 }
 
 trait IRWriter[T] {
-  def write[IR](tagged: TypeTagged[T])(implicit ops: OpsBase[IR], guidance: SerializationGuidance): WriteResult[IR] =
+  def write[IR, WIRE](tagged: TypeTagged[T])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =
     WriteFailure(WriteError.Unsupported("write() is not implemented on base IRTransceiver"))
 }
 
