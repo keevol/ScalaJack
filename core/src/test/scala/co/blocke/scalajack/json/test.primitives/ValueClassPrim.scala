@@ -5,8 +5,6 @@ package test.primitives
 import org.scalatest.{ FunSpec, Matchers }
 import java.util.UUID
 
-import co.blocke.scalajack.typeadapter.IRParsingFallbackTypeAdapter
-
 class ValueClassPrim() extends FunSpec with Matchers {
 
   val sj = ScalaJack()

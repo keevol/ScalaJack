@@ -31,7 +31,6 @@ object DerivedValueClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
 
       def unwrap(wrapped: Derived): Source = accessorMethod.invoke(wrapped)
 
-      implicit val z = sourceTypeTag
       DerivedValueClassAdapter[Derived, Source](
         new DerivedValueClassIRTransceiver[Derived, Source](valueTypeAdapter.irTransceiver, unwrap, wrap)(derivedTypeTag, sourceTypeTag))
     } else {

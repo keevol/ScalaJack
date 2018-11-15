@@ -48,8 +48,7 @@ object JavaNumberTypeAdapter extends TypeAdapterFactory.=:=[java.lang.Number] {
             case TypeTagged(javaBigInteger: java.math.BigInteger) => WriteSuccess(IRInt(scala.math.BigInt(javaBigInteger)))
             case TypeTagged(javaBigDecimal: java.math.BigDecimal) => WriteSuccess(IRDecimal(scala.math.BigDecimal(javaBigDecimal)))
           }
-      }
-    )
+      })
 
 }
 

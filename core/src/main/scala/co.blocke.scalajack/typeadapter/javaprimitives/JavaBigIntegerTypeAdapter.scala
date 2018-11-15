@@ -23,8 +23,7 @@ object JavaBigIntegerTypeAdapter extends TypeAdapterFactory.=:=[java.math.BigInt
             case TypeTagged(null)           => scalaBigIntTypeAdapter.irTransceiver.write(TypeTagged(null, ScalaBigIntType))
             case TypeTagged(javaBigInteger) => scalaBigIntTypeAdapter.irTransceiver.write(TypeTagged(scala.math.BigInt(javaBigInteger), ScalaBigIntType))
           }
-      }
-    )
+      })
   }
 
 }

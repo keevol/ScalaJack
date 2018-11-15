@@ -26,8 +26,7 @@ object JavaIntegerTypeAdapter extends TypeAdapterFactory.=:=[java.lang.Integer] 
             case TypeTagged(null)  => WriteSuccess(IRNull())
             case TypeTagged(boxed) => intTypeAdapter.irTransceiver.write(TypeTagged(boxed.intValue))
           }
-      }
-    )
+      })
   }
 
 }

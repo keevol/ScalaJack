@@ -1,7 +1,9 @@
 package co.blocke.scalajack
 package json
 
+import java.time.Instant
 import org.apache.commons.text.StringEscapeUtils.escapeJava
+import typeadapter.javatime._
 
 trait JsonSerializer[IR] extends WireSerializer[IR, String] {
 
@@ -44,6 +46,15 @@ trait JsonSerializer[IR] extends WireSerializer[IR, String] {
 
     def helper(ast: IR): Unit =
       ast match {
+        case IRCustom((customLabel, customIR)) =>
+          customLabel match {
+            case InstantTypeAdapter.CUSTOM_LABEL =>
+              val IRArray(epocnano) = customIR
+              val Seq(IRLong(epocSec), IRInt(nano)) = epocnano
+              builder.append('"' + Instant.ofEpochSecond(epocSec, nano.intValue()).toString + '"')
+            case _ => helper(customIR)
+          }
+
         case IRArray(x) =>
           builder.append('[')
           x.zipWithIndex.map {

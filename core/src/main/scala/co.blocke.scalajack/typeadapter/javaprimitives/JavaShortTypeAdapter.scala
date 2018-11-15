@@ -27,8 +27,7 @@ object JavaShortTypeAdapter extends TypeAdapterFactory.=:=[java.lang.Short] {
             case TypeTagged(null)  => WriteSuccess(IRNull())
             case TypeTagged(boxed) => shortTypeAdapter.irTransceiver.write(TypeTagged(boxed.shortValue))
           }
-      }
-    )
+      })
   }
 
 }

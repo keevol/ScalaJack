@@ -28,8 +28,7 @@ object JavaLongTypeAdapter extends TypeAdapterFactory.=:=[java.lang.Long] {
             case TypeTagged(null)  => WriteSuccess(IRNull())
             case TypeTagged(boxed) => longTypeAdapter.irTransceiver.write(TypeTagged(boxed.longValue))
           }
-      }
-    )
+      })
   }
 
 }

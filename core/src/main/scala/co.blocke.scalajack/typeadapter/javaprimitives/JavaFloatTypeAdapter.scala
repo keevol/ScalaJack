@@ -27,8 +27,7 @@ object JavaFloatTypeAdapter extends TypeAdapterFactory.=:=[java.lang.Float] {
             case TypeTagged(null)  => WriteSuccess(IRNull())
             case TypeTagged(boxed) => floatTypeAdapter.irTransceiver.write(TypeTagged(boxed.floatValue))
           }
-      }
-    )
+      })
   }
 
 }

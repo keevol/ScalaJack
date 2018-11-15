@@ -29,8 +29,7 @@ object JavaDoubleTypeAdapter extends TypeAdapterFactory.=:=[java.lang.Double] {
             case TypeTagged(null)  => WriteSuccess(IRNull())
             case TypeTagged(boxed) => doubleTypeAdapter.irTransceiver.write(TypeTagged(boxed.doubleValue))
           }
-      }
-    )
+      })
   }
 
 }

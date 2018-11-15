@@ -22,8 +22,7 @@ object JavaBigDecimalTypeAdapter extends TypeAdapterFactory.=:=[java.math.BigDec
             case TypeTagged(null)           => scalaBigDecimalTypeAdapter.irTransceiver.write(TypeTagged(null, ScalaBigDecimalType))
             case TypeTagged(javaBigDecimal) => scalaBigDecimalTypeAdapter.irTransceiver.write(TypeTagged(scala.math.BigDecimal(javaBigDecimal), ScalaBigDecimalType))
           }
-      }
-    )
+      })
   }
 
 }
