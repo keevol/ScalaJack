@@ -61,8 +61,7 @@ trait JsonSerializer[IR] extends WireSerializer[IR, String] {
             case (ir, index) =>
               if (index > 0)
                 builder.append(",")
-              else
-                helper(ir)
+              helper(ir)
           }
           builder.append(']')
 

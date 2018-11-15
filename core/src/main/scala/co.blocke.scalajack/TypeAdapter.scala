@@ -1,5 +1,7 @@
 package co.blocke.scalajack
 
+import co.blocke.scalajack.typeadapter.IRParsingFallbackTypeAdapter
+
 import scala.reflect.ClassTag
 
 /**
@@ -54,23 +56,12 @@ trait TypeAdapter[T] {
         None
     }
   }
-
   val irTransceiver: IRTransceiver[T] = new IRTransceiver[T] {}
-
-  /*
-  val deserializer: Deserializer[T] = new Deserializer[T] {
-    override def deserialize[AST, S](path: Path, ast: AST)(implicit ops: AstOps[AST, S], guidance: SerializationGuidance): DeserializationResult[T] =
-      throw new NotImplementedError(s"$self.deserializer.deserialize")
-  }
-
-  val serializer: Serializer[T] = new Serializer[T] {
-    override def serialize[AST, S](tagged: TypeTagged[T])(implicit ops: AstOps[AST, S], guidance: SerializationGuidance): SerializationResult[AST] =
-      throw new NotImplementedError(s"$self.serializer.serialize")
-  }
-  */
-
   def defaultValue: Option[T] = None
-
-  def resolved: TypeAdapter[T] = this
+  def resolved: TypeAdapter[T] =
+    this match {
+      case me: IRParsingFallbackTypeAdapter[T] => me.decorated.as[typeadapter.TermTypeAdapter[T]].next
+      case _                                   => this
+    }
 }
 

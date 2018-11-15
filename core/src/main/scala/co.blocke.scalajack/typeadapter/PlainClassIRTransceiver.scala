@@ -29,10 +29,14 @@ class PlainClassIRTransceiver[T](members: List[PlainFieldMember[T]], newInstance
               }
           }
 
-          // TODO handle exceptions
-
-          for (member <- members if !readResultsByMember.contains(member))
-            readResultsByMember += member -> member.irTransceiver.readFromNothing(path \ member.name)
+          for (member <- members if !readResultsByMember.contains(member)) {
+            val result = member.irTransceiver.readFromNothing(path \ member.name) match {
+              // Change generic error about "readFromNothing" not being impliemented, to a more meaningful Missing field error
+              case rf: ReadFailure if (rf.errors.size > 0 && rf.errors(0)._2.isInstanceOf[ReadError.Unsupported]) => ReadFailure(path, ReadError.Missing(member.name, this))
+              case other => other
+            }
+            readResultsByMember += member -> result
+          }
 
           if (readResultsByMember.values.exists(_.isFailure)) {
             throw new ReadException(ReadFailure(readResultsByMember.values.flatMap(_.errors).to[immutable.Seq]))

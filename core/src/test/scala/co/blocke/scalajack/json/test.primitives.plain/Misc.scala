@@ -15,9 +15,8 @@ class Misc() extends FunSpec with Matchers {
     }
     it("Missing field (non-optional) from a getter/setter class") {
       val js = """{"name":"Mike"}"""
-      val msg = """DeserializationException(1 error):
-  [$.age] Required field missing (reported by: DerivedValueClassDeserializer[co.blocke.scalajack.json.test.primitives.plain.VCDouble, scala.Double])""".stripMargin
-
+      val msg = """ReadException(1 error):
+                  |  [$] Required field age missing (reported by: co.blocke.scalajack.typeadapter.PlainClassIRTransceiver)""".stripMargin
       the[co.blocke.scalajack.ReadException] thrownBy sj.read[PlayerMix](js) should have message msg
     }
     it("Read/write null into object") {

@@ -7,8 +7,8 @@ import scala.util.control.NonFatal
 
 object ReadError {
 
-  case class Missing(reportedBy: IRTransceiver[_]) extends ReadError {
-    override def message: String = s"Required field missing"
+  case class Missing(absentFieldName: String, reportedBy: IRTransceiver[_]) extends ReadError {
+    override def message: String = s"Required field $absentFieldName missing"
   }
 
   case class ExceptionThrown(exception: Throwable) extends ReadError {

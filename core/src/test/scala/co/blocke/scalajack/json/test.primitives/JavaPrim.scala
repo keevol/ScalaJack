@@ -303,7 +303,6 @@ class JavaPrim() extends FunSpec with Matchers {
           the[ReadException] thrownBy sj.read[SampleUUID](js2) should have message msg2
         }
       }
-      /*
       describe("Time Primitives:") {
         it("Duration must break") {
           val js = """{"d1":"PT0S","d2":21,"d3":null}"""
@@ -396,7 +395,6 @@ class JavaPrim() extends FunSpec with Matchers {
           the[ReadException] thrownBy sj.read[SampleZonedDateTime](js2) should have message msg2
         }
       }
-      */
     }
   }
 }

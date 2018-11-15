@@ -23,15 +23,15 @@ class TryAndCapture() extends FunSpec with Matchers {
       it("Try failure") {
         val js = """{"name":"Greg","other":[1,2,3]}"""
         val obj = sj.read[Boom](js)
-        assertResult("""DeserializationException(1 error):
-  |  [$.other] Expected a JSON object (reported by: co.blocke.scalajack.typeadapter.PlainClassDeserializer)""".stripMargin) { obj.other.asInstanceOf[Failure[_]].exception.getMessage }
+        assertResult("""ReadException(1 error):
+  |  [$.other] Expected a JSON object (reported by: co.blocke.scalajack.typeadapter.PlainClassIRTransceiver)""".stripMargin) { obj.other.asInstanceOf[Failure[_]].exception.getMessage }
         assertResult("""{"other":[1,2,3],"name":"Greg"}""") { sj.render(obj) }
       }
       it("Try failure 2") {
         val js = """{"name":"Greg","other":  -12.45  ,"num":2}"""
         val obj = sj.read[Boom](js)
-        assertResult("""DeserializationException(1 error):
-  |  [$.other] Expected a JSON object (reported by: co.blocke.scalajack.typeadapter.PlainClassDeserializer)""".stripMargin) { obj.other.asInstanceOf[Failure[_]].exception.getMessage }
+        assertResult("""ReadException(1 error):
+  |  [$.other] Expected a JSON object (reported by: co.blocke.scalajack.typeadapter.PlainClassIRTransceiver)""".stripMargin) { obj.other.asInstanceOf[Failure[_]].exception.getMessage }
         assertResult("""{"other":-12.45,"name":"Greg"}""") { sj.render(obj) }
       }
     }
