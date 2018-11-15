@@ -13,7 +13,6 @@ class ValueClassPrim() extends FunSpec with Matchers {
 
   describe("---------------------------------\n:  ValueClass Primitives Tests  :\n---------------------------------") {
     describe("+++ Positive Tests +++") {
-      /*
       it("Value class of BigDecimal") {
         val inst = VCBigDecimal(BigDecimal(12.34))
         val js = sj.render(inst)
@@ -161,12 +160,9 @@ class ValueClassPrim() extends FunSpec with Matchers {
           sj.read[VCUUID](js)
         }
       }
-      */
       it("Value class of Number") {
         val inst = VCNumber(25)
         val js = sj.render(inst)
-        println("JS: " + js)
-        println(sj.context.resolvedTypeAdapterOf[Number])
         assertResult("""25""") { js }
         assertResult((inst, true)) {
           val r = sj.read[VCNumber](js)
@@ -174,15 +170,13 @@ class ValueClassPrim() extends FunSpec with Matchers {
         }
       }
     }
-    /*
     describe("--- Negative Tests ---") {
       it("Wrong JSON for wrapped type") {
         val js = """100.25"""
-        val msg = """DeserializationException(1 error):
-                    |  [$] Expected a JSON number (short), not JDecimal(100.25) (reported by: co.blocke.scalajack.typeadapter.ShortDeserializer)""".stripMargin
+        val msg = """ReadException(1 error):
+                    |  [$] Expected a JSON number (short), not JDecimal(100.25) (reported by: co.blocke.scalajack.typeadapter.ShortTypeAdapter$$anon$1)""".stripMargin
         the[co.blocke.scalajack.ReadException] thrownBy sj.read[VCShort](js) should have message msg
       }
     }
-    */
   }
 }

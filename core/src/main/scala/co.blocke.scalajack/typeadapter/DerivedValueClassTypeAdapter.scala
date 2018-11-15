@@ -1,8 +1,6 @@
 package co.blocke.scalajack
 package typeadapter
 
-import java.lang.reflect.Method
-
 object DerivedValueClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
 
   override def typeAdapterOf[T](classSymbol: ClassSymbol, next: TypeAdapterFactory)(implicit context: Context, tt: TypeTag[T]): TypeAdapter[T] =
@@ -34,26 +32,15 @@ object DerivedValueClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
       def unwrap(wrapped: Derived): Source = accessorMethod.invoke(wrapped)
 
       implicit val z = sourceTypeTag
-      //      println("Derived: " + context.resolvedTypeAdapterOf[Derived])
-      println("Source: " + context.resolvedTypeAdapterOf[Source]) // PlainClass!  Why?!
-      println("Source TT: " + sourceTypeTag)
-      println("Number TA: " + context.resolvedTypeAdapterOf[Number])
-      println("ValueType: " + valueType) // Number
       DerivedValueClassAdapter[Derived, Source](
-        new DerivedValueClassIRTransceiver[Derived, Source](valueTypeAdapter.irTransceiver, unwrap, wrap)(derivedTypeTag, sourceTypeTag)
-      /*,constructorMirror, accessorMethodSymbol, accessorMethod, valueTypeAdapter*/ )
+        new DerivedValueClassIRTransceiver[Derived, Source](valueTypeAdapter.irTransceiver, unwrap, wrap)(derivedTypeTag, sourceTypeTag))
     } else {
       next.typeAdapterOf[T]
     }
 }
 
 case class DerivedValueClassAdapter[DerivedValueClass, Value](
-    override val irTransceiver: IRTransceiver[DerivedValueClass]
-/*,
-    constructorMirror:          MethodMirror,
-    accessorMethodSymbol:       MethodSymbol,
-    accessorMethod:             Method,
-    valueTypeAdapter:           TypeAdapter[Value]*/ ) extends TypeAdapter[DerivedValueClass]
+    override val irTransceiver: IRTransceiver[DerivedValueClass]) extends TypeAdapter[DerivedValueClass]
 
 class DerivedValueClassIRTransceiver[Derived, Source](
     sourceTransceiver: IRTransceiver[Source],

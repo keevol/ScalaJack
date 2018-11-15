@@ -2,7 +2,7 @@ package co.blocke.scalajack
 
 import typeadapter._
 //import typeadapter.javatime._
-//import typeadapter.javaprimitives._
+import typeadapter.javaprimitives._
 //import typeadapter.javacollections._
 
 import scala.reflect.runtime.currentMirror
@@ -43,7 +43,6 @@ object Context {
     .withFactory(StringTypeAdapter)
     .withFactory(EnumerationTypeAdapter)
     .withFactory(UUIDTypeAdapter)
-  /*
     .withFactory(JavaNumberTypeAdapter)
     .withFactory(JavaBooleanTypeAdapter)
     .withFactory(JavaByteTypeAdapter)
@@ -55,18 +54,17 @@ object Context {
     .withFactory(JavaShortTypeAdapter)
     .withFactory(JavaBigDecimalTypeAdapter)
     .withFactory(JavaBigIntegerTypeAdapter)
-    .withFactory(JavaMapTypeAdapter)
-    .withFactory(JavaCollectionTypeAdapter)
-    .withFactory(DurationTypeAdapter)
-    .withFactory(InstantTypeAdapter)
-    .withFactory(LocalDateTimeTypeAdapter)
-    .withFactory(LocalDateTypeAdapter)
-    .withFactory(LocalTimeTypeAdapter)
-    .withFactory(OffsetDateTimeTypeAdapter)
-    .withFactory(OffsetTimeTypeAdapter)
-    .withFactory(PeriodTypeAdapter)
-    .withFactory(ZonedDateTimeTypeAdapter)
-    */
+  //    .withFactory(JavaMapTypeAdapter)
+  //    .withFactory(JavaCollectionTypeAdapter)
+  //    .withFactory(DurationTypeAdapter)
+  //    .withFactory(InstantTypeAdapter)
+  //    .withFactory(LocalDateTimeTypeAdapter)
+  //    .withFactory(LocalDateTypeAdapter)
+  //    .withFactory(LocalTimeTypeAdapter)
+  //    .withFactory(OffsetDateTimeTypeAdapter)
+  //    .withFactory(OffsetTimeTypeAdapter)
+  //    .withFactory(PeriodTypeAdapter)
+  //    .withFactory(ZonedDateTimeTypeAdapter)
 }
 
 case class Context(defaultHint: String = "", factories: List[TypeAdapterFactory] = Nil, sjFlavor: Option[ScalaJackLike[_, _]] = None) {
