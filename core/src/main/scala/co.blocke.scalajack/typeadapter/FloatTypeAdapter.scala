@@ -34,7 +34,8 @@ object FloatTypeAdapter extends TypeAdapter.=:=[Float] {
               ReadError.Malformed(e, reportedBy = self)
           })
 
-        case IRString(s) if (guidance.isMapKey) => this.read(path, ops.deserialize(s.asInstanceOf[WIRE]).get)(ops, guidance = guidance.copy(isMapKey = false))
+        case IRString(s) if (guidance.isMapKey) =>
+          ops.deserialize(s.asInstanceOf[WIRE]).mapToReadResult(path, (dsIR: IR) => this.read(path, dsIR)(ops, guidance = guidance.copy(isMapKey = false)))
 
         case _ =>
           ReadFailure(path, ReadError.Unexpected("Expected a JSON number", reportedBy = self))

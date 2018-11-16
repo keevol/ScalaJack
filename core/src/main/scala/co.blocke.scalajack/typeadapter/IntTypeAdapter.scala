@@ -12,7 +12,8 @@ object IntTypeAdapter extends TypeAdapter.=:=[Int] {
         case IRLong(longValue) if (longValue >= -2147483648 && longValue <= 2147483647) => ReadResult(path)(TypeTagged(longValue.toIntExact))
         case IRLong(_) => ReadFailure(path, ReadError.Unexpected("Int value out of range", reportedBy = self))
         case IRInt(bigInt) => ReadSuccess(TypeTagged(bigInt.intValue))
-        case IRString(s) if (guidance.isMapKey) => this.read(path, ops.deserialize(s.asInstanceOf[WIRE]).get)(ops, guidance = guidance.copy(isMapKey = false))
+        case IRString(s) if (guidance.isMapKey) =>
+          ops.deserialize(s.asInstanceOf[WIRE]).mapToReadResult(path, (dsIR: IR) => this.read(path, dsIR)(ops, guidance = guidance.copy(isMapKey = false)))
         case _ => ReadFailure(path, ReadError.Unexpected(s"Expected a JSON int, not $ir", reportedBy = self))
       }
 

@@ -13,7 +13,12 @@ object Path {
   }
 
   case class Field(parent: Path, name: String) extends Path {
-    override def toString: String = s"$parent.$name"
+    override def toString: String = {
+      if (name.contains('.'))
+        s"""$parent."$name""""
+      else
+        s"$parent.$name"
+    }
   }
 
   case class Element(parent: Path, index: Int) extends Path {

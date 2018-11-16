@@ -7,7 +7,6 @@ object TypeTypeIRTransceiver {
       staticClass(typeName).toType
     } catch {
       case e: ScalaReflectionException =>
-        println("oops: " + typeName) // Why did this work ok pre-refactor?  What's the difference???
         throw new ClassNotFoundException(s"""Unable to find class named "$typeName"\n""", e)
     }
 

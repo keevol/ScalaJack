@@ -13,7 +13,8 @@ object ShortTypeAdapter extends TypeAdapter.=:=[Short] {
         case IRLong(_) => ReadFailure(path, ReadError.Unexpected("Short value out of range", reportedBy = self))
         case IRInt(bigInt) if (bigInt >= -32768 && bigInt <= 32767) => ReadSuccess(TypeTagged(bigInt.toShortExact))
         case IRInt(_) => ReadFailure(path, ReadError.Unexpected("Short value out of range", reportedBy = self))
-        case IRString(s) if (guidance.isMapKey) => this.read(path, ops.deserialize(s.asInstanceOf[WIRE]).get)(ops, guidance = guidance.copy(isMapKey = false))
+        case IRString(s) if (guidance.isMapKey) =>
+          ops.deserialize(s.asInstanceOf[WIRE]).mapToReadResult(path, (dsIR: IR) => this.read(path, dsIR)(ops, guidance = guidance.copy(isMapKey = false)))
         case _ => ReadFailure(path, ReadError.Unexpected(s"Expected a JSON number (short), not $ir", reportedBy = self))
       }
 

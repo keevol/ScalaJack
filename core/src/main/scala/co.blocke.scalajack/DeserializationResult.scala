@@ -18,6 +18,11 @@ import scala.util.control.NonFatal
 sealed trait DeserializationResult[IR] {
   def get: IR
   def errors: immutable.Seq[ReadError]
+  def mapToReadResult[T](path: Path, fn: IR => ReadResult[T]) =
+    this match {
+      case DeserializationSuccess(ir)   => fn(ir)
+      case DeserializationFailure(errs) => ReadFailure(errs.map(e => (path, e)))
+    }
 }
 
 object DeserializationResult {

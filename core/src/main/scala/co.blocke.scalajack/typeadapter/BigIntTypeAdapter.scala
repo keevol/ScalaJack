@@ -26,9 +26,10 @@ object BigIntTypeAdapter extends TypeAdapter.=:=[BigInt] {
             case None    => ReadFailure.apply(path, ReadError.Malformed(s"Can't create a BigInt from $doubleValue", self))
           }
 
-        case IRString(s) if (guidance.isMapKey) => this.read(path, ops.deserialize(s.asInstanceOf[WIRE]).get)(ops, guidance = guidance.copy(isMapKey = false))
+        case IRString(s) if (guidance.isMapKey) =>
+          ops.deserialize(s.asInstanceOf[WIRE]).mapToReadResult(path, (dsIR: IR) => this.read(path, dsIR)(ops, guidance = guidance.copy(isMapKey = false)))
 
-        case _                                  => ReadFailure(path, ReadError.Unexpected("Expected a JSON number (integer value)", reportedBy = self))
+        case _ => ReadFailure(path, ReadError.Unexpected("Expected a JSON number (integer value)", reportedBy = self))
       }
 
     override def write[IR, WIRE](tagged: TypeTagged[BigInt])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =

@@ -52,8 +52,10 @@ trait JsonSerializer[IR] extends WireSerializer[IR, String] {
               val IRArray(epocnano) = customIR
               val Seq(IRLong(epocSec), IRInt(nano)) = epocnano
               builder.append('"' + Instant.ofEpochSecond(epocSec, nano.intValue()).toString + '"')
-            case _ => helper(customIR)
+            case _ =>
+              helper(customIR)
           }
+          println(builder) // TODO: Getting bogus quotes around Period CustomIR Map keys.
 
         case IRArray(x) =>
           builder.append('[')

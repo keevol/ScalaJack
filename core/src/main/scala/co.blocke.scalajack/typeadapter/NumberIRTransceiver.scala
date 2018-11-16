@@ -21,7 +21,8 @@ trait NumberIRReader extends IRReader[Number] {
       case IRDouble(doubleValue) => ReadSuccess(TypeTagged(java.lang.Double.valueOf(doubleValue), BoxedDoubleType))
       case IRInt(scalaBigInt) => ReadSuccess(TypeTagged(scalaBigInt, ScalaBigIntegerType))
       case IRLong(longValue) => ReadSuccess(TypeTagged(java.lang.Long.valueOf(longValue), BoxedLongType))
-      case IRString(s) if (guidance.isMapKey) => this.read(path, ops.deserialize(s.asInstanceOf[WIRE]).get)(ops, guidance = guidance.copy(isMapKey = false))
+      case IRString(s) if (guidance.isMapKey) =>
+        ops.deserialize(s.asInstanceOf[WIRE]).mapToReadResult(path, (dsIR: IR) => this.read(path, dsIR)(ops, guidance = guidance.copy(isMapKey = false)))
       case _ => ReadFailure(path, ReadError.Unsupported("Expected a IR number", reportedBy = self))
     }
 }

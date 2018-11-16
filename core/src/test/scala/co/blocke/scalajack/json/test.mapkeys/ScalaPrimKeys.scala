@@ -110,68 +110,68 @@ class ScalaPrimKeys() extends FunSpec with Matchers {
     describe("--- Negative Tests ---") {
       it("Bad BigDecimal Key") {
         val js = """{"m":{"789.123":1,"fred":2}}"""
-        val msg = """DeserializationException(1 error):
-                    |  [$.m.fred] Expected a JSON number, not JString(fred) (reported by: co.blocke.scalajack.typeadapter.BigDecimalDeserializer)""".stripMargin
+        val msg = """ReadException(1 error):
+                    |  [$.m.fred] Expected a JSON number, not JString(fred) (reported by: co.blocke.scalajack.typeadapter.BigDecimalTypeAdapter$$anon$1)""".stripMargin
         the[ReadException] thrownBy sj.read[SampleBigDecimal](js) should have message msg
       }
       it("Bad BigInt Key") {
         val js = """{"m":{"fred":1,"789":2}}"""
-        val msg = """DeserializationException(1 error):
-                    |  [$.m.fred] Expected a JSON number (integer value) (reported by: co.blocke.scalajack.typeadapter.BigIntDeserializer)""".stripMargin
+        val msg = """ReadException(1 error):
+                    |  [$.m.fred] Expected a JSON number (integer value) (reported by: co.blocke.scalajack.typeadapter.BigIntTypeAdapter$$anon$1)""".stripMargin
         the[ReadException] thrownBy sj.read[SampleBigInt](js) should have message msg
       }
       it("Bad Boolean Key") {
         val js = """{"m":{"true":false,"123":true}}"""
-        val msg = """DeserializationException(1 error):
-                    |  [$.m.123] Expected a JSON boolean (reported by: co.blocke.scalajack.typeadapter.BooleanDeserializer)""".stripMargin
+        val msg = """ReadException(1 error):
+                    |  [$.m.123] Expected a JSON boolean (reported by: co.blocke.scalajack.typeadapter.BooleanTypeAdapter$$anon$1)""".stripMargin
         the[ReadException] thrownBy sj.read[SampleBoolean](js) should have message msg
       }
       it("Bad Byte Key") {
         val js = """{"m":{"16":2,"x48":9}}"""
-        val msg = """DeserializationException(1 error):
-                    |  [$.m.x48] Expected a JSON number (byte) (reported by: co.blocke.scalajack.typeadapter.ByteDeserializer)""".stripMargin
+        val msg = """ReadException(1 error):
+                    |  [$.m.x48] Expected a JSON number (byte) (reported by: co.blocke.scalajack.typeadapter.ByteTypeAdapter$$anon$1)""".stripMargin
         the[ReadException] thrownBy sj.read[SampleByte](js) should have message msg
       }
       it("Bad Char Key") { // NOTE: This comprehensively tests for any null keyed Map
         val js = """{"m":{null:"A","z":"Z"}}"""
-        val msg = """DeserializationException(1 error):
-                    |  [$.m.null] Expected a char (JSON string of length 1), not null (reported by: co.blocke.scalajack.typeadapter.CharDeserializer)""".stripMargin
+        val msg = """ReadException(1 error):
+                    |  [$.m.null] Expected a char (JSON string of length 1), not null (reported by: co.blocke.scalajack.typeadapter.CharTypeAdapter$$anon$1)""".stripMargin
         the[ReadException] thrownBy sj.read[SampleChar](js) should have message msg
       }
       it("Bad Double Key") {
         val js = """{"m":{"12.34":56.78,"true":34.56}}"""
-        val msg = """DeserializationException(1 error):
-                    |  [$.m.true] Expected a JSON number, not JBool(true) (reported by: co.blocke.scalajack.typeadapter.DoubleDeserializer)""".stripMargin
+        val msg = """ReadException(1 error):
+                    |  [$.m.true] Expected a JSON number, not JBool(true) (reported by: co.blocke.scalajack.typeadapter.DoubleTypeAdapter$$anon$1)""".stripMargin
         the[ReadException] thrownBy sj.read[SampleDouble](js) should have message msg
       }
       it("Bad Enumeration Key") {
         val js = """{"m":{"Small":"Large","Bogus":"Medium"}}"""
-        val msg = """DeserializationException(1 error):
-                    |  [$.m.Bogus] Enumeration co.blocke.scalajack.json.test.mapkeys.Size$ does not contain a value named Bogus (reported by: co.blocke.scalajack.typeadapter.EnumerationValueDeserializer)""".stripMargin
+        val msg = """ReadException(1 error):
+                    |  [$.m.Bogus] Enumeration co.blocke.scalajack.json.test.mapkeys.Size$ does not contain a value named Bogus (reported by: co.blocke.scalajack.typeadapter.EnumerationIRTransceiver)""".stripMargin
         the[ReadException] thrownBy sj.read[SampleEnumeration](js) should have message msg
       }
       it("Bad Float Key") {
         val js = """{"m":{"12.34":56.78,"90.12.3":34.56}}"""
-        val msg = """DeserializationException(1 error):
-                    |  [$.m] Exception was thrown: java.lang.NumberFormatException (reported by: unknown)""".stripMargin
+        val msg = """ReadException(1 error):
+                    |  [$.m."90.12.3"] Exception was thrown: java.lang.NumberFormatException (reported by: unknown)""".stripMargin
         the[ReadException] thrownBy sj.read[SampleFloat](js) should have message msg
       }
       it("Bad Int Key") {
         val js = """{"m":{"12.0":56,"90":34}}"""
-        val msg = """DeserializationException(1 error):
-                    |  [$.m.12.0] Expected a JSON int, not JDecimal(12.0) (reported by: co.blocke.scalajack.typeadapter.IntDeserializer)""".stripMargin
+        val msg = """ReadException(1 error):
+                    |  [$.m."12.0"] Expected a JSON int, not JDecimal(12.0) (reported by: co.blocke.scalajack.typeadapter.IntTypeAdapter$$anon$1)""".stripMargin
         the[ReadException] thrownBy sj.read[SampleInt](js) should have message msg
       }
       it("Bad Long Key") {
         val js = """{"m":{"12":56,"hey":34}}"""
-        val msg = """DeserializationException(1 error):
-                    |  [$.m.hey] Expected a JSON number (long) (reported by: co.blocke.scalajack.typeadapter.LongDeserializer)""".stripMargin
+        val msg = """ReadException(1 error):
+                    |  [$.m.hey] Expected a JSON number (long) (reported by: co.blocke.scalajack.typeadapter.LongTypeAdapter$$anon$1)""".stripMargin
         the[ReadException] thrownBy sj.read[SampleLong](js) should have message msg
       }
       it("Bad Short Key") {
         val js = """{"m":{"99999":56,"90":34}}"""
-        val msg = """DeserializationException(1 error):
-                    |  [$.m.99999] Short value out of range (reported by: co.blocke.scalajack.typeadapter.ShortDeserializer)""".stripMargin
+        val msg = """ReadException(1 error):
+                    |  [$.m.99999] Short value out of range (reported by: co.blocke.scalajack.typeadapter.ShortTypeAdapter$$anon$1)""".stripMargin
         the[ReadException] thrownBy sj.read[SampleShort](js) should have message msg
       }
     }

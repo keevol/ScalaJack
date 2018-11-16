@@ -65,7 +65,7 @@ class AnyIRTransceiver(
       // If not, stay with the string, otherwise use the more specific type.
       case IRString(s) if (guidance.isMapKey) =>
         try {
-          context.typeAdapterOf[Any].irTransceiver.read(path, ops.deserialize(s.asInstanceOf[WIRE]).get) match {
+          ops.deserialize(s.asInstanceOf[WIRE]).mapToReadResult(path, (dsIR: IR) => context.typeAdapterOf[Any].irTransceiver.read(path, dsIR)) match {
             case success: ReadSuccess[_] => success
             case _                       => stringIRTransceiver.read(path, ir)
           }

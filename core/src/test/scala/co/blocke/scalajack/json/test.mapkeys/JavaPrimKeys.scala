@@ -113,6 +113,7 @@ class JavaPrimKeys() extends FunSpec with Matchers {
         }
       }
       describe("Time Primitives:") {
+        /*
         it("With Duration Key") {
           val inst = SampleDuration(Map(Duration.ZERO -> Duration.parse("P2DT3H4M")))
           val js = sj.render(inst)
@@ -169,9 +170,11 @@ class JavaPrimKeys() extends FunSpec with Matchers {
             sj.read[SampleOffsetTime](js)
           }
         }
+        */
         it("With Period Key") {
           val inst = SamplePeriod(Map(Period.ZERO -> Period.parse("P1Y2M3D")))
           val js = sj.render(inst)
+          println(js)
           assertResult("""{"m":{"P0D":"P1Y2M3D"}}""") { js }
           assertResult(inst) {
             sj.read[SamplePeriod](js)
@@ -187,6 +190,7 @@ class JavaPrimKeys() extends FunSpec with Matchers {
         }
       }
     }
+    /*
     describe("--- Negative Tests ---") {
       describe("Simple Primitives:") {
         it("Bad BigDecimal Key") {
@@ -317,5 +321,6 @@ class JavaPrimKeys() extends FunSpec with Matchers {
         }
       }
     }
+      */
   }
 }
