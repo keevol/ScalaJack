@@ -125,9 +125,7 @@ abstract class ScalaJackLike[IR, WIRE] extends JackFlavor[IR, WIRE] {
             if (typeTag.tpe =:= attemptedType) {
               val primary = attemptedTypeAdapter.asInstanceOf[TypeAdapter[T]]
               val secondary = fallbackTypeAdapter.asInstanceOf[TypeAdapter[T]]
-              FallbackTypeAdapter[T](
-                new FallBackIRTransceiver[T](primary.irTransceiver, secondary.irTransceiver),
-                primary, secondary)
+              FallbackTypeAdapter[T](primary, secondary)
             } else {
               next.typeAdapterOf[T]
             }

@@ -38,7 +38,7 @@ class TraitIRTransceiver[T](
             }
         }
 
-        maybeConcreteType match {
+        val z = maybeConcreteType match {
           case Some(concreteType) =>
             val populatedConcreteType = populateConcreteType(concreteType)
             context.irTransceiver(populatedConcreteType).read(path, ir).asInstanceOf[ReadResult[T]]
@@ -46,6 +46,8 @@ class TraitIRTransceiver[T](
           case None =>
             ReadFailure(path, ReadError.Unexpected(s"""Could not find type field named "$typeFieldName"""", reportedBy = self))
         }
+        println("z: " + z)
+        z
 
       case IRString(s) if (guidance.isMapKey) =>
         context.typeAdapterOf[T].irTransceiver.read(Path.Root, ops.deserialize(s.asInstanceOf[WIRE]).get)
@@ -82,10 +84,7 @@ case class TraitTypeAdapterFactory(hintLabel: String, specificType: Option[Type]
   override def typeAdapterOf[T](classSymbol: ClassSymbol, next: TypeAdapterFactory)(implicit context: Context, tt: TypeTag[T]): TypeAdapter[T] =
     if (specificType.map(_ == tt.tpe).getOrElse(true) && classSymbol.isTrait) {
       val typeTypeAdapter = context.typeAdapterOf[Type]
-
-      TraitTypeAdapter(
-        new TraitIRTransceiver[T](hintLabel, typeTypeAdapter.irTransceiver),
-        tt.tpe)
+      TraitTypeAdapter(new TraitIRTransceiver[T](hintLabel, typeTypeAdapter.irTransceiver), tt.tpe)
     } else {
       next.typeAdapterOf[T]
     }

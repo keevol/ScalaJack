@@ -28,7 +28,6 @@ class FallBackIRTransceiver[T](primary: IRTransceiver[T], secondary: IRTransceiv
   // NOTE: No write() for this transceiver... it's never used, so just default.
 }
 
-case class FallbackTypeAdapter[T](
-    override val irTransceiver: IRTransceiver[T],
-    primaryTypeAdapter:         TypeAdapter[T],
-    secondaryTypeAdapter:       TypeAdapter[T]) extends TypeAdapter[T]
+case class FallbackTypeAdapter[T](primaryTypeAdapter: TypeAdapter[T], secondaryTypeAdapter: TypeAdapter[T]) extends TypeAdapter[T] {
+  override val irTransceiver = new FallBackIRTransceiver(primaryTypeAdapter.irTransceiver, secondaryTypeAdapter.irTransceiver)
+}
