@@ -44,7 +44,7 @@ class TraitIRTransceiver[T](
             context.irTransceiver(populatedConcreteType).read(path, ir).asInstanceOf[ReadResult[T]]
 
           case None =>
-            throw new java.lang.IllegalStateException(s"""Could not find type field named "$typeFieldName"\n""" /* FIXME + reader.showError()*/ )
+            ReadFailure(path, ReadError.Unexpected(s"""Could not find type field named "$typeFieldName"""", reportedBy = self))
         }
 
       case IRString(s) if (guidance.isMapKey) =>

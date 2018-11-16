@@ -51,26 +51,23 @@ class CustomTypeHints() extends FunSpec with Matchers {
       it("Use unspecified type hint") {
         val sj = ScalaJack().withDefaultHint("which")
         val js = """{"bogus":"co.blocke.scalajack.json.test.custom.USAddress","street":"123 Main","city":"New York","state":"NY","postalCode":"39822"}"""
-        val msg = """DeserializationException(1 error):
-                    |  [???] Exception was thrown: java.lang.IllegalStateException: Could not find type field named "which"
-                    | (reported by: unknown)""".stripMargin
+        val msg = """ReadException(1 error):
+                    |  [$] Could not find type field named "which" (reported by: co.blocke.scalajack.typeadapter.TraitIRTransceiver)""".stripMargin
         the[ReadException] thrownBy sj.read[Address](js) should have message msg
       }
       it("Ignore type-specific type hint (e.g. use default) when a specific hint is specified") {
         val sj = ScalaJack().withDefaultHint("which")
         val js = """{"_hint":"co.blocke.scalajack.json.test.custom.USDemographic","age":50,"address":{"_hint":"co.blocke.scalajack.json.test.custom.USAddress","street":"123 Main","city":"New York","state":"NY","postalCode":"39822"}}"""
-        val msg = """DeserializationException(1 error):
-                    |  [???] Exception was thrown: java.lang.IllegalStateException: Could not find type field named "which"
-                    | (reported by: unknown)""".stripMargin
+        val msg = """ReadException(1 error):
+                    |  [$] Could not find type field named "which" (reported by: co.blocke.scalajack.typeadapter.TraitIRTransceiver)""".stripMargin
         the[ReadException] thrownBy sj.read[Address](js) should have message msg
       }
       it("Ignore type-specific type hint (e.g. use default) when a specific hint is specified -- newline test") {
         val sj = ScalaJack().withDefaultHint("which")
         val js = """{"_hint":"co.blocke.scalajack.json.test.custom.USDemographic","age":50,"address":{"_hint":"co.blocke.scalajack.json.test.custom.USAddress","street":"123 Main","city":"New
         |York","state":"NY","postalCode":"39822"}}""".stripMargin
-        val msg = """DeserializationException(1 error):
-                    |  [???] Exception was thrown: java.lang.IllegalStateException: Could not find type field named "which"
-                    | (reported by: unknown)""".stripMargin
+        val msg = """ReadException(1 error):
+                    |  [$] Could not find type field named "which" (reported by: co.blocke.scalajack.typeadapter.TraitIRTransceiver)""".stripMargin
         the[ReadException] thrownBy sj.read[Address](js) should have message msg
       }
       it("Hint value after modification doesn't resolve to known class name") {
@@ -83,7 +80,7 @@ class CustomTypeHints() extends FunSpec with Matchers {
         val strMatchHintMod = StringMatchHintModifier(Map("US" -> typeOf[USAddress]))
         val sj = ScalaJack().withHintModifiers((typeOf[Address], strMatchHintMod))
         val js = """{"_hint":"co.blocke.scalajack.json.test.custom.USDemographic","age":50,"address":{"_hint":"Bogus","street":"123 Main","city":"New York","state":"NY","postalCode":"39822"}}"""
-        val msg = """DeserializationException(1 error):
+        val msg = """ReadException(1 error):
                     |  [$] Exception was thrown: java.lang.IllegalStateException: No Type mapping given for hint Bogus (reported by: unknown)""".stripMargin
         the[ReadException] thrownBy sj.read[Demographic](js) should have message msg
       }
