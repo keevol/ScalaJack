@@ -14,7 +14,9 @@ object Path {
 
   case class Field(parent: Path, name: String) extends Path {
     override def toString: String = {
-      if (name.contains('.'))
+      if (name.startsWith("{") || name.startsWith("["))
+        s"""$parent"""
+      else if (name.contains('.'))
         s"""$parent."$name""""
       else
         s"$parent.$name"
@@ -32,5 +34,10 @@ sealed trait Path {
   def \(fieldName: String): Field = Field(this, fieldName)
 
   def \(elementIndex: Int): Element = Element(this, elementIndex)
+
+  def +(next: String) = this match {
+    case _: Field   => Field(this, next)
+    case e: Element => e
+  }
 
 }

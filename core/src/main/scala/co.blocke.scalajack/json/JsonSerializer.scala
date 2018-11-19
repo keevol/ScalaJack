@@ -12,7 +12,7 @@ trait JsonSerializer[IR] extends WireSerializer[IR, String] {
   def serialize(ir: IR, sj: ScalaJackLike[_, _]): String = {
     val builder = new StringBuilder
 
-    def appendString(string: String): Unit = {
+    def appendString(builder: StringBuilder, string: String): Unit = {
       var i = 0
 
       var beginIndex = 0
@@ -28,12 +28,6 @@ trait JsonSerializer[IR] extends WireSerializer[IR, String] {
                 builder.appendAll(string)
                 beginIndex = i
                 i += 1
-
-              case No_Quote_Marker => // no-quotes rendering
-                builder.appendAll(string.tail)
-                beginIndex = i
-                i += 1
-
               case _ =>
                 builder.append('"')
                 i += 1
@@ -44,72 +38,94 @@ trait JsonSerializer[IR] extends WireSerializer[IR, String] {
       }
     }
 
-    def helper(ast: IR): Unit =
-      ast match {
-        case IRCustom((customLabel, customIR)) =>
-          customLabel match {
-            case InstantTypeAdapter.CUSTOM_LABEL =>
-              val IRArray(epocnano) = customIR
-              val Seq(IRLong(epocSec), IRInt(nano)) = epocnano
-              builder.append('"' + Instant.ofEpochSecond(epocSec, nano.intValue()).toString + '"')
-            case _ =>
-              helper(customIR)
-          }
-          println(builder) // TODO: Getting bogus quotes around Period CustomIR Map keys.
-
-        case IRArray(x) =>
-          builder.append('[')
-          x.zipWithIndex.map {
-            case (ir, index) =>
-              if (index > 0)
-                builder.append(",")
-              helper(ir)
-          }
-          builder.append(']')
-
-        case IRBoolean(booleanValue) =>
-          builder.append(if (booleanValue) "true" else "false")
-
-        case IRDecimal(bigDecimal) =>
-          builder.append(bigDecimal.toString)
-
-        case IRDouble(doubleValue) =>
-          builder.append(doubleValue)
-
-        case IRInt(bigInt) =>
-          builder.append(bigInt.toString)
-
-        case IRLong(longValue) =>
-          builder.append(longValue)
-
-        case IRNull() =>
-          builder.append("null")
-
-        case IRObject(x) =>
-          builder.append('{')
-          var isFirst = true
-          x.map {
-            case (name, value) =>
-              if (isFirst) {
-                isFirst = false
-              } else {
-                builder.append(",")
-              }
-              if (sj.isCanonical)
-                appendString(escapeJava(name))
-              else {
-                appendString(name)
-              }
-              builder.append(":")
-              helper(value)
-          }
-          builder.append('}')
-
-        case IRString(string) =>
-          appendString(escapeJava(string))
+    def privateSerMapFields(sepChar: String, builder: StringBuilder, fields: Seq[(IR, IR)]) =
+      fields.foreach {
+        case (IRString(kString), v) => // Special case: Key is already a String, ready-to-eat
+          builder.append(sepChar)
+          appendString(builder, escapeJava(kString))
+          builder.append(":")
+          helper(builder, v)
+        case (k, v) =>
+          builder.append(sepChar)
+          val subBuilder = new StringBuilder()
+          helper(subBuilder, k)
+          val kStr = subBuilder.result()
+          if (!kStr.isEmpty && kStr(0) == '"')
+            builder.append(subBuilder.result)
+          else
+            appendString(builder, escapeJava(subBuilder.result))
+          builder.append(":")
+          helper(builder, v)
       }
 
-    helper(ir)
+    def serializeMapFields(builder: StringBuilder, fields: Seq[(IR, IR)]) = {
+      builder.append('{')
+      if (!fields.isEmpty) {
+        val (firstField :: restFields) = fields
+        privateSerMapFields("", builder, Seq(firstField))
+        privateSerMapFields(",", builder, restFields)
+      }
+      builder.append('}')
+    }
+
+    def serializeCustom(builder: StringBuilder, customLabel: String, customIR: IR) =
+      customLabel match {
+        case InstantTypeAdapter.CUSTOM_LABEL =>
+          val IRArray(epocnano) = customIR
+          val Seq(IRLong(epocSec), IRInt(nano)) = epocnano
+          appendString(builder, Instant.ofEpochSecond(epocSec, nano.intValue()).toString)
+        case _ =>
+          helper(builder, customIR)
+      }
+
+    def serializeArray(builder: StringBuilder, elements: Seq[IR]) = {
+      builder.append('[')
+      elements.zipWithIndex.map {
+        case (ir, index) =>
+          if (index > 0)
+            builder.append(",")
+          helper(builder, ir)
+      }
+      builder.append(']')
+    }
+
+    def serializeObject(builder: StringBuilder, fields: Seq[(String, IR)]) = {
+      builder.append('{')
+      var isFirst = true
+      fields.map {
+        case (name, value) =>
+          if (isFirst) {
+            isFirst = false
+          } else {
+            builder.append(",")
+          }
+          if (sj.isCanonical)
+            appendString(builder, escapeJava(name))
+          else {
+            appendString(builder, name)
+          }
+          builder.append(":")
+          helper(builder, value)
+      }
+      builder.append('}')
+    }
+
+    def helper(builder: StringBuilder, ir: IR): Unit =
+      ir match {
+        case IRMap(fields)                     => serializeMapFields(builder, fields)
+        case IRCustom((customLabel, customIR)) => serializeCustom(builder, customLabel, customIR)
+        case IRArray(elements)                 => serializeArray(builder, elements)
+        case IRBoolean(booleanValue)           => builder.append(if (booleanValue) "true" else "false")
+        case IRDecimal(bigDecimal)             => builder.append(bigDecimal.toString)
+        case IRDouble(doubleValue)             => builder.append(doubleValue)
+        case IRInt(bigInt)                     => builder.append(bigInt.toString)
+        case IRLong(longValue)                 => builder.append(longValue)
+        case IRNull()                          => builder.append("null")
+        case IRObject(fields)                  => serializeObject(builder, fields)
+        case IRString(string)                  => appendString(builder, escapeJava(string))
+      }
+
+    helper(builder, ir)
 
     builder.result()
   }

@@ -12,7 +12,11 @@ object DoubleTypeAdapter extends TypeAdapter.=:=[Double] {
         case IRDecimal(x)          => ReadResult(path)(TypeTagged(x.toDoubleExact))
         case IRDouble(doubleValue) => ReadSuccess(TypeTagged(doubleValue))
         case IRString(s) if (guidance.isMapKey) =>
-          ops.deserialize(s.asInstanceOf[WIRE]).mapToReadResult(path, (dsIR: IR) => this.read(path, dsIR)(ops, guidance = guidance.copy(isMapKey = false)))
+          try {
+            ops.deserialize(s.asInstanceOf[WIRE]).mapToReadResult(path, (dsIR: IR) => this.read(path, dsIR)(ops, guidance = guidance.copy(isMapKey = false)))
+          } catch {
+            case t: Throwable => ReadFailure(path, ReadError.ExceptionThrown(t))
+          }
         // TODO handle other JSON types
         case _ => ReadFailure(path, ReadError.Unexpected(s"Expected a JSON number, not $ir", reportedBy = self))
       }

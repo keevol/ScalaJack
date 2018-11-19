@@ -27,7 +27,11 @@ object BigIntTypeAdapter extends TypeAdapter.=:=[BigInt] {
           }
 
         case IRString(s) if (guidance.isMapKey) =>
-          ops.deserialize(s.asInstanceOf[WIRE]).mapToReadResult(path, (dsIR: IR) => this.read(path, dsIR)(ops, guidance = guidance.copy(isMapKey = false)))
+          try {
+            ops.deserialize(s.asInstanceOf[WIRE]).mapToReadResult(path, (dsIR: IR) => this.read(path, dsIR)(ops, guidance = guidance.copy(isMapKey = false)))
+          } catch {
+            case t: Throwable => ReadFailure(path, ReadError.ExceptionThrown(t))
+          }
 
         case _ => ReadFailure(path, ReadError.Unexpected("Expected a JSON number (integer value)", reportedBy = self))
       }

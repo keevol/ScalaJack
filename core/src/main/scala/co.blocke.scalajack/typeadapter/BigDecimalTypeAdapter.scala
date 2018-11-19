@@ -17,7 +17,11 @@ object BigDecimalTypeAdapter extends TypeAdapter.=:=[BigDecimal] {
         case IRInt(x)     => ReadResult(path)(TypeTagged(BigDecimal(x), BigDecimalType))
         case IRLong(x)    => ReadResult(path)(TypeTagged(BigDecimal(x), BigDecimalType))
         case IRString(s) if (guidance.isMapKey) =>
-          ops.deserialize(s.asInstanceOf[WIRE]).mapToReadResult(path, (dsIR: IR) => this.read(path, dsIR)(ops, guidance = guidance.copy(isMapKey = false)))
+          try {
+            ops.deserialize(s.asInstanceOf[WIRE]).mapToReadResult(path, (dsIR: IR) => this.read(path, dsIR)(ops, guidance = guidance.copy(isMapKey = false)))
+          } catch {
+            case t: Throwable => ReadFailure(path, ReadError.ExceptionThrown(t))
+          }
         case _ => ReadFailure(path, ReadError.Unexpected(s"Expected a JSON number, not $ir", reportedBy = self))
       }
 

@@ -301,7 +301,7 @@ trait JsonDeserializer[IR] extends WireDeserializer[IR, String] {
 
     def readJsonString(): IR = applyString(readString())
 
-    def readJsonValue(): IR = {
+    def readJsonValue(): IR =
       source(position) match {
         case '{' =>
           readJsonObject()
@@ -323,12 +323,12 @@ trait JsonDeserializer[IR] extends WireDeserializer[IR, String] {
         case numberChar if isNumberChar(numberChar) =>
           readJsonNumber()
       }
-    }
 
     skipWhitespace()
     if (position == maxPosition) {
       DeserializationSuccess(IRNull()) // Nothing to parse!
     } else {
+      //      val result = DeserializationSuccess(readJsonValue())
       val result = DeserializationResult {
         readJsonValue()
       }
@@ -341,7 +341,8 @@ trait JsonDeserializer[IR] extends WireDeserializer[IR, String] {
             case _ =>
               DeserializationSuccess(applyString(source.mkString))
           }
-        case other: DeserializationResult[IR] => other
+        case other: DeserializationResult[IR] =>
+          other
       }
     }
   }

@@ -112,13 +112,17 @@ trait ClassReaderUsingReflectedConstructor[CC] extends IRReader[CC] {
                     readResultsByField(fieldMember) = if (fieldMember.defaultValue.isDefined)
                       ReadSuccess(TypeTagged(fieldMember.defaultValue.get, fieldMember.declaredValueType))
                     else
-                      fieldMember.readValueFromNothing[IR, WIRE](path \ fieldMember.name)
+                      fieldMember.readValueFromNothing[IR, WIRE](path \ fieldMember.name) match {
+                        case rs @ ReadSuccess(_) => rs
+                        case ReadFailure(Seq(pathErr)) if (pathErr._2.isInstanceOf[ReadError.Unsupported]) =>
+                          ReadFailure(pathErr._1, ReadError.Missing(fieldMember.name, fieldMember.valueTypeAdapter.resolved.irTransceiver))
+                      }
                   }
 
-                  if (readResultsByField.exists(_._2.isFailure))
+                  if (readResultsByField.exists(_._2.isFailure)) {
                     // Uh-oh!  One or more fields *still* didn't deserialize (after default value substitution).
                     ReadFailure(readResultsByField.values.flatMap(_.errors).to[immutable.Seq])
-                  else {
+                  } else {
                     val constructorArguments: Array[Any] = fieldMembers
                       .map { fieldMember =>
                         val ReadSuccess(TypeTagged(fieldValue)) = readResultsByField(fieldMember)
@@ -146,7 +150,11 @@ trait ClassReaderUsingReflectedConstructor[CC] extends IRReader[CC] {
 
       case IRString(s) if (guidance.isMapKey) =>
         implicit val ttt = tt
-        context.typeAdapterOf[CC].irTransceiver.read(Path.Root, ops.deserialize(s.asInstanceOf[WIRE]).get)
+        try {
+          ops.deserialize(s.asInstanceOf[WIRE]).mapToReadResult(path, (dsIR: IR) => this.read(Path.Root, dsIR)(ops, guidance = guidance.copy(isMapKey = false)))
+        } catch {
+          case t: Throwable => ReadFailure(path, ReadError.ExceptionThrown(t))
+        }
 
       case _ =>
         ReadFailure(path, ReadError.Unexpected(s"Expected a JSON object, not $ir", self))

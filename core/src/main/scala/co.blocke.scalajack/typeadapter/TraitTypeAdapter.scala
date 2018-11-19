@@ -48,7 +48,11 @@ class TraitIRTransceiver[T](
         }
 
       case IRString(s) if (guidance.isMapKey) =>
-        context.typeAdapterOf[T].irTransceiver.read(Path.Root, ops.deserialize(s.asInstanceOf[WIRE]).get)
+        try {
+          ops.deserialize(s.asInstanceOf[WIRE]).mapToReadResult(path, (dsIR: IR) => this.read(Path.Root, dsIR)(ops, guidance = guidance.copy(isMapKey = false)))
+        } catch {
+          case t: Throwable => ReadFailure(path, ReadError.ExceptionThrown(t))
+        }
 
       case _ =>
         ReadFailure(path, ReadError.Unexpected("Expected a JSON object", reportedBy = self))

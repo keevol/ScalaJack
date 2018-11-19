@@ -39,7 +39,8 @@ case class JsonFlavor(
 
   def readSafely[T](json: String)(implicit tt: TypeTag[T]): Either[ReadFailure, T] =
     Json4sOps.deserialize(json) match {
-      case DeserializationFailure(df) => Left(ReadFailure(Path.Root, df: _*))
+      case DeserializationFailure(df) =>
+        Left(ReadFailure(Path.Root, df: _*))
       case DeserializationSuccess(ir) =>
         context.typeAdapterOf[T].irTransceiver.read(Path.Root, ir) match {
           case rf: ReadFailure    => Left(rf)
