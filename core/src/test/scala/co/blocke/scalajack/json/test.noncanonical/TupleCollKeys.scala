@@ -110,7 +110,6 @@ class TupleCollKeys() extends FunSpec with Matchers {
         sj.read[SampleTupleVC](js)
       }
     }
-
     it("Complex class (having members that are classes) as key") {
       val a = SimpleClass("Larry", 32, true, "golf")
       val b = SimpleClass("Mike", 27, false, 125)

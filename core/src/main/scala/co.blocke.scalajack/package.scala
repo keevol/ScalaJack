@@ -34,10 +34,6 @@ package object scalajack {
   @inline final val TermName = scala.reflect.runtime.universe.TermName
   @inline final val NoType = scala.reflect.runtime.universe.NoType
 
-  // $COVERAGE-OFF$Not sure why but Coverage zeros in on this stupid val assignment
-  final val No_Quote_Marker = '\u00C5'
-  // $COVERAGE-ON$
-
   // format: OFF
   @inline final def appliedType(tycon: Type, args: Type*): Type        = scala.reflect.runtime.universe.appliedType(tycon, args: _*)
   @inline final def appliedType(tycon: Type, args: List[Type]): Type   = scala.reflect.runtime.universe.appliedType(tycon, args)

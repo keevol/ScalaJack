@@ -12,6 +12,8 @@ trait JsonSerializer[IR] extends WireSerializer[IR, String] {
   def serialize(ir: IR, sj: ScalaJackLike[_, _]): String = {
     val builder = new StringBuilder
 
+    val escape: (String) => String = if (sj.isCanonical) escapeJava else (s: String) => s
+
     def appendString(builder: StringBuilder, string: String): Unit = {
       var i = 0
 
@@ -42,7 +44,7 @@ trait JsonSerializer[IR] extends WireSerializer[IR, String] {
       fields.foreach {
         case (IRString(kString), v) => // Special case: Key is already a String, ready-to-eat
           builder.append(sepChar)
-          appendString(builder, escapeJava(kString))
+          appendString(builder, escape(kString))
           builder.append(":")
           helper(builder, v)
         case (k, v) =>
@@ -50,10 +52,10 @@ trait JsonSerializer[IR] extends WireSerializer[IR, String] {
           val subBuilder = new StringBuilder()
           helper(subBuilder, k)
           val kStr = subBuilder.result()
-          if (!kStr.isEmpty && kStr(0) == '"')
-            builder.append(subBuilder.result)
+          if (!kStr.isEmpty && (kStr(0) == '"' || !sj.isCanonical))
+            builder.append(kStr)
           else
-            appendString(builder, escapeJava(subBuilder.result))
+            appendString(builder, escape(subBuilder.result))
           builder.append(":")
           helper(builder, v)
       }
@@ -100,7 +102,7 @@ trait JsonSerializer[IR] extends WireSerializer[IR, String] {
             builder.append(",")
           }
           if (sj.isCanonical)
-            appendString(builder, escapeJava(name))
+            appendString(builder, escape(name))
           else {
             appendString(builder, name)
           }
@@ -122,7 +124,7 @@ trait JsonSerializer[IR] extends WireSerializer[IR, String] {
         case IRLong(longValue)                 => builder.append(longValue)
         case IRNull()                          => builder.append("null")
         case IRObject(fields)                  => serializeObject(builder, fields)
-        case IRString(string)                  => appendString(builder, escapeJava(string))
+        case IRString(string)                  => appendString(builder, escape(string))
       }
 
     helper(builder, ir)

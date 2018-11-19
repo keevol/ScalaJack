@@ -297,19 +297,19 @@ class ValueClassKeys() extends FunSpec with Matchers {
       it("Bad List Key") {
         val js = """{"m":{"[1,2,\"a\"]":[4,5,6]}}"""
         val msg = """ReadException(1 error):
-                      |  [$.m] Expected a JSON array, not JString([1,2,"a"]) (reported by: co.blocke.scalajack.typeadapter.CollectionIRTransceiver)""".stripMargin
+                      |  [$.m.[1,2,"a"]] Expected a JSON array, not JString([1,2,"a"]) (reported by: co.blocke.scalajack.typeadapter.CollectionIRTransceiver)""".stripMargin
         the[ReadException] thrownBy sj.read[SampleVCList](js) should have message msg
       }
       it("Bad Map Key") {
         val js = """{"m":{"{[true]:2}":{"3":4}}}"""
         val msg = """ReadException(1 error):
-                      |  [$] Expected a JSON int, not JArray(List(JBool(true))) (reported by: co.blocke.scalajack.typeadapter.IntTypeAdapter$$anon$1)""".stripMargin
+                      |  [$.[true]] Expected a JSON int, not JArray(List(JBool(true))) (reported by: co.blocke.scalajack.typeadapter.IntTypeAdapter$$anon$1)""".stripMargin
         the[ReadException] thrownBy sj.read[SampleVCMap](js) should have message msg
       }
       it("Bad Tuple Key") {
         val js = """{"m":{"[1,\"one\",true,1]":[2,"two",false]}}"""
         val msg = """ReadException(1 error):
-                      |  [$.m] Given JSON has too many elements for tuple (reported by: co.blocke.scalajack.typeadapter.TupleIRTransceiver)""".stripMargin
+                      |  [$.m.[1,"one",true,1]] Given JSON has too many elements for tuple (reported by: co.blocke.scalajack.typeadapter.TupleIRTransceiver)""".stripMargin
         the[ReadException] thrownBy sj.read[SampleVCTuple](js) should have message msg
       }
     }
@@ -323,7 +323,7 @@ class ValueClassKeys() extends FunSpec with Matchers {
       it("Bad Trait Key") {
         val js = """{"m":{"{\"_hint\":\"co.blocke.scalajack.json.test.mapkeys.Bogus\",\"name\":\"Flipper\",\"food\":\"Veggies\",\"waterTemp\":74.33}":{"_hint":"co.blocke.scalajack.json.test.mapkeys.DogPet","name":"Fido","food":"Meat","numLegs":3}}}"""
         val msg = """ReadException(1 error):
-                      |  [$.m] Exception was thrown: java.lang.ClassNotFoundException: Unable to find class named "co.blocke.scalajack.json.test.mapkeys.Bogus"
+                      |  [$.m.{"_hint":"co.block...}] Exception was thrown: java.lang.ClassNotFoundException: Unable to find class named "co.blocke.scalajack.json.test.mapkeys.Bogus"
                       | (reported by: unknown)""".stripMargin
         the[ReadException] thrownBy sj.read[SampleVCTrait](js) should have message msg
       }
@@ -336,14 +336,14 @@ class ValueClassKeys() extends FunSpec with Matchers {
       it("Bad Parameterized Trait Key") {
         val js = """{"m":{"{\"_hint\":\"co.blocke.scalajack.json.test.mapkeys.ZThing\",\"a\":5,\"b\":\"wow\"}":{"_hint":"co.blocke.scalajack.json.test.mapkeys.AThing","a":6,"b":"zoom"}}}"""
         val msg = """ReadException(1 error):
-                      |  [$.m] Exception was thrown: java.lang.ClassNotFoundException: Unable to find class named "co.blocke.scalajack.json.test.mapkeys.ZThing"
+                      |  [$.m.{"_hint":"co.block...}] Exception was thrown: java.lang.ClassNotFoundException: Unable to find class named "co.blocke.scalajack.json.test.mapkeys.ZThing"
                       | (reported by: unknown)""".stripMargin
         the[ReadException] thrownBy sj.read[SampleVCParamTrait[Int, String]](js) should have message msg
       }
       it("Bad Nested Collection Key") {
         val js = """{"m":{"[{\"a\":\"b\"},{\"c\":9}]":[{"t":"u"},{"x":"y"}]}}"""
         val msg = """ReadException(1 error):
-                      |  [$.m] Expected a JSON array, not JString([{"a":"b"},{"c":9}]) (reported by: co.blocke.scalajack.typeadapter.CollectionIRTransceiver)""".stripMargin
+                      |  [$.m.[{"a":"b"},{"c":9}...]] Expected a JSON array, not JString([{"a":"b"},{"c":9}]) (reported by: co.blocke.scalajack.typeadapter.CollectionIRTransceiver)""".stripMargin
         the[ReadException] thrownBy sj.read[SampleVCNested](js) should have message msg
       }
     }

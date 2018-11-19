@@ -13,13 +13,21 @@ object Path {
   }
 
   case class Field(parent: Path, name: String) extends Path {
-    override def toString: String = {
-      if (name.startsWith("{") || name.startsWith("["))
-        s"""$parent"""
-      else if (name.contains('.'))
-        s"""$parent."$name""""
-      else
-        s"$parent.$name"
+    override def toString: String = name(0) match {
+      case '{' =>
+        val s = name.take(18)
+        if (s.endsWith("}"))
+          s"""$parent.$s"""
+        else
+          s"""$parent.$s...}"""
+      case '[' =>
+        val s = name.take(18)
+        if (s.endsWith("]"))
+          s"""$parent.$s"""
+        else
+          s"""$parent.$s...]"""
+      case _ if name.contains('.') => s"""$parent."$name""""
+      case _                       => s"$parent.$name"
     }
   }
 

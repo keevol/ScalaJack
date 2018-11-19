@@ -139,7 +139,7 @@ class ClassPrimKeys() extends FunSpec with Matchers {
       it("Bad (invalid--missing field) class json as map key") {
         val js = """{"m":{"{\"nameLarry\",\"age\":32,\"favorite\":\"golf\"":{"name":"Mike","age":27,"isOk":false,"favorite":125}}}"""
         val msg = """ReadException(1 error):
-                    |  [$.m] Exception was thrown: java.lang.IllegalArgumentException: Skipped ',', not ':' (reported by: unknown)""".stripMargin
+                    |  [$.m.{"nameLarry","age"...}] Exception was thrown: java.lang.IllegalArgumentException: Skipped ',', not ':' (reported by: unknown)""".stripMargin
         the[ReadException] thrownBy sj.read[SampleSimple](js) should have message msg
       }
       it("Bad class json as map key (valid json, but wrong for given class)") {
@@ -157,7 +157,7 @@ class ClassPrimKeys() extends FunSpec with Matchers {
       it("Bad (invalid) trait json as map key") {
         val js = """{"m":{"{\"_hint\":\"co.blocke.scalajack.json.test.mapkeys.FishPet\":\"Flipper\",\"food\":\"Veggies\",\"waterTemp\":74.33}":{"_hint":"co.blocke.scalajack.json.test.mapkeys.DogPet","name":"Fido","food":"Meat","numLegs":3}}}"""
         val msg = """ReadException(1 error):
-                    |  [$.m] Exception was thrown: java.lang.IllegalArgumentException: Malformed JSON: Expected either ',' or '}' at position 56 (reported by: unknown)""".stripMargin
+                    |  [$.m.{"_hint":"co.block...}] Exception was thrown: java.lang.IllegalArgumentException: Malformed JSON: Expected either ',' or '}' at position 56 (reported by: unknown)""".stripMargin
         the[ReadException] thrownBy sj.read[SamplePet](js) should have message msg
       }
       it("Bad trait json (missing hint) as map key") {
@@ -169,14 +169,14 @@ class ClassPrimKeys() extends FunSpec with Matchers {
       it("Bad trait json (hint to unknown classs) as map key") {
         val js = """{"m":{"{\"_hint\":\"co.blocke.scalajack.json.test.mapkeys.Bogus\",\"name\":\"Flipper\",\"food\":\"Veggies\",\"waterTemp\":74.33}":{"_hint":"co.blocke.scalajack.json.test.mapkeys.DogPet","name":"Fido","food":"Meat","numLegs":3}}}"""
         val msg = """ReadException(1 error):
-                    |  [$.m] Exception was thrown: java.lang.ClassNotFoundException: Unable to find class named "co.blocke.scalajack.json.test.mapkeys.Bogus"
+                    |  [$.m.{"_hint":"co.block...}] Exception was thrown: java.lang.ClassNotFoundException: Unable to find class named "co.blocke.scalajack.json.test.mapkeys.Bogus"
                     | (reported by: unknown)""".stripMargin
         the[ReadException] thrownBy sj.read[SamplePet](js) should have message msg
       }
       it("Bad trait json (missing hint) for member trait") {
         val js = """{"m":{"{\"_hint\":\"co.blocke.scalajack.json.test.mapkeys.CompoundPet\",\"name\":\"Legion\",\"food\":\"Pellets\",\"pet\":{\"_hint\":\"co.blocke.scalajack.json.test.mapkeys.DogPet\",\"name\":\"Fido\",\"food\":\"Meat\",\"numLegs\":3}}":{"name":"Flipper","food":"Veggies","waterTemp":74.33}}}"""
         val msg = """ReadException(1 error):
-                    |  [$.m] Could not find type field named "_hint" (reported by: co.blocke.scalajack.typeadapter.TraitIRTransceiver)""".stripMargin
+                    |  [$.m.{"_hint":"co.block...}] Could not find type field named "_hint" (reported by: co.blocke.scalajack.typeadapter.TraitIRTransceiver)""".stripMargin
         the[ReadException] thrownBy sj.read[SamplePet](js) should have message msg
       }
       it("Bad trait json (hint to unknown classs) for member trait") {
@@ -200,7 +200,7 @@ class ClassPrimKeys() extends FunSpec with Matchers {
         val js = """{"m":{"{\"_hint\":\"co.blocke.scalajack.json.test.mapkeys.ShinyPetHolder\",\"address\":\"123 Main\",\"pet\":{\"sort\":\"BreathsWater\",\"name\":\"Flipper\",\"food\":\"Veggies\",\"waterTemp\":74.33}}":{"_hint":"co.blocke.scalajack.json.test.mapkeys.ShinyPetHolder","address":"210 North","pet":{"kind":"BreathsAir","name":"Fido","food":"Meat","numLegs":3}}}}"""
         val msg = """ReadException(2 errors):
                     |  [$] Could not find type field named "kind" (reported by: co.blocke.scalajack.typeadapter.TraitIRTransceiver)
-                    |  [$.m] Could not find type field named "kind" (reported by: co.blocke.scalajack.typeadapter.TraitIRTransceiver)""".stripMargin
+                    |  [$.m.{"_hint":"co.block...}] Could not find type field named "kind" (reported by: co.blocke.scalajack.typeadapter.TraitIRTransceiver)""".stripMargin
         the[ReadException] thrownBy sj2.read[SamplePet](js) should have message msg
       }
       it("Bad custom hint value for key member's trait") {
@@ -211,7 +211,7 @@ class ClassPrimKeys() extends FunSpec with Matchers {
         val js = """{"m":{"{\"_hint\":\"co.blocke.scalajack.json.test.mapkeys.ShinyPetHolder\",\"address\":\"123 Main\",\"pet\":{\"kind\":\"BreathsLava\",\"name\":\"Flipper\",\"food\":\"Veggies\",\"waterTemp\":74.33}}":{"_hint":"co.blocke.scalajack.json.test.mapkeys.ShinyPetHolder","address":"210 North","pet":{"kind":"BreathsAir","name":"Fido","food":"Meat","numLegs":3}}}}"""
         val msg = """ReadException(2 errors):
                     |  [$] Could not find type field named "kind" (reported by: co.blocke.scalajack.typeadapter.TraitIRTransceiver)
-                    |  [$.m] Could not find type field named "kind" (reported by: co.blocke.scalajack.typeadapter.TraitIRTransceiver)""".stripMargin
+                    |  [$.m.{"_hint":"co.block...}] Could not find type field named "kind" (reported by: co.blocke.scalajack.typeadapter.TraitIRTransceiver)""".stripMargin
         the[ReadException] thrownBy sj2.read[SamplePet](js) should have message msg
       }
     }
