@@ -1,13 +1,15 @@
 package co.blocke.scalajack
 package csv
 
-trait CSVParser extends Parser[String] {
+trait CSVDeserializer[IR] extends WireDeserializer[IR, String] {
 
-  def _parse[AST](source: String)(implicit ops: AstOps[AST, String]): Option[AST] = {
+  this: Ops[IR, String] =>
+
+  def deserialize(source: String): DeserializationResult[IR] =
     if (source == "")
-      Some(AstNull())
+      DeserializationSuccess(IRNull())
     else {
-      val tokens = scala.collection.mutable.ListBuffer.empty[AST]
+      val tokens = scala.collection.mutable.ListBuffer.empty[IR]
       var inBlock: Boolean = false
       var quoteTrigger: Boolean = false
       val sb = new scala.collection.mutable.StringBuilder()
@@ -33,22 +35,19 @@ trait CSVParser extends Parser[String] {
         }
       }
       tokens.append(inferType(sb.toString.reverse.tail.reverse))
-      Some(ops.applyArray(tokens.toList))
+      DeserializationSuccess(IRArray(tokens.toList))
     }
-  }
 
   // Infers Boolean, Double, Long, String, or Null
-  private def inferType[AST](s: String)(implicit ops: AstOps[AST, String]): AST = {
-    //    val trimmed = s.trim
+  private def inferType(s: String): IR =
     s match {
-      case "\""             => ops.applyString("")
-      case "true" | "false" => ops.applyBoolean(s.toBoolean)
-      case ""               => ops.applyNull()
-      case IsLong(l)        => ops.applyLong(l)
-      case IsDouble(d)      => ops.applyDouble(d)
-      case _                => ops.applyString(s)
+      case "\""             => applyString("")
+      case "true" | "false" => applyBoolean(s.toBoolean)
+      case ""               => applyNull()
+      case IsLong(l)        => applyLong(l)
+      case IsDouble(d)      => applyDouble(d)
+      case _                => applyString(s)
     }
-  }
 }
 
 object IsDouble {

@@ -12,6 +12,31 @@ object WriteError {
   case class ExceptionThrown(exception: Throwable) extends WriteError
 }
 
+//------------------------------------------- Exception
+
+object WriteException {
+
+  private def format(writeFailure: WriteFailure): String = {
+    val stringBuilder = new StringBuilder
+    val errors = writeFailure.errors
+
+    stringBuilder.append("WriteException")
+
+    errors.size match {
+      case 0 => stringBuilder.append("(no errors)")
+      case 1 => stringBuilder.append("(1 error):")
+      case n => stringBuilder.append(s"($n errors):")
+    }
+
+    errors.foreach(e => stringBuilder.append(s"\n  $e"))
+
+    stringBuilder.result()
+  }
+
+}
+
+class WriteException(val writeFailure: WriteFailure) extends RuntimeException(WriteException.format(writeFailure))
+
 //------------------------------------------- Result
 
 sealed trait WriteResult[+J] {
@@ -26,12 +51,12 @@ case class WriteSuccess[+J](get: J) extends WriteResult[J] {
 }
 
 object WriteFailure {
-  def apply[J](errors: WriteError*): WriteFailure[J] = WriteFailure[J](errors.to[immutable.Seq])
+  def apply[J](errors: WriteError*): WriteFailure = WriteFailure(errors.to[immutable.Seq])
 }
 
-case class WriteFailure[+J](errors: immutable.Seq[WriteError]) extends WriteResult[J] {
-  override def get: J = throw new UnsupportedOperationException("WriteFailure.get not supported")
-  override def map[JJ](f: J => JJ): WriteResult[JJ] = this.asInstanceOf[WriteResult[JJ]]
+case class WriteFailure(errors: immutable.Seq[WriteError]) extends WriteResult[Nothing] {
+  override def get: Nothing = throw new UnsupportedOperationException("WriteFailure.get not supported")
+  override def map[JJ](f: Nothing => JJ): WriteResult[JJ] = this.asInstanceOf[WriteResult[JJ]]
   def isNothing: Boolean = errors.contains(WriteError.Nothing)
   override def toString: String = productPrefix + errors.mkString("(", ", ", ")")
 }

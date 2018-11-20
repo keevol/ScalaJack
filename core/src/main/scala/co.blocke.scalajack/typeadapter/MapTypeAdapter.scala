@@ -13,7 +13,9 @@ object MapTypeAdapter extends TypeAdapterFactory.<:<.withTwoTypeParams[GenMap] {
 
     CanBuildFroms.to[M].headOption match {
       case None =>
+        // $COVERAGE-OFF$Not sure how to trigger this!
         next.typeAdapterOf[M]
+      // $COVERAGE-ON$
 
       case Some(canBuildFromEntry) =>
         val canBuildFrom = canBuildFromEntry.canBuildFrom.asInstanceOf[CanBuildFrom[_, (K, V), M]]

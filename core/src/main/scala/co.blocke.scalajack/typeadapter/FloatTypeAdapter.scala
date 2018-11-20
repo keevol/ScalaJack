@@ -15,7 +15,9 @@ object FloatTypeAdapter extends TypeAdapter.=:=[Float] {
               ReadError.Malformed(e, reportedBy = self)
             // $COVERAGE-ON$
           })
+        // $COVERAGE-OFF$Not sure how to trigger this! Here for extra safety, really.
         case IRDecimal(_) => ReadFailure(path, ReadError.Unexpected("Float value out of range", reportedBy = self))
+        // $COVERAGE-ON$
 
         case IRDouble(doubleValue) =>
           ReadResult(path)(TypeTagged(doubleValue.toFloat), {

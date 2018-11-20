@@ -61,6 +61,7 @@ class PlugTestHoles extends FunSpec {
       val bigD2 = BigDecimal(10)
       val shortOne: Short = bigD2.toShortExact
       shortOne should be(10.toShortExact)
+      bigD2.toShortExact.toString should be("10")
       //        the[ArithmeticException] thrownBy BigDecimal(123456).toShortExact should have message "$bigDecimal (BigDecimal) cannot be exactly converted to Short ($bigDecimalAsShort)"
 
       123.0D.toFloatExact should be(123.0F)
@@ -105,9 +106,11 @@ class PlugTestHoles extends FunSpec {
       rs.isSuccess should be(true)
       val rf = ReadFailure(Path.Root, ReadError.Missing("something", sj.context.typeAdapterOf[Byte].resolved.irTransceiver))
       rf.isFailure should be(true)
+      rf.isSuccess should be(false)
       val msg = """ReadException(1 error):
                   |  [$] Required field something missing (reported by: co.blocke.scalajack.typeadapter.ByteTypeAdapter$$anon$1)""".stripMargin
       the[ReadException] thrownBy rf.get should have message msg
+      the[ReadException] thrownBy rf.tagged should have message msg
     }
     it("Reflection") {
       assertResult(typeOf[Null]) { Reflection.inferTypeOf(null) }
@@ -232,6 +235,10 @@ class PlugTestHoles extends FunSpec {
         val obj = Bogus("thing")
         val ir2 = sj.parse(sj.render(obj)).get
         sj.materialize[Any](ir2).toString should be("""ReadSuccess(Map(name -> thing) as Map[Any,Any])""")
+        val ta = sj.context.typeAdapterOf[Any].as[AnyTypeAdapter]
+        val m = Map("a" -> 1, "b" -> 2)
+        val ir3 = sj.dematerialize(m).get
+        ta.irTransceiver.read(Path.Root, ir3).toString should be("""ReadSuccess(Map(b -> 2, a -> 1) as scala.collection.mutable.Map[Any,Any])""")
       }
       it("BigDecimalTypeAdapter") {
         val ir = IRDouble(123.45)
@@ -268,9 +275,31 @@ class PlugTestHoles extends FunSpec {
         val ir = IRDouble(12.34)
         eta.read(Path.Root, ir).toString should be("ReadFailure(Vector(($,Expected a JSON string or int (reported by: co.blocke.scalajack.typeadapter.EnumerationIRTransceiver))))")
       }
+      it("FloatTypeAdapter") {
+        val ir = IRDouble(12.34)
+        sj.materialize[Float](ir).get should be(12.34F)
+        val ir2 = IRLong(12L)
+        sj.materialize[Float](ir2).get should be(12.0F)
+        val ir3 = IRInt(12)
+        sj.materialize[Float](ir3).get should be(12.0F)
+      }
       it("IntTypeAdapter") {
         val ir = IRLong(15)
         sj.materialize[Int](ir).get should be(15)
+        val ir2 = IRLong(9223372036854775807L)
+        val msg = """ReadException(1 error):
+                    |  [$] Int value out of range (reported by: co.blocke.scalajack.typeadapter.IntTypeAdapter$$anon$1)""".stripMargin
+        the[ReadException] thrownBy sj.materialize[Int](ir2).get should have message msg
+      }
+      it("NumberIRTransciever") {
+        val ir = IRNull()
+        sj.materialize[Number](ir).toString should be("ReadSuccess(null as java.lang.Number)")
+        val ir2 = IRDouble(12.34)
+        sj.materialize[Number](ir2).toString should be("ReadSuccess(12.34 as java.lang.Double)")
+        val ir3 = IRString("123.45")
+        val ta = sj.context.typeAdapterOf[Number].resolved
+        ta.irTransceiver.read(Path.Root, ir3)(ops, guidance.withMapKey()).toString should be("ReadSuccess(123.45 as java.lang.Double)")
+        ta.irTransceiver.read(Path.Root, IRBoolean(true)).toString should be("ReadFailure(Vector(($,Expected a JSON number (reported by: co.blocke.scalajack.typeadapter.javaprimitives.JavaNumberTypeAdapter$$anon$1))))")
       }
       it("OptionTypeAdapter") {
         val ota = sj.context.typeAdapterOf[Option[Int]].as[OptionTypeAdapter[Int]]
