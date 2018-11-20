@@ -48,8 +48,8 @@ class DefaultValues extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
     }
     it("Fails if no default is found for a given field") {
       val js = """{"age":null}"""
-      val msg = """DeserializationException(1 error):
-                  |  [$.name] Required field missing (reported by: co.blocke.scalajack.typeadapter.StringDeserializer)""".stripMargin
+      val msg = """ReadException(1 error):
+                  |  [$.name] Required field name missing (reported by: co.blocke.scalajack.typeadapter.StringTypeAdapter$$anon$1)""".stripMargin
       the[ReadException] thrownBy sj.read[DefaultOpt](js) should have message msg
     }
   }

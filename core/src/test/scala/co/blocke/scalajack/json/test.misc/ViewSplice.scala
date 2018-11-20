@@ -22,12 +22,8 @@ class ViewSplice() extends FunSpec with Matchers {
     }
     it("Must enforce required constructor fields") {
       val master = Master("Greg", List("a", "b"), List(Encapsulated("x", false), Encapsulated("y", true)), Encapsulated("Nest!", true), Some("wow"), Map("hey" -> 17, "you" -> 21), true, 99123986123L, Num.C, 46)
-      val msg = """DeserializationException(2 errors):
-                  |  [$.bar] Required field missing (reported by: co.blocke.scalajack.typeadapter.BooleanDeserializer)
-                  |  [$.foo] Required field missing (reported by: co.blocke.scalajack.typeadapter.StringDeserializer)""".stripMargin
-      val msg2 = """DeserializationException(2 errors):
-                  |  [$.foo] Required field missing (reported by: co.blocke.scalajack.typeadapter.StringDeserializer)
-                  |  [$.bar] Required field missing (reported by: co.blocke.scalajack.typeadapter.BooleanDeserializer)""".stripMargin
+      val msg = """ReadFailure(Vector(($.foo,Required field foo missing (reported by: co.blocke.scalajack.typeadapter.StringTypeAdapter$$anon$1)), ($.bar,Required field bar missing (reported by: co.blocke.scalajack.typeadapter.BooleanTypeAdapter$$anon$1))))""".stripMargin
+      val msg2 = """ReadFailure(Vector(($.bar,Required field bar missing (reported by: co.blocke.scalajack.typeadapter.BooleanTypeAdapter$$anon$1)), ($.foo,Required field foo missing (reported by: co.blocke.scalajack.typeadapter.StringTypeAdapter$$anon$1))))""".stripMargin
       val ex = scala.util.Try { sj.view[Encapsulated](master) }.toEither match {
         case Left(boom) => (boom.getMessage() == msg || boom.getMessage == msg2)
         case Right(_)   => false

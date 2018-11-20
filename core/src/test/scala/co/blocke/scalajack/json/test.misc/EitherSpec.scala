@@ -64,8 +64,8 @@ class EitherSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
     }
     it("Same instance Left and Right") {
       val js = "\"foo\""
-      val msg = """DeserializationException(1 error):
-                  |  [???] Exception was thrown: java.lang.IllegalArgumentException: Types String and String are not mutually exclusive (reported by: unknown)""".stripMargin
+      val msg = """ReadException(1 error):
+                  |  [$] Exception was thrown: java.lang.IllegalArgumentException: Types String and String are not mutually exclusive (reported by: unknown)""".stripMargin
       the[ReadException] thrownBy sj.read[Either[String, String]](js) should have message msg
     }
     it("Different classes with identical fields--favor Right") {
@@ -90,9 +90,9 @@ class EitherSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
     }
     it("Neither value works") {
       val js = "25"
-      val msg = """DeserializationException(2 errors):
-                  |  [$] Expected a JSON boolean (reported by: co.blocke.scalajack.typeadapter.BooleanDeserializer)
-                  |  [$] Expected a JSON string (reported by: co.blocke.scalajack.typeadapter.StringDeserializer)""".stripMargin
+      val msg = """ReadException(2 errors):
+                  |  [$] Expected a JSON boolean (reported by: co.blocke.scalajack.typeadapter.BooleanTypeAdapter$$anon$1)
+                  |  [$] Expected a JSON string (reported by: co.blocke.scalajack.typeadapter.StringTypeAdapter$$anon$1)""".stripMargin
       the[java.lang.RuntimeException] thrownBy sj.read[Either[String, Boolean]](js) should have message msg
     }
   }

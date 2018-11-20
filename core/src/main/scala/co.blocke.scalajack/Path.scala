@@ -44,8 +44,8 @@ sealed trait Path {
   def \(elementIndex: Int): Element = Element(this, elementIndex)
 
   def +(next: String) = this match {
-    case _: Field   => Field(this, next)
     case e: Element => e
+    case _          => Field(this, next)
   }
 
 }

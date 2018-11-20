@@ -102,12 +102,5 @@ class TypeAdapterFactorySpec extends FunSpec {
       val c2 = context.withFactory(factory)
       c2.typeAdapterOf[Boolean].getClass.getName should be("co.blocke.scalajack.json.test.misc.TA6")
     }
-    it("Create a TypeAdapter from a Deserializer") {
-      val deser = Deserializer.constant(TypeTagged(123.45D))
-      val factory = TypeAdapterFactory.=:=(deser)
-      val c2 = context.withFactory(factory)
-      // Creates an anonmyous TypeAdapter
-      c2.typeAdapterOf[Double].getClass.getName startsWith ("co.blocke.scalajack.TypeAdapterFactory$") should be(true)
-    }
   }
 }

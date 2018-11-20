@@ -18,7 +18,7 @@ class TryAndCapture() extends FunSpec with Matchers {
 
   describe("---------------------------\n:  Try and Capture Tests  :\n---------------------------") {
     describe("Try:") {
-      it("Try sucess") {
+      it("Try success") {
         val js = """{"name":"Greg","other":{"stuff":["a","b","c"],"num":2}}"""
         val obj = sj.read[Boom](js)
         assertResult(Boom("Greg", Success(Embed(List("a", "b", "c"), 2)))) { obj }
@@ -27,16 +27,16 @@ class TryAndCapture() extends FunSpec with Matchers {
       it("Try failure") {
         val js = """{"name":"Greg","other":[1,2,3]}"""
         val obj = sj.read[Boom](js)
-        val msg = """DeserializationException(1 error):
-                    |  [$.other] Expected a JSON object, not JArray(List(JLong(1), JLong(2), JLong(3))) (reported by: co.blocke.scalajack.typeadapter.ClassDeserializerUsingReflectedConstructor)""".stripMargin
+        val msg = """ReadException(1 error):
+                    |  [$.other] Expected a JSON object, not JArray(List(JLong(1), JLong(2), JLong(3))) (reported by: CaseClassIRTransceiver(Context(_hint,List(co.blocke.scalajack.typeadapter.IRParsingFallbackTypeAdapter$)""".stripMargin
         assertResult(msg) { obj.other.asInstanceOf[Failure[_]].exception.getMessage }
         assertResult(js) { sj.render(obj) }
       }
       it("Try failure 2") {
         val js = """{"name":"Greg","other":  -12.45  ,"num":2}"""
         val obj = sj.read[Boom](js)
-        val msg = """DeserializationException(1 error):
-                    |  [$.other] Expected a JSON object, not JDecimal(-12.45) (reported by: co.blocke.scalajack.typeadapter.ClassDeserializerUsingReflectedConstructor)""".stripMargin
+        val msg = """ReadException(1 error):
+                    |  [$.other] Expected a JSON object, not JDecimal(-12.45) (reported by: CaseClassIRTransceiver(Context(_hint,List(co.blocke.scalajack.typeadapter.IRParsingFallbackTypeAdapter$)""".stripMargin
         assertResult(msg) { obj.other.asInstanceOf[Failure[_]].exception.getMessage }
         assertResult("""{"name":"Greg","other":-12.45}""") { sj.render(obj) }
       }

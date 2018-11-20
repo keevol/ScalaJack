@@ -42,7 +42,7 @@ trait ClassReaderUsingReflectedConstructor[CC] extends IRReader[CC] {
           fields.foreach {
             case (fieldName, fieldValueAst) =>
               for (typeMember <- typeMembersByName.get(fieldName)) {
-                val actualType: Type = Try(typeTransceiver.read(path \ fieldName, fieldValueAst)).map(_.get.get).getOrElse(typeMember.baseType)
+                val actualType: Type = Try(typeTransceiver.read(path \ fieldName, fieldValueAst)).map(_.get).getOrElse(typeMember.baseType)
 
                 // Solve for each type parameter
                 for (typeParam <- caseClassType.typeConstructor.typeParams) {
@@ -149,7 +149,6 @@ trait ClassReaderUsingReflectedConstructor[CC] extends IRReader[CC] {
         }
 
       case IRString(s) if (guidance.isMapKey) =>
-        implicit val ttt = tt
         try {
           ops.deserialize(s.asInstanceOf[WIRE]).mapToReadResult(path, (dsIR: IR) => this.read(Path.Root, dsIR)(ops, guidance = guidance.copy(isMapKey = false)))
         } catch {

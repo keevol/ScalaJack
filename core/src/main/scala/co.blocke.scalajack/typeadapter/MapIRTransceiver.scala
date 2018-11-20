@@ -14,11 +14,16 @@ class MapIRTransceiver[K, V, M <: GenMap[K, V]](
 
   private val taggedNull: TypeTagged[M] = TypeTagged(null.asInstanceOf[M], tt.tpe)
 
+  private class TaggedMapFromIRArray(override val get: M) extends TypeTagged[M] {
+    override lazy val tpe: Type = appliedType(tt.tpe.typeConstructor, typeOf[K], typeOf[V]) // TODO `M` may not actually have type parameters
+  }
+
   override def read[IR, WIRE](path: Path, ir: IR)(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): ReadResult[M] =
     ir match {
       case IRNull() =>
         ReadSuccess(taggedNull)
 
+      // Comes in raw from some WIRE formats, e.g. JSON, that require String-typed keys
       case IRObject(objectFields) =>
         try {
           val builder = newBuilder()
@@ -67,6 +72,17 @@ class MapIRTransceiver[K, V, M <: GenMap[K, V]](
         } catch {
           case NonFatal(e) =>
             ReadFailure(path, ReadError.ExceptionThrown(e))
+        }
+
+      case IRMap(fields) =>
+        ReadResult(path) {
+          val builder = newBuilder()
+          fields.map {
+            case (kIR, vIR) =>
+              builder += ((keyTransceiver.read(path, kIR).get, valueTransceiver.read(path, vIR).get))
+          }
+          val map = builder.result()
+          new TaggedMapFromIRArray(map)
         }
 
       case IRArray(_) =>

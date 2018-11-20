@@ -133,7 +133,7 @@ class JavaPrim() extends FunSpec with Matchers {
           }
           val ir = sj.dematerialize(inst)
           ir.toString should be("WriteSuccess(JObject(List((d1,JArray(List(JString(IRCustom), JString(Duration), JString(PT0S)))), (d2,JArray(List(JString(IRCustom), JString(Duration), JString(PT51H4M)))), (d3,JNull))))")
-          sj.materialize[SampleDuration](ir.get).get.get should be(inst)
+          sj.materialize[SampleDuration](ir.get).get should be(inst)
         }
         it("Instant must work") {
           val inst = SampleInstant(Instant.EPOCH, Instant.MAX, Instant.MIN, Instant.parse("2007-12-03T10:15:30.00Z"), null)
@@ -144,7 +144,7 @@ class JavaPrim() extends FunSpec with Matchers {
           }
           val ir = sj.dematerialize(inst)
           ir.toString should be("WriteSuccess(JObject(List((i1,JArray(List(JString(IRCustom), JString(Instant), JArray(List(JLong(0), JInt(0)))))), (i2,JArray(List(JString(IRCustom), JString(Instant), JArray(List(JLong(31556889864403199), JInt(999999999)))))), (i3,JArray(List(JString(IRCustom), JString(Instant), JArray(List(JLong(-31557014167219200), JInt(0)))))), (i4,JArray(List(JString(IRCustom), JString(Instant), JArray(List(JLong(1196676930), JInt(0)))))), (i5,JNull))))")
-          sj.materialize[SampleInstant](ir.get).get.get should be(inst)
+          sj.materialize[SampleInstant](ir.get).get should be(inst)
         }
         it("LocalDateTime must work") {
           val inst = SampleLocalDateTime(LocalDateTime.MAX, LocalDateTime.MIN, LocalDateTime.parse("2007-12-03T10:15:30"), null)

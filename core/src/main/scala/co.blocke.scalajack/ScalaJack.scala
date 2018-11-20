@@ -37,8 +37,8 @@ abstract class ScalaJackLike[IR, WIRE] extends JackFlavor[IR, WIRE] {
    */
   def view[T](master: Any)(implicit tt: TypeTag[T]): T =
     if (tt.tpe.typeSymbol.asClass.isCaseClass)
-      materialize[T](dematerialize(master) match {
-        case WriteSuccess(w)      => w
+      (dematerialize(master) match {
+        case WriteSuccess(w)      => materialize[T](w)
         case wf: WriteFailure[IR] => throw new ViewException(wf.toString)
       }) match {
         case ReadSuccess(t)  => t.get

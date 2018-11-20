@@ -123,8 +123,8 @@ class TupleIRTransceiver[Tuple](fields: IndexedSeq[Field[Tuple]], tupleConstruct
           ReadFailure(readResults.flatMap(_.errors).to[immutable.Seq])
         } else {
           ReadResult(path)({
-            val tuple = tupleConstructorMirror(readResults.map(_.get.get): _*).asInstanceOf[Tuple]
-            val taggedElements = readResults.map(_.get)
+            val tuple = tupleConstructorMirror(readResults.map(_.get): _*).asInstanceOf[Tuple]
+            val taggedElements = readResults.map(_.tagged)
             new TaggedTuple(tuple, taggedElements)
           })
         }

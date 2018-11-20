@@ -35,14 +35,15 @@ class LooseChange extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
       adapter.collectionName should be(Some("plains"))
       adapter.dbKeys.head.dbKeyIndex should be(Some(1))
     }
-    it("Materialize from AST works") {
+    it("Materialize from IR works") {
       import org.json4s.JsonDSL._
       val c = View1("Fred", 123L, None)
-      val ast = sj.dematerialize(c).asInstanceOf[JObject] // JObject(List((name,JString(Fred)), (big,JLong(123))))
-      val modded = (ast ~ ("maybe" -> "I'm here")).transformField {
+      val WriteSuccess(ir) = sj.dematerialize(c)
+      val ir2 = ir.asInstanceOf[JObject] // JObject(List((name,JString(Fred)), (big,JLong(123))))
+      val modded = (ir2 ~ ("maybe" -> "I'm here")).transformField {
         case JField("name", _) => ("name", JString("Sally"))
       }
-      sj.materialize[View1](modded) should be(View1("Sally", 123L, Some("I'm here")))
+      sj.materialize[View1](modded).get should be(View1("Sally", 123L, Some("I'm here")))
     }
   }
 }

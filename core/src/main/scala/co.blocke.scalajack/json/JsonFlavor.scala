@@ -42,9 +42,13 @@ case class JsonFlavor(
       case DeserializationFailure(df) =>
         Left(ReadFailure(Path.Root, df: _*))
       case DeserializationSuccess(ir) =>
-        context.typeAdapterOf[T].irTransceiver.read(Path.Root, ir) match {
-          case rf: ReadFailure    => Left(rf)
-          case ReadSuccess(scala) => Right(scala.get)
+        try {
+          context.typeAdapterOf[T].irTransceiver.read(Path.Root, ir) match {
+            case rf: ReadFailure    => Left(rf)
+            case ReadSuccess(scala) => Right(scala.get)
+          }
+        } catch {
+          case t: Throwable => Left(ReadFailure(Path.Root, ReadError.ExceptionThrown(t)))
         }
     }
 
