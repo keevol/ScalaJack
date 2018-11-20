@@ -77,7 +77,6 @@ sealed trait ReadResult[+T] {
   def tagged: TypeTagged[T]
   def errors: immutable.Seq[(Path, ReadError)]
   def map[U](f: TypeTagged[T] => TypeTagged[U]): ReadResult[U]
-  def flatMap[U](f: TypeTagged[T] => ReadResult[U]): ReadResult[U]
   def isSuccess: Boolean
   def isFailure: Boolean
 }
@@ -86,7 +85,6 @@ case class ReadSuccess[+T](tagged: TypeTagged[T]) extends ReadResult[T] {
   override def get: T = tagged.get
   override def errors: immutable.Seq[(Path, ReadError)] = immutable.Seq.empty
   override def map[U](f: TypeTagged[T] => TypeTagged[U]): ReadResult[U] = ReadSuccess(f(tagged))
-  override def flatMap[U](f: TypeTagged[T] => ReadResult[U]): ReadResult[U] = f(tagged)
   override def isSuccess: Boolean = true
   override def isFailure: Boolean = false
 }
@@ -100,7 +98,6 @@ case class ReadFailure(errors: immutable.Seq[(Path, ReadError)]) extends ReadRes
   override def tagged: TypeTagged[Nothing] = throw new ReadException(this)
   override def get: Nothing = throw new ReadException(this)
   override def map[U](f: TypeTagged[Nothing] => TypeTagged[U]): ReadResult[U] = this.asInstanceOf[ReadResult[U]]
-  override def flatMap[U](f: TypeTagged[Nothing] => ReadResult[U]): ReadResult[U] = this.asInstanceOf[ReadResult[U]]
 
   def errors(path: Path): immutable.Seq[(Path, ReadError)] = errors.filter(_._1 == path)
 

@@ -1,21 +1,15 @@
 package co.blocke.scalajack
 package json
 
-import org.json4s.JsonAST.{ JArray, JBool, JDecimal, JDouble, JInt, JLong, JNothing, JNull, JObject, JString, JValue }
+import org.json4s.JsonAST.{ JArray, JBool, JDecimal, JDouble, JInt, JLong, JNull, JObject, JString, JValue }
 
 trait Json4sOpsBase extends OpsBase[JValue] {
 
   override type ArrayType = JArray
   override type ObjectType = JObject
 
-  override def getObjectField(obj: JObject, name: String): Option[JValue] =
-    obj \ name match {
-      case JNothing => None
-      case v        => Some(v)
-    }
-
   override def getArrayElement(arr: JArray, index: Int): Option[JValue] =
-    if (index >= 0 && arr.values.size < index) Some(arr(index)) else None
+    if (index >= 0 && index < arr.values.size) Some(arr(index)) else None
 
   override def applyArray(values: Seq[JValue]): JValue = new JArray(values.toList)
   override def unapplyArray(ir: JValue): Option[Seq[JValue]] =
@@ -79,9 +73,6 @@ trait Json4sOpsBase extends OpsBase[JValue] {
       case JString(value) => Some(value)
       case _              => None
     }
-
-  override def isObject(json: JValue): Boolean = json.isInstanceOf[JObject]
-  override def isArray(json: JValue): Boolean = json.isInstanceOf[JArray]
 }
 
 object Json4sOps extends Ops[JValue, String] with Json4sOpsBase with JsonDeserializer[JValue] with JsonSerializer[JValue]

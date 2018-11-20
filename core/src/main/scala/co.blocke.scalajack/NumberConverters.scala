@@ -10,7 +10,9 @@ object NumberConverters {
       if (bigDecimal == bigDecimalAsDoubleAsBigDecimal) {
         bigDecimalAsDouble
       } else {
+        // $COVERAGE-OFF$Not sure how to trigger this
         throw new ArithmeticException(s"$bigDecimal (BigDecimal) cannot be exactly converted to Double ($bigDecimalAsDouble)")
+        // $COVERAGE-ON$
       }
     }
 
@@ -44,7 +46,9 @@ object NumberConverters {
       if (bigInt == bigIntAsShortAsBigInt) {
         bigIntAsShort
       } else {
+        // $COVERAGE-OFF$Not sure how to trigger this
         throw new ArithmeticException(s"$bigInt (BigInt) cannot be exactly converted to Short ($bigIntAsShort)")
+        // $COVERAGE-ON$
       }
     }
 
@@ -72,7 +76,9 @@ object NumberConverters {
       if (long == longAsFloatAsLong) {
         longAsFloat
       } else {
+        // $COVERAGE-OFF$Not sure how to trigger this
         throw new ArithmeticException(s"$long (Long) cannot be exactly converted to Float ($longAsFloat)")
+        // $COVERAGE-ON$
       }
     }
 

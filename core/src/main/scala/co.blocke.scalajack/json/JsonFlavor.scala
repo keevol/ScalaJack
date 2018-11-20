@@ -60,8 +60,8 @@ case class JsonFlavor(
     }
   }
 
-  def parseToAST(json: String): DeserializationResult[JValue] = Json4sOps.deserialize(json)
-  def emitFromAST(ir: JValue): String = Json4sOps.serialize(ir, this)
+  def parse(json: String): DeserializationResult[JValue] = Json4sOps.deserialize(json)
+  def emit(ir: JValue): String = Json4sOps.serialize(ir, this)
   def materialize[T](ir: JValue)(implicit tt: TypeTag[T]): ReadResult[T] = context.typeAdapterOf[T].irTransceiver.read(Path.Root, ir)
   def dematerialize[T](t: T)(implicit tt: TypeTag[T]): WriteResult[JValue] = context.typeAdapterOf[T].irTransceiver.write(TypeTagged(t, typeOf[T]))
 }

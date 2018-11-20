@@ -15,7 +15,9 @@ object DoubleTypeAdapter extends TypeAdapter.=:=[Double] {
           try {
             ops.deserialize(s.asInstanceOf[WIRE]).mapToReadResult(path, (dsIR: IR) => this.read(path, dsIR)(ops, guidance = guidance.copy(isMapKey = false)))
           } catch {
+            // $COVERAGE-OFF$Not sure how to trigger this! Here for extra safety, really.
             case t: Throwable => ReadFailure(path, ReadError.ExceptionThrown(t))
+            // $COVERAGE-ON$
           }
         // TODO handle other JSON types
         case _ => ReadFailure(path, ReadError.Unexpected(s"Expected a JSON number, not $ir", reportedBy = self))

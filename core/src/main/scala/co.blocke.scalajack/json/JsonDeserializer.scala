@@ -71,11 +71,13 @@ trait JsonDeserializer[IR] extends WireDeserializer[IR, String] {
           case '"' if (!inSlash) =>
             reading = false
 
-          case '"' =>
-            skipChar(expected = '"')
-            stringBuilder.append('"')
-            segmentStart += 1
-            inSlash = false
+          // ---- Unclear if this is needed.  Coverage testing revealed it's never called
+          //      in the suite of unit tests.  Leave it here for now... maybe delete later.
+          //          case '"' =>
+          //            skipChar(expected = '"')
+          //            stringBuilder.append('"')
+          //            segmentStart += 1
+          //            inSlash = false
 
           case '\\' =>
             if (stringBuilder eq null) stringBuilder = new StringBuilder

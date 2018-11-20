@@ -15,8 +15,8 @@ trait JackFlavor[IR, WIRE] {
       case Left(x)  => throw new ReadException(x)
     }
 
-  def parseToAST(wire: WIRE): DeserializationResult[IR]
-  def emitFromAST(ir: IR): WIRE
+  def parse(wire: WIRE): DeserializationResult[IR]
+  def emit(ir: IR): WIRE
 
   def materialize[T](ir: IR)(implicit tt: TypeTag[T]): ReadResult[T]
   def dematerialize[T](t: T)(implicit tt: TypeTag[T]): WriteResult[IR]

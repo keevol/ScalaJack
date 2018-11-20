@@ -344,7 +344,7 @@ class PlugTestHoles extends FunSpec {
         //        val tas = sj.context.typeAdapterOf[Tuple2[Option[Int], Int]].as[TupleTypeAdapter[_]].serializer
 
         tad.deserialize(Path.Root, AstInt(5)).toString should be("DeserializationFailure(Vector(($,Expected a JSON array, not JInt(5) (reported by: co.blocke.scalajack.typeadapter.TupleDeserializer))))")
-      }
+      }0
       it("Try") {
         implicit val ops = Json4sOps
         implicit val g = SerializationGuidance()

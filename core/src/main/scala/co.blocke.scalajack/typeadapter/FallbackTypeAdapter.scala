@@ -16,7 +16,9 @@ class FallBackIRTransceiver[T](primary: IRTransceiver[T], secondary: IRTransceiv
             secondarySuccess
 
           case ReadFailure(secondaryErrors) =>
+            // $COVERAGE-OFF$Not sure how to trigger this! Here for extra safety, really.
             ReadFailure(primaryErrors ++ secondaryErrors)
+          // $COVERAGE-ON$
         }
     }
 
@@ -28,7 +30,9 @@ class FallBackIRTransceiver[T](primary: IRTransceiver[T], secondary: IRTransceiv
   private def readMeFromNothing[IR, WIRE](xceiver: IRTransceiver[T], path: Path)(implicit ops: Ops[IR, WIRE]): ReadResult[T] =
     try xceiver.readFromNothing(path) catch {
       case NonFatal(e) =>
+        // $COVERAGE-OFF$Not sure how to trigger this! Here for extra safety, really.
         ReadFailure(path, ReadError.ExceptionThrown(e))
+      // $COVERAGE-ON$
     }
 
   override def read[IR, WIRE](path: Path, ir: IR)(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): ReadResult[T] =
@@ -42,7 +46,9 @@ class FallBackIRTransceiver[T](primary: IRTransceiver[T], secondary: IRTransceiv
             secondarySuccess
 
           case ReadFailure(secondaryErrors) =>
+            // $COVERAGE-OFF$Not sure how to trigger this! Here for extra safety, really.
             ReadFailure(primaryErrors ++ secondaryErrors)
+          // $COVERAGE-ON$
         }
     }
 

@@ -74,6 +74,15 @@ class AnyIRTransceiver(
           case _: Throwable => stringIRTransceiver.read(path, ir)
         }
 
+      case IRMap(fields) =>
+        import scala.collection.mutable.{ Builder, Map }
+        val builder: Builder[(Any, Any), Map[Any, Any]] = scala.collection.mutable.Map.newBuilder
+        fields.map {
+          case (kIR, vIR) =>
+            builder += ((this.read(path, kIR).get, this.read(path, vIR).get))
+        }
+        ReadSuccess(TypeTagged(builder.result(), typeOf[Map[Any, Any]]))
+
       case IRObject(fields) =>
         val concreteTypeFieldName = context.defaultHint
         fields.find { case (name, _) => name == concreteTypeFieldName }.map(_._2) match {

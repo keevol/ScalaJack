@@ -85,7 +85,9 @@ object CanBuildFromTypeAdapter extends TypeAdapterFactory.<:<.withOneTypeParam[G
           keyTypeAdapter.asInstanceOf[TypeAdapter[Any]],
           valueTypeAdapter.asInstanceOf[TypeAdapter[Any]]))
           */
+        // $COVERAGE-OFF$Not sure how to trigger this! Here for extra safety, really.
         throw new java.lang.UnsupportedOperationException("This functionality has not yet been implemented")
+        // $COVERAGE-ON$
       } else {
         def newBuilder(): mutable.Builder[E, T] = canBuildFrom.asInstanceOf[CanBuildFrom[Any, E, T]]()
 

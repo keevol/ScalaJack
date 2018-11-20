@@ -5,8 +5,8 @@ import scala.collection.{ GenMap, immutable, mutable }
 import scala.util.control.NonFatal
 
 class MapIRTransceiver[K, V, M <: GenMap[K, V]](
-    keyTransceiver:          IRTransceiver[K],
-    valueTransceiver:        IRTransceiver[V],
+    val keyTransceiver:      IRTransceiver[K],
+    val valueTransceiver:    IRTransceiver[V],
     keyValuePairTransceiver: IRTransceiver[List[(K, V)]],
     newBuilder:              () => mutable.Builder[(K, V), M])(implicit tt: TypeTag[M], ttk: TypeTag[K], ttv: TypeTag[V], context: Context) extends IRTransceiver[M] {
 

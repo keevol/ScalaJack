@@ -59,19 +59,25 @@ abstract class ScalaJackLike[IR, WIRE] extends JackFlavor[IR, WIRE] {
         case IRObject(x) => x
         case _           => throw new ViewException(s"View must be a case class, not ${tt.tpe}")
       }
+      // $COVERAGE-OFF$Not sure how to trigger this! Here for extra safety, really.
       case wf: WriteFailure[IR] => throw new ViewException(wf.toString)
+      // $COVERAGE-ON$
     }).toMap
     val masterIR = (dematerialize(master) match {
       case WriteSuccess(ws) => ws match {
         case IRObject(x) => x
-        case _           => throw new ViewException(s"Master must be a case class, not ${tt.tpe}")
+        case _           => throw new ViewException(s"Master must be a case class, not ${tu.tpe}")
       }
+      // $COVERAGE-OFF$Not sure how to trigger this! Here for extra safety, really.
       case wf: WriteFailure[IR] => throw new ViewException(wf.toString)
+      // $COVERAGE-ON$
     }).toMap
     val newMaster = masterIR.map { case (name, value) => (name, viewIR.getOrElse(name, value)) }.toSeq
     materialize[U](ops.applyObject(newMaster)) match {
       case ReadSuccess(t)  => t.get
+      // $COVERAGE-OFF$Not sure how to trigger this! Here for extra safety, really.
       case rf: ReadFailure => throw new ViewException(rf.toString)
+      // $COVERAGE-ON$
     }
   }
 

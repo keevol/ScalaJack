@@ -137,7 +137,9 @@ object TypeAdapterFactory {
           override val irTransceiver: IRTransceiver[T] = irTrans
         }
 
+        // $COVERAGE-OFF$This is present for completeness--never actually used
         override def create(next: TypeAdapterFactory)(implicit context: Context, tt: TypeTag[T]): TypeAdapter[T] = typeAdapter
+        // $COVERAGE-ON$
       }
     }
 

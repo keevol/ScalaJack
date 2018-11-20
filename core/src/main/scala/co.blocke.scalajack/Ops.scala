@@ -38,28 +38,9 @@ trait OpsBase[IR] {
   def applyString(value: String): IR
   def unapplyString(ir: IR): Option[String]
 
-  def getObjectField(obj: ObjectType, name: String): Option[IR]
   def getArrayElement(arr: ArrayType, index: Int): Option[IR]
 
-  def isObject(ir: IR): Boolean
-  def isArray(ir: IR): Boolean
-
   //------- Operations you get "for free", i.e. no need to implement these for a new AST
-
-  def mapArray[A](arr: IR, fn: (IR, Int) => A): Seq[A] = arr match {
-    case IRArray(elements) => elements.zipWithIndex.map { case (ir, index) => fn(ir, index) }
-    case _                 => throw new IllegalArgumentException("mapArray() requires IRArray as input")
-  }
-
-  def mapObject[A](obj: IR, fn: (String, IR) => A): List[A] = obj match {
-    case IRObject(elements) => elements.map { case (name, value) => fn(name, value) }.toList
-    case _                  => throw new IllegalArgumentException("mapObject() requires IRObject as input")
-  }
-
-  def mutateObject(obj: IR, fn: (String, IR) => (String, IR)): ObjectType = obj match {
-    case IRObject(elements) => IRObject(elements.map { case (name, value) => fn(name, value) }).asInstanceOf[ObjectType]
-    case _                  => throw new IllegalArgumentException("mutateObject() requires IRObject as input")
-  }
 
   def partitionObject(obj: IR, fn: (String, IR) => Boolean): (ObjectType, ObjectType) = obj match {
     case IRObject(elements) =>

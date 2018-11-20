@@ -71,7 +71,9 @@ trait ClassWriter[C] extends IRWriter[C] {
               case WriteSuccess(typeIR) =>
                 fields += ((typeMember.name.toString, typeIR))
               case WriteFailure(typeErrors) =>
+                // $COVERAGE-OFF$Not sure how to trigger this! Here for extra safety, really.
                 errorsBuilder ++= typeErrors
+              // $COVERAGE-ON$
             }
           }
 
@@ -84,7 +86,9 @@ trait ClassWriter[C] extends IRWriter[C] {
               case WriteSuccess(valueIR) =>
                 fields += ((member.name, valueIR))
               case WriteFailure(valueErrors) =>
+                // $COVERAGE-OFF$Not sure how to trigger this! Here for extra safety, really.
                 errorsBuilder ++= valueErrors
+              // $COVERAGE-ON$
             }
           }
         } else {
@@ -99,7 +103,9 @@ trait ClassWriter[C] extends IRWriter[C] {
               case failure @ WriteFailure(_) if failure.isNothing =>
               // Nothing to do here
               case WriteFailure(valueErrors) =>
+                // $COVERAGE-OFF$Not sure how to trigger this! Here for extra safety, really.
                 errorsBuilder ++= valueErrors
+              // $COVERAGE-ON$
             }
           }
         }
@@ -118,7 +124,9 @@ trait ClassWriter[C] extends IRWriter[C] {
 
         val errors = errorsBuilder.result()
         if (errors.nonEmpty) {
+          // $COVERAGE-OFF$Not sure how to trigger this! Here for extra safety, really.
           WriteFailure(errors)
+          // $COVERAGE-ON$
         } else {
           WriteSuccess(handleDBKeys(IRObject(fields), fieldMembers))
         }
