@@ -83,7 +83,7 @@ case class Context(defaultHint: String = "", factories: List[TypeAdapterFactory]
     @volatile
     private var phase: Phase = Uninitialized
 
-    override def toString(): String = tpe.toString()
+    //    override def toString(): String = tpe.toString()
 
     def typeAdapter: TypeAdapter[_] = {
       val attempt =
@@ -135,14 +135,4 @@ case class Context(defaultHint: String = "", factories: List[TypeAdapterFactory]
 
   def irTransceiver(tpe: Type): IRTransceiver[_] =
     typeAdapter(tpe).irTransceiver
-
-  def irTransceiverOf[T: TypeTag]: IRTransceiver[T] =
-    typeAdapterOf[T].irTransceiver
-
-  def addTypeAdapterFactories(typeAdapterFactories: TypeAdapterFactory*): Context = copy(factories = typeAdapterFactories.toList ++ factories)
-
-  // Unwind the wrapping magic of IRParsingFallback and Term type adapters to get to the "real" adapter.
-  // (for debugging principally--assumptions made, so be warned!)
-  def resolvedTypeAdapterOf[T: TypeTag]: TypeAdapter[T] =
-    typeAdapterOf[T].as[IRParsingFallbackTypeAdapter[T]].decorated.as[typeadapter.TermTypeAdapter[T]].next
 }

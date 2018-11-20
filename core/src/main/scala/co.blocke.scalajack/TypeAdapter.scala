@@ -58,6 +58,9 @@ trait TypeAdapter[T] {
   }
   val irTransceiver: IRTransceiver[T] = new IRTransceiver[T] {}
   def defaultValue: Option[T] = None
+
+  // Unwind the wrapping magic of IRParsingFallback and Term type adapters to get to the "real" adapter.
+  // (for debugging principally--assumptions made, so be warned!)
   def resolved: TypeAdapter[T] =
     this match {
       case me: IRParsingFallbackTypeAdapter[T] => me.decorated.as[typeadapter.TermTypeAdapter[T]].next
