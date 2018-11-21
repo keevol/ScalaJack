@@ -5,15 +5,15 @@ trait CSVDeserializer[IR] extends WireDeserializer[IR, String] {
 
   this: Ops[IR, String] =>
 
-  def deserialize(source: String): DeserializationResult[IR] =
-    if (source == "")
+  override def deserialize(wire: String): DeserializationResult[IR] =
+    if (wire == "")
       DeserializationSuccess(IRNull())
     else {
       val tokens = scala.collection.mutable.ListBuffer.empty[IR]
       var inBlock: Boolean = false
       var quoteTrigger: Boolean = false
       val sb = new scala.collection.mutable.StringBuilder()
-      val carray = source.toCharArray :+ '|'
+      val carray = wire.toCharArray :+ '|'
       carray.zipWithIndex.foreach {
         case (c, i) => c match {
           case '"' =>

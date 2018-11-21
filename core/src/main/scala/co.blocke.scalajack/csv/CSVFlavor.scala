@@ -4,7 +4,7 @@ package csv
 import scala.reflect.runtime.universe.Type
 import java.lang.{ UnsupportedOperationException => UOE }
 
-import typeadapter.CaseClassTypeAdapter
+import typeadapter.{ CaseClassTypeAdapter, CanBuildFromTypeAdapter }
 import org.json4s.JsonAST.JValue
 
 case class CSVFlavor() extends {
@@ -40,23 +40,37 @@ case class CSVFlavor() extends {
   // fieldname->value map required by the case class irTransceiver.  Additionally there may be some type slip 'n slide
   // as CSV is free-form, so we need to do some smart-matching on the AST types against the required field types.
   def readSafely[T](csv: String)(implicit tt: TypeTag[T]): Either[ReadFailure, T] = {
-    val ccta = context.typeAdapterOf[T].as[CaseClassTypeAdapter[T]]
-    val fields = ccta.members.map(member => (member.name, member.asInstanceOf[CaseClassTypeAdapter.FieldMember[_, _]].valueType))
+    val typeAdapter = context.typeAdapterOf[T]
 
-    dematerialize(csv).get match {
-      case IRArray(elements) =>
-        val objIR = IRObject(elements.zipWithIndex.map {
-          case (value, pos) =>
-            (fields(pos)._1, fixedValue(value, fields(pos)._2))
-        })
-        println(objIR)
-        ccta.irTransceiver.read(Path.Root, objIR) match {
-          case ReadSuccess(t)       => Right(t.get)
-          case failure: ReadFailure => Left(failure)
+    ops.deserialize(csv).get match {
+      case ir @ IRArray(elements) =>
+        // T could validly be either an Array or an Object... but which?
+        typeAdapter.maybeAs[CaseClassTypeAdapter[T]] match {
+          case Some(ccta) =>
+            val fields = ccta.members.map(member => (member.name, member.asInstanceOf[CaseClassTypeAdapter.FieldMember[_, _]].valueType))
+            val objIR = IRObject(elements.zipWithIndex.map {
+              case (value, pos) =>
+                (fields(pos)._1, fixedValue(value, fields(pos)._2))
+            })
+            ccta.irTransceiver.read(Path.Root, objIR) match {
+              case ReadSuccess(t)       => Right(t.get)
+              case failure: ReadFailure => Left(failure)
+            }
+          case None => // Array?
+            typeAdapter.maybeAs[CanBuildFromTypeAdapter[T, Seq[T]]] match {
+              case Some(arta) =>
+                arta.irTransceiver.read(Path.Root, ir) match {
+                  case ReadSuccess(t)       => Right(t.get.asInstanceOf[T])
+                  case failure: ReadFailure => Left(failure)
+                }
+              case None => Left(ReadFailure(Path.Root, ReadError.Unexpected("Unable to successfully deserialize this CSV", typeAdapter.irTransceiver)))
+            }
         }
 
       case IRNull() => Right(null.asInstanceOf[T])
-      case _        => Left(ReadFailure(Path.Root, ReadError.Unexpected("Unable to successfully deserialize this CSV", ccta.irTransceiver)))
+      case x =>
+        println("x: " + x)
+        Left(ReadFailure(Path.Root, ReadError.Unexpected("Unable to successfully deserialize this CSV", typeAdapter.irTransceiver)))
     }
   }
 
@@ -74,17 +88,7 @@ case class CSVFlavor() extends {
     val serializer = typeAdapter.irTransceiver
     serializer.write[JValue, String](TypeTagged(value, valueTypeTag.tpe)) match {
       case WriteSuccess(objectOutput) =>
-        objectOutput match {
-          case IRObject(objFields) =>
-            val valuesOnly = IRArray(objFields.map { entry =>
-              val (_, v) = entry
-              v
-            })
-            ops.serialize(valuesOnly, this)
-          case IRArray(_) => ops.serialize(objectOutput, this)
-          case IRNull()   => ""
-          case _          => ""
-        }
+        ops.serialize(objectOutput, this)
       // $COVERAGE-OFF$WriteFailure not fully socialized
       case WriteFailure(f) if f == Seq(WriteError.Nothing) => ""
       // $COVERAGE-ON$

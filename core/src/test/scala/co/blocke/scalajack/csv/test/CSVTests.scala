@@ -21,7 +21,6 @@ class CSVTests() extends FunSpec with Matchers {
           sj.read[BasicScala](csv)
         }
       }
-      /*
       it("Handles Any type") {
         val inst = HasAny(true, "hey, you", 34.56)
         val csv = sj.render(inst)
@@ -42,21 +41,27 @@ class CSVTests() extends FunSpec with Matchers {
       it("Fails when CSV field count doesn't match case class member count") {
         val csv = """123.45,123,true,64,Z,12.34,Large,12.34,5,5,54cab778-7b9e-4b07-9d37-87b97a011e55"""
         val msg = """ReadException(1 error):
-                    |  [$.u] Required field missing (reported by: co.blocke.scalajack.typeadapter.UUIDDeserializer)""".stripMargin
+                    |  [$.u] Required field u missing (reported by: co.blocke.scalajack.typeadapter.UUIDTypeAdapter$$anon$1)""".stripMargin
         the[ReadException] thrownBy
           sj.read[BasicScala](csv) should have message msg
       }
       it("Fails when types of CSV field don't match ordered case class constructor arguments") {
         val csv = """123.45,"m123",true,64,Z,12.34,Large,12.34,5,5,wow,54cab778-7b9e-4b07-9d37-87b97a011e55"""
         val msg = """ReadException(1 error):
-                    |  [$.bi] Expected a JSON number (integer value) (reported by: co.blocke.scalajack.typeadapter.BigIntDeserializer)""".stripMargin
+                    |  [$.bi] Expected a JSON number (integer value) (reported by: co.blocke.scalajack.typeadapter.BigIntTypeAdapter$$anon$1)""".stripMargin
         the[ReadException] thrownBy
           sj.read[BasicScala](csv) should have message msg
       }
-      */
+      it("Serializes from List or Seq type") {
+        val list = List(1, 2, 3)
+        val csv = sj.render(list)
+        sj.read[List[Int]](csv) should be(list)
+        val seq = List(1, 2, 3)
+        val csv3 = sj.render(seq)
+        sj.read[Seq[Int]](csv3) should be(seq)
+      }
     }
     describe("Fancy String permutations:") {
-      /*
       it("Handles fancy strings with embedded commas and quotes") {
         val inst = Strings("Hey, you", "This \"life\"", "And now, \"Mike\" will sing.")
         val csv = sj.render(inst)
@@ -73,10 +78,8 @@ class CSVTests() extends FunSpec with Matchers {
           sj.read[Strings](csv)
         }
       }
-      */
     }
     describe("Options and null:") {
-      /*
       it("Renders Some()") {
         val inst = Maybe("yes", Some("blink"), true)
         val csv = sj.render(inst)
@@ -157,9 +160,7 @@ class CSVTests() extends FunSpec with Matchers {
           sj.read[Strings](csv)
         }
       }
-      */
     }
-    /* WORKING
     describe("Collections/nested (failures):") {
       it("Fails when given an object having a nested object (not flat)") {
         val inst = Nested("K-9", Thing("Robot dog", 1))
@@ -210,6 +211,5 @@ class CSVTests() extends FunSpec with Matchers {
           ScalaJack(CSVFlavor()).isCanonical(false) should have message "Not available for CSV formatting"
       }
     }
-    */
   }
 }

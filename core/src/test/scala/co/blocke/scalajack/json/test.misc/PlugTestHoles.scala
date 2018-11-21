@@ -75,22 +75,22 @@ class PlugTestHoles extends FunSpec {
     it("Ops") {
       val ir = IRString("wow")
       the[IllegalArgumentException] thrownBy ops.partitionObject(ir, (a: String, i: org.json4s.JValue) => true) should have message "partitionObject() requires IRObject as input"
-      // NEED CSV implemented first!!!
-      //      implicit val ops = Json4sOps
-      //      val nums: List[JValue] = List(AstInt(1), AstInt(2), AstInt(3))
-      //      val objstuff: List[(String, JValue)] = List(("a", AstInt(5)), ("b", AstInt(6)))
-      //      val jsonStuff = List(
-      //        ops.applyArray(nums),
-      //        AstBoolean(true),
-      //        AstDecimal(BigDecimal(123.45)),
-      //        AstDouble(12.34),
-      //        AstInt(5),
-      //        AstLong(5L),
-      //        AstNull(),
-      //        ops.applyObject(objstuff),
-      //        AstString("wow"))
-      //      val result = AstValue.transform[JValue, JValue, String, String](ops.applyArray(jsonStuff))(Json4sOps, CSVOps)
-      //      result.toString() should be("""JArray(List(JArray(List(JInt(1), JInt(2), JInt(3))), JBool(true), JDecimal(123.45), JDouble(12.34), JInt(5), JLong(5), JNull, JObject(List((a,JInt(5)), (b,JInt(6)))), JString(wow)))""")
+      implicit val ops2 = Json4sOps
+      import org.json4s.JValue
+      val nums: List[JValue] = List(IRInt(1)(ops2), IRInt(2)(ops2), IRInt(3)(ops2))
+      val objstuff: List[(String, JValue)] = List(("a", IRInt(5)(ops2)), ("b", IRInt(6)(ops2)))
+      val jsonStuff = List(
+        ops2.applyArray(nums),
+        IRBoolean(true)(ops2),
+        IRDecimal(BigDecimal(123.45))(ops2),
+        IRDouble(12.34)(ops2),
+        IRInt(5)(ops2),
+        IRLong(5L)(ops2),
+        IRNull()(ops2),
+        ops2.applyObject(objstuff),
+        IRString("wow")(ops2))
+      val result = ops2.become[JValue](ops2.applyArray(jsonStuff))(csv.CSVOps)
+      result.toString() should be("""JArray(List(JArray(List(JInt(1), JInt(2), JInt(3))), JBool(true), JDecimal(123.45), JDouble(12.34), JInt(5), JLong(5), JNull, JObject(List((a,JInt(5)), (b,JInt(6)))), JString(wow)))""")
     }
     it("Path") {
       Path.Unknown.toString should be("???")

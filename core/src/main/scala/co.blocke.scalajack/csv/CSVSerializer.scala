@@ -8,7 +8,7 @@ trait CSVSerializer[IR] extends WireSerializer[IR, String] {
 
   this: Ops[IR, String] =>
 
-  def serialize(ir: IR, sj: ScalaJackLike[_, _]): String = {
+  override def serialize(ir: IR, sj: ScalaJackLike[_, _]): String = {
     ir match {
       case IRNull() => ""
       case IRArray(elements) =>
