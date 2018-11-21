@@ -58,7 +58,7 @@ class PlugTestHoles extends FunSpec {
       smallF should be(12.34F)
       the[ArithmeticException] thrownBy BigDecimal(123.4567890).toFloatExact should have message "123.456789 (BigDecimal) cannot be exactly converted to Float (123.45679)"
 
-      val bigD2 = BigDecimal(10)
+      val bigD2 = BigDecimal(10.0)
       val shortOne: Short = bigD2.toShortExact
       shortOne should be(10.toShortExact)
       bigD2.toShortExact.toString should be("10")
@@ -133,6 +133,21 @@ class PlugTestHoles extends FunSpec {
         }
       assert(caught.getMessage.endsWith("is not an instance of class co.blocke.scalajack.typeadapter.CaseClassTypeAdapter"))
     }
+    it("TypeAdapterFactory") {
+      val taf = TypeAdapterFactory.=:=(sj.context.typeAdapterOf[String].resolved.irTransceiver)
+      taf.toString.startsWith("co.blocke.scalajack.TypeAdapterFactory$$eq$colon$eq$$anon$") should be(true)
+      class PassItOn extends TypeAdapterFactory.FromClassSymbol {
+        override def typeAdapterOf[T](classSymbol: ClassSymbol, next: TypeAdapterFactory)(implicit context: Context, tt: TypeTag[T]): TypeAdapter[T] =
+          if (classSymbol.isCaseClass) {
+            ??? // doesn't matter here...  it'll fail and not get here
+          } else
+            next.typeAdapterOf[T]
+      }
+      val pio = new PassItOn
+      implicit val context = sj.context
+      val chosen = pio.typeAdapterOf[String](taf)
+      chosen.irTransceiver.isInstanceOf[IRTransceiver[String]] should be(true) // we fell thru to taf's xceiver
+    }
     it("TypeTagged") {
       val tt = TypeTagged(5, typeOf[Int])
       tt.toString should be("""5 as Int""")
@@ -143,6 +158,12 @@ class PlugTestHoles extends FunSpec {
       val wf = WriteFailure[String](WriteError.Unsupported("me"))
       the[UnsupportedOperationException] thrownBy wf.get should have message "WriteFailure.get not supported"
       wf.map[Int](_ => 15) should be(wf.asInstanceOf[WriteResult[Int]])
+      val we = new WriteException(WriteFailure(Nil))
+      we.toString should be("co.blocke.scalajack.WriteException: WriteException(no errors)")
+      val we2 = new WriteException(WriteFailure(WriteError.Unsupported("thing1"), WriteError.Unsupported("thing2")))
+      we2.toString should be("""co.blocke.scalajack.WriteException: WriteException(2 errors):
+                               |  Unsupported(thing1)
+                               |  Unsupported(thing2)""".stripMargin)
     }
     it("package") {
       SingleType(typeOf[Int], typeOf[String].typeSymbol) // Not really sure what this does... just exercising the API here.
@@ -260,7 +281,9 @@ class PlugTestHoles extends FunSpec {
       }
       it("ByteTypeAdapter") {
         val ir = IRInt(5)
-        sj.materialize[Short](ir).get should be(5)
+        sj.materialize[Byte](ir).get should be(5)
+        val ir2 = IRInt(256)
+        sj.materialize[Byte](ir2).toString should be("ReadFailure(Vector(($,Byte value out of range (reported by: co.blocke.scalajack.typeadapter.ByteTypeAdapter$$anon$1))))")
       }
       it("DerivedValueClassTypeAdapter") {
         val ta = sj.context.typeAdapterOf[VCDouble].resolved
@@ -274,6 +297,10 @@ class PlugTestHoles extends FunSpec {
         val eta = sj.context.typeAdapterOf[Size.Value].irTransceiver
         val ir = IRDouble(12.34)
         eta.read(Path.Root, ir).toString should be("ReadFailure(Vector(($,Expected a JSON string or int (reported by: co.blocke.scalajack.typeadapter.EnumerationIRTransceiver))))")
+      }
+      it("FallbackTypeAdapter") {
+        val fbta = new FallbackTypeAdapter[String](sj.context.typeAdapterOf[String], sj.context.typeAdapterOf[String])
+        fbta.irTransceiver.readFromNothing(Path.Root).toString should be("""ReadFailure(Vector(($,readFromNothing() is not implemented on base IRTransceiver (reported by: co.blocke.scalajack.typeadapter.StringTypeAdapter$$anon$1)), ($,readFromNothing() is not implemented on base IRTransceiver (reported by: co.blocke.scalajack.typeadapter.StringTypeAdapter$$anon$1))))""")
       }
       it("FloatTypeAdapter") {
         val ir = IRDouble(12.34)
@@ -300,6 +327,8 @@ class PlugTestHoles extends FunSpec {
         val ta = sj.context.typeAdapterOf[Number].resolved
         ta.irTransceiver.read(Path.Root, ir3)(ops, guidance.withMapKey()).toString should be("ReadSuccess(123.45 as java.lang.Double)")
         ta.irTransceiver.read(Path.Root, IRBoolean(true)).toString should be("ReadFailure(Vector(($,Expected a JSON number (reported by: co.blocke.scalajack.typeadapter.javaprimitives.JavaNumberTypeAdapter$$anon$1))))")
+        ta.irTransceiver.read(Path.Root, IRNull())(ops, guidance.withMapKey()).toString should be("ReadSuccess(null as java.lang.Number)")
+        ta.irTransceiver.read(Path.Root, IRString("true"))(ops, guidance.withMapKey()).toString should be("ReadFailure(Vector(($,Expected a JSON number (reported by: co.blocke.scalajack.typeadapter.javaprimitives.JavaNumberTypeAdapter$$anon$1))))")
       }
       it("OptionTypeAdapter") {
         val ota = sj.context.typeAdapterOf[Option[Int]].as[OptionTypeAdapter[Int]]
@@ -315,9 +344,9 @@ class PlugTestHoles extends FunSpec {
       }
       it("ShortTypeAdapter") {
         val ir = IRInt(5)
-        sj.materialize[Byte](ir).get should be(5)
-        val ir2 = IRInt(256)
-        sj.materialize[Byte](ir2).toString should be("ReadFailure(Vector(($,Byte value out of range (reported by: co.blocke.scalajack.typeadapter.ByteTypeAdapter$$anon$1))))")
+        sj.materialize[Short](ir).get should be(5)
+        val ir2 = IRInt(40000)
+        sj.materialize[Short](ir2).toString should be("ReadFailure(Vector(($,Short value out of range (reported by: co.blocke.scalajack.typeadapter.ShortTypeAdapter$$anon$1))))")
       }
       it("TryTypeAdapter") {
         val tts = sj.context.typeAdapterOf[scala.util.Try[Int]].as[TryTypeAdapter[Int]].irTransceiver

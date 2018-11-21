@@ -160,6 +160,32 @@ class CSVTests() extends FunSpec with Matchers {
           sj.read[Strings](csv)
         }
       }
+      it("Reading from a non-object or non-array should fail") {
+        val csv = "1,2,3"
+        val msg = """ReadException(1 error):
+                    |  [$] Unable to successfully deserialize this CSV (reported by: co.blocke.scalajack.typeadapter.IRParsingFallbackTypeAdapter$$anon$1)""".stripMargin
+        the[ReadException] thrownBy sj.read[String](csv) should have message msg
+      }
+      it("Basic full-range serialization stage tests") {
+        val list = List("a", "b", "c")
+        val ir = sj.dematerialize(list).get
+        sj.materialize[List[String]](ir).get should be(list)
+        val csv = sj.emit(ir)
+        csv should be("a,b,c")
+        sj.parse(csv).get should be(ir)
+      }
+      it("Infer basic types") {
+        val list: List[Any] = List(12.34, true, 123L, "wow")
+        val csv = sj.render(list)
+        csv should be("12.34,true,123,wow")
+        sj.read[List[Any]](csv) should be(list)
+      }
+      it("Serializing an unsupported type should fail") {
+        val msg = """WriteException(1 error):
+                    |  ExceptionThrown(java.lang.UnsupportedOperationException: CSV serialization of input of type JString(wow) is unsupported.)""".stripMargin
+        the[WriteException] thrownBy
+          CSVOps.serialize(IRString("wow")(CSVOps), sj) should have message msg
+      }
     }
     describe("Collections/nested (failures):") {
       it("Fails when given an object having a nested object (not flat)") {

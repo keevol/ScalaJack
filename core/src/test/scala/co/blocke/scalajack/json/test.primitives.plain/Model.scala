@@ -7,6 +7,7 @@ case class VCDouble(vc: Double) extends AnyVal
 class PlayerMix() {
   def someConfusingThing() = true
   var name: String = "" // public var member
+  var maybe: Option[Int] = Some(1) // optional member
 
   @Ignore var bogus: String = ""
 

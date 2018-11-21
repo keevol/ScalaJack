@@ -13,7 +13,6 @@ case class CSVFlavor() extends {
   val hintModifiers: Map[Type, HintModifier] = Map.empty[Type, HintModifier]
   val typeModifier: Option[HintModifier] = None
   val parseOrElseMap: Map[Type, Type] = Map.empty[Type, Type]
-  val deserializeOrElseMap: Map[Type, Type] = Map.empty[Type, Type]
   val defaultHint: String = "_hint"
   val isCanonical: Boolean = true
   val secondLookParsing: Boolean = false
@@ -25,7 +24,6 @@ case class CSVFlavor() extends {
   def withDefaultHint(hint: String) = throw new UOE("Not available for CSV formatting")
   def withTypeModifier(tm: HintModifier) = throw new UOE("Not available for CSV formatting")
   def withSecondLookParsing() = throw new UOE("Not available for CSV formatting")
-  def deserializeOrElse(poe: (Type, Type)*) = throw new UOE("Not available for CSV formatting")
   def isCanonical(canonical: Boolean) = throw new UOE("Not available for CSV formatting")
   def parseOrElse(poe: (Type, Type)*) = throw new UOE("Not available for CSV formatting")
 
@@ -68,8 +66,7 @@ case class CSVFlavor() extends {
         }
 
       case IRNull() => Right(null.asInstanceOf[T])
-      case x =>
-        println("x: " + x)
+      case _ =>
         Left(ReadFailure(Path.Root, ReadError.Unexpected("Unable to successfully deserialize this CSV", typeAdapter.irTransceiver)))
     }
   }

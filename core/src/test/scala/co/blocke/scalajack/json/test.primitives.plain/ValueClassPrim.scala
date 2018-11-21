@@ -13,7 +13,7 @@ class ValueClassPrim() extends FunSpec with Matchers {
       p1.name = "Mike"
       p1.age = VCDouble(BigDecimal("1.23").toDouble)
       val js = sj.render(p1)
-      assertResult("""{"age":1.23,"name":"Mike"}""") { js }
+      assertResult("""{"age":1.23,"maybe":1,"name":"Mike"}""") { js }
       assertResult(p1.name) {
         val r = sj.read[PlayerMix](js)
         r.name
