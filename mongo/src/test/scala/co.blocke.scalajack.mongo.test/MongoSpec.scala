@@ -6,7 +6,8 @@ import java.time._
 import java.util.UUID
 
 import co.blocke.scalajack.json.JsonFlavor
-import org.mongodb.scala.bson._
+import org.mongodb.scala.bson.{ BsonDocument, BsonString, BsonBoolean, BsonObjectId }
+import org.bson.types.ObjectId
 import org.scalatest.Matchers._
 import org.scalatest.{ BeforeAndAfterAll, FunSpec, GivenWhenThen }
 
@@ -27,93 +28,94 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
     describe("MongoDB/Casbah Support") {
       it("MongoKey Annotation (_id field generation) - single key") {
         val five = Five("Fred", Two("blah", true))
-        val dbo = mongoScalaJack.render(five)
+        val dbo = mongoScalaJack.render(five).asInstanceOf[BsonDocument]
         dbo.toJson should equal("""{ "_id" : "Fred", "two" : { "foo" : "blah", "bar" : true } }""")
         mongoScalaJack.read[Five](dbo) should equal(five)
       }
       it("MongoKey Annotation (_id field generation) - single key -- Missing Non-Key Field") {
-        val dbo = Document("_id" -> BsonString("Fred"), "two" -> BsonDocument("bar" -> BsonBoolean(true)))
+        val dbo = BsonDocument("_id" -> BsonString("Fred"), "two" -> BsonDocument("bar" -> BsonBoolean(true)))
         dbo.toJson should equal("""{ "_id" : "Fred", "two" : { "bar" : true } }""")
-        val msg = """DeserializationException(1 error):
-                    |  [$.two.foo] Required field missing (reported by: co.blocke.scalajack.typeadapter.StringDeserializer)""".stripMargin
+        val msg = """ReadException(1 error):
+                    |  [$.two.foo] Required field foo missing (reported by: co.blocke.scalajack.typeadapter.StringTypeAdapter$$anon$1)""".stripMargin
         the[ReadException] thrownBy mongoScalaJack.read[Five](dbo) should have message msg
       }
       it("MongoKey Annotation (_id field generation) - single key -- Missing Key Field") {
-        val dbo = Document("two" -> BsonDocument("foo" -> BsonString("blah"), "bar" -> BsonBoolean(true)))
+        val dbo = BsonDocument("two" -> BsonDocument("foo" -> BsonString("blah"), "bar" -> BsonBoolean(true)))
         dbo.toJson should equal("""{ "two" : { "foo" : "blah", "bar" : true } }""")
-        val msg = """DeserializationException(1 error):
-                    |  [$] Did not find required db key field (e.g. _id) (reported by: co.blocke.scalajack.mongo.typeadapter.MongoCaseClassDeserializer)""".stripMargin
+        val msg = """ReadException(1 error):
+                    |  [$] Did not find required db key field (e.g. _id) (reported by: co.blocke.scalajack.mongo.typeadapter.MongoCaseClassIRTransceiver)""".stripMargin
         the[ReadException] thrownBy mongoScalaJack.read[Five](dbo) should have message msg
       }
       it("MongoKey Annotation (_id field generation) - compound key") {
         val six = Six("Fred", 12, Two("blah", true))
-        val dbo = mongoScalaJack.render(six)
+        val dbo = mongoScalaJack.render(six).asInstanceOf[BsonDocument]
         dbo.toJson should equal("""{ "_id" : { "name" : "Fred", "num" : 12 }, "two" : { "foo" : "blah", "bar" : true } }""")
         mongoScalaJack.read[Six](dbo) should equal(six)
       }
       it("MongoKey Annotation (_id field generation) - compound key -- Missing fields") {
         val six = Six("Fred", 12, Two("blah", true))
-        val dbo = mongoScalaJack.render(six)
+        val dbo = mongoScalaJack.render(six).asInstanceOf[BsonDocument]
         dbo.toJson should equal("""{ "_id" : { "name" : "Fred", "num" : 12 }, "two" : { "foo" : "blah", "bar" : true } }""")
-        val badDbo = dbo - "_id"
-        val msg = """DeserializationException(1 error):
-                    |  [$] Missing at least one required db key field (e.g. _id) component: [name,num] (reported by: co.blocke.scalajack.mongo.typeadapter.MongoCaseClassDeserializer)""".stripMargin
-        the[ReadException] thrownBy mongoScalaJack.read[Six](badDbo) should have message msg
+        dbo.remove("_id")
+        val msg = """ReadException(1 error):
+                    |  [$] Missing at least one required db key field (e.g. _id) component: [name,num] (reported by: co.blocke.scalajack.mongo.typeadapter.MongoCaseClassIRTransceiver)""".stripMargin
+        the[ReadException] thrownBy mongoScalaJack.read[Six](dbo) should have message msg
       }
       it("ObjectId support -- JSON") {
-        val seven = Seven((new BsonObjectId()).getValue().toHexString, Two("blah", true))
+        val seven = Seven((new BsonObjectId()).getValue(), Two("blah", true))
         val js = jsonScalaJack.render(seven)
         jsonScalaJack.read[Seven](js) should equal(seven)
       }
       it("ObjectId support -- Mongo") {
-        val oid: co.blocke.scalajack.mongo.ObjectId = (new BsonObjectId()).getValue().toHexString()
+        val oid = (new BsonObjectId()).getValue()
         val seven = Seven(oid, Two("blah", true))
-        val dbo = mongoScalaJack.render(seven)
-        dbo.toJson should equal(s"""{ "_id" : { "$$oid" : "$oid" }, "two" : { "foo" : "blah", "bar" : true } }""")
+        val dbo = mongoScalaJack.render(seven).asInstanceOf[BsonDocument]
+        val hex = oid.toHexString
+        dbo.toJson should equal(s"""{ "_id" : { "$$oid" : "$hex" }, "two" : { "foo" : "blah", "bar" : true } }""")
         mongoScalaJack.read[Seven](dbo) should equal(seven)
       }
       it("ObjectId support (null) -- Mongo") {
-        val oid: co.blocke.scalajack.mongo.ObjectId = null
+        val oid: ObjectId = null
         val seven = Seven(oid, Two("blah", true))
-        val dbo = mongoScalaJack.render(seven)
+        val dbo = mongoScalaJack.render(seven).asInstanceOf[BsonDocument]
         mongoScalaJack.read[Seven](dbo) should equal(seven)
       }
       it("Naked Map support") {
         val li = Map("a" -> 1, "b" -> 2, "c" -> 3)
-        val dbo = mongoScalaJack.render(li)
+        val dbo = mongoScalaJack.render(li).asInstanceOf[BsonDocument]
         dbo.toJson should equal("""{ "a" : 1, "b" : 2, "c" : 3 }""")
         mongoScalaJack.read[Map[String, Int]](dbo) should equal(li)
       }
       it("UUID support") {
         val thing = UuidThing("Foo", UUID.fromString("1e6c2b31-4dfe-4bf6-a0a0-882caaff0e9c"), List(UUID.fromString("1e6c2b31-4dfe-4bf6-a0a0-882caaff0e9c"), UUID.fromString("1e6c2b31-4dfe-4bf6-a0a0-882caaff0e9c")), Some(UUID.fromString("1e6c2b31-4dfe-4bf6-a0a0-882caaff0e9c")))
-        val dbo = mongoScalaJack.render(thing)
+        val dbo = mongoScalaJack.render(thing).asInstanceOf[BsonDocument]
         dbo.toJson should equal("""{ "name" : "Foo", "uuid" : "1e6c2b31-4dfe-4bf6-a0a0-882caaff0e9c", "many" : ["1e6c2b31-4dfe-4bf6-a0a0-882caaff0e9c", "1e6c2b31-4dfe-4bf6-a0a0-882caaff0e9c"], "maybe" : "1e6c2b31-4dfe-4bf6-a0a0-882caaff0e9c" }""")
         val b = mongoScalaJack.read[UuidThing](dbo)
         b should equal(thing)
       }
       it("Misc number primitives support") {
         val inst = Loose('A', 1.23F, 15.toShort, 3.toByte)
-        val dbo = mongoScalaJack.render(inst)
+        val dbo = mongoScalaJack.render(inst).asInstanceOf[BsonDocument]
         dbo.toJson should equal("""{ "a" : "A", "b" : 1.23, "c" : 15, "d" : 3 }""")
         mongoScalaJack.read[Loose](dbo) should equal(inst)
       }
       it("Must handle a case class with default values - defaults specified") {
         val wd = WithDefaults("Greg", 49, Some(5), Some(false), GrumpyPet(Cat("Fluffy"), "fish"))
-        val dbo = mongoScalaJack.render(wd)
+        val dbo = mongoScalaJack.render(wd).asInstanceOf[BsonDocument]
         dbo.toJson should equal("""{ "name" : "Greg", "age" : 49, "num" : 5, "hasStuff" : false, "pet" : { "_hint" : "co.blocke.scalajack.mongo.test.GrumpyPet", "kind" : { "_hint" : "co.blocke.scalajack.mongo.test.Cat", "name" : "Fluffy" }, "food" : "fish" } }""")
         val b = mongoScalaJack.read[WithDefaults](dbo)
         b should equal(wd)
       }
       it("Must handle a case class with default values - defaults not specified") {
         val wd = WithDefaults("Greg", 49, None)
-        val dbo = mongoScalaJack.render(wd)
+        val dbo = mongoScalaJack.render(wd).asInstanceOf[BsonDocument]
         dbo.toJson should equal("""{ "name" : "Greg", "age" : 49, "hasStuff" : true, "pet" : { "_hint" : "co.blocke.scalajack.mongo.test.NicePet", "kind" : { "_hint" : "co.blocke.scalajack.mongo.test.Dog", "name" : "Fido" }, "food" : "bones" } }""")
         val b = mongoScalaJack.read[WithDefaults](dbo)
         b should equal(wd)
       }
       it("ZonedDateTime must work") {
         val inst = SampleZonedDateTime(ZonedDateTime.parse("2007-12-03T10:15:30+01:00[UTC]"), null)
-        val dbo = mongoScalaJack.render(inst)
+        val dbo = mongoScalaJack.render(inst).asInstanceOf[BsonDocument]
         dbo.toJson should equal("""{ "o1" : { "$date" : 1196676930000 }, "o2" : null }""")
         val b = mongoScalaJack.read[SampleZonedDateTime](dbo)
         b should equal(inst)
@@ -126,8 +128,8 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
           val w2 = Wrap("number", true, "wow")
           val js = jsonScalaJack.render(w)
           val js2 = jsonScalaJack.render(w2)
-          val db = mongoScalaJack.render(w)
-          val db2 = mongoScalaJack.render(w2)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
+          val db2 = mongoScalaJack.render(w2).asInstanceOf[BsonDocument]
           js should equal("""{"name":"number","data":true,"stuff":15}""")
           js2 should equal("""{"name":"number","data":true,"stuff":"wow"}""")
           db.toJson should equal("""{ "name" : "number", "data" : true, "stuff" : 15 }""")
@@ -140,7 +142,7 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         it("Non-parameter case clase as a field member - Foo[A](x:A, b:Bar) where A -> simple type") {
           val w = Truck(false, Two("z", true))
           val js = jsonScalaJack.render(w)
-          val dbo = mongoScalaJack.render(w)
+          val dbo = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
           js should equal("""{"s":false,"t":{"foo":"z","bar":true}}""")
           dbo.toJson should equal("""{ "s" : false, "t" : { "foo" : "z", "bar" : true } }""")
           jsonScalaJack.read[Truck[Boolean]](js) should equal(w)
@@ -150,7 +152,7 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
           val w = Wrap("number", true, Two("a", false))
           val js = jsonScalaJack.render(w)
           js should equal("""{"name":"number","data":true,"stuff":{"foo":"a","bar":false}}""")
-          val db = mongoScalaJack.render(w)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
           db.toJson should equal("""{ "name" : "number", "data" : true, "stuff" : { "foo" : "a", "bar" : false } }""")
           jsonScalaJack.read[Wrap[Boolean, Two]](js) should equal(w)
           mongoScalaJack.read[Wrap[Boolean, Two]](db) should equal(w)
@@ -164,9 +166,9 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
           val js = jsonScalaJack.render(w)
           val js2 = jsonScalaJack.render(x)
           val js3 = jsonScalaJack.render(y)
-          val db = mongoScalaJack.render(w)
-          val db2 = mongoScalaJack.render(x)
-          val db3 = mongoScalaJack.render(y)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
+          val db2 = mongoScalaJack.render(x).asInstanceOf[BsonDocument]
+          val db3 = mongoScalaJack.render(y).asInstanceOf[BsonDocument]
           js should equal("""{"s":"Bob","w":{"name":"Mary","data":3,"stuff":"Available"}}""")
           js2 should equal("""{"s":"Mary","w":{"name":"Greg","data":false,"stuff":"Done"}}""")
           js3 should equal("""{"s":"Fred","w":{"name":"Mike","data":{"foo":"Steam","bar":true},"stuff":"OK"}}""")
@@ -183,7 +185,7 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         it("Case class having value class parameter - Foo[A](x:A) where A -> value class (no value class handler)") {
           val w = Carry("Mike", Wrap("Sally", new Wrapper(15), "Fine"))
           val js = jsonScalaJack.render(w)
-          val db = mongoScalaJack.render(w)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
           js should equal("""{"s":"Mike","w":{"name":"Sally","data":15,"stuff":"Fine"}}""")
           db.toJson should equal("""{ "s" : "Mike", "w" : { "name" : "Sally", "data" : 15, "stuff" : "Fine" } }""")
           jsonScalaJack.read[Carry[Wrapper]](js) should equal(w)
@@ -193,7 +195,7 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
           val t = OffsetDateTime.parse("2018-10-30T18:04:58.874-05:00")
           val w = Carry("Mike", Wrap("Sally", new WrappedOffsetDateTime(t), "Fine"))
           val js = jsonScalaJack.render(w)
-          val db = mongoScalaJack.render(w)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
           val timeval = t.toInstant.toEpochMilli
           db.toJson should equal(s"""{ "s" : "Mike", "w" : { "name" : "Sally", "data" : { "$$date" : $timeval }, "stuff" : "Fine" } }""")
           jsonScalaJack.read[Carry[WrappedOffsetDateTime]](js) should equal(w)
@@ -202,7 +204,7 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         it("Case class having parameterized case class as a parameter: Foo[A](x:A) where A -> Bar[Blah[Long]]") {
           val w = Carry("Bill", Wrap("Betty", Zoo("dog", false), "ok"))
           val js = jsonScalaJack.render(w)
-          val db = mongoScalaJack.render(w)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
           js should equal("""{"s":"Bill","w":{"name":"Betty","data":{"name":"dog","z":false},"stuff":"ok"}}""")
           db.toJson should equal("""{ "s" : "Bill", "w" : { "name" : "Betty", "data" : { "name" : "dog", "z" : false }, "stuff" : "ok" } }""")
           jsonScalaJack.read[Carry[Zoo[Boolean]]](js) should equal(w)
@@ -213,7 +215,7 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         it("Case class having List parameter - Foo[A](x:A) where A -> List of simple type") {
           val w = Carry("Trey", Wrap("Hobbies", List(true, true, false), "all"))
           val js = jsonScalaJack.render(w)
-          val db = mongoScalaJack.render(w)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
           js should equal("""{"s":"Trey","w":{"name":"Hobbies","data":[true,true,false],"stuff":"all"}}""")
           db.toJson should equal("""{ "s" : "Trey", "w" : { "name" : "Hobbies", "data" : [true, true, false], "stuff" : "all" } }""")
           jsonScalaJack.read[Carry[List[Boolean]]](js) should equal(w)
@@ -222,7 +224,7 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         it("Case class having Map parameter - Foo[A](x:A) where A -> Map of simple type") {
           val w = Carry("Troy", Wrap("Articles", Map("OK" -> 59), "all"))
           val js = jsonScalaJack.render(w)
-          val db = mongoScalaJack.render(w)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
           js should equal("""{"s":"Troy","w":{"name":"Articles","data":{"OK":59},"stuff":"all"}}""")
           db.toJson should equal("""{ "s" : "Troy", "w" : { "name" : "Articles", "data" : { "OK" : 59 }, "stuff" : "all" } }""")
           jsonScalaJack.read[Carry[Map[String, Int]]](js) should equal(w)
@@ -233,8 +235,8 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
           val x = Carry[Option[Int]]("Terry", Wrap("Hobbies", None, "all"))
           val js = jsonScalaJack.render(w)
           val js2 = jsonScalaJack.render(x)
-          val db = mongoScalaJack.render(w)
-          val db2 = mongoScalaJack.render(x)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
+          val db2 = mongoScalaJack.render(x).asInstanceOf[BsonDocument]
           js should equal("""{"s":"Terri","w":{"name":"Hobbies","data":17,"stuff":"all"}}""")
           js2 should equal("""{"s":"Terry","w":{"name":"Hobbies","stuff":"all"}}""")
           db.toJson should equal("""{ "s" : "Terri", "w" : { "name" : "Hobbies", "data" : 17, "stuff" : "all" } }""")
@@ -247,7 +249,7 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         it("Case class having List of parameterized value - Foo[A](x:List[A]) - where A is a simple type") {
           val w = BagList("list", List(1, 2, 3))
           val js = jsonScalaJack.render(w)
-          val db = mongoScalaJack.render(w)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
           js should equal("""{"s":"list","many":[1,2,3]}""")
           db.toJson should equal("""{ "s" : "list", "many" : [1, 2, 3] }""")
           jsonScalaJack.read[BagList[Int]](js) should equal(w)
@@ -256,7 +258,7 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         it("Case class having Map of parameterized value - Foo[A,B](x:Map[A,B]) - where A,B are simple types") {
           val w = BagMap(5, Map("one" -> true, "two" -> false))
           val js = jsonScalaJack.render(w)
-          val db = mongoScalaJack.render(w)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
           js should equal("""{"i":5,"items":{"one":true,"two":false}}""")
           db.toJson should equal("""{ "i" : 5, "items" : { "one" : true, "two" : false } }""")
           jsonScalaJack.read[BagMap[Boolean]](js) should equal(w)
@@ -267,8 +269,8 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
           val x = BagOpt[String](1, None)
           val js = jsonScalaJack.render(w)
           val js2 = jsonScalaJack.render(x)
-          val db = mongoScalaJack.render(w)
-          val db2 = mongoScalaJack.render(x)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
+          val db2 = mongoScalaJack.render(x).asInstanceOf[BsonDocument]
           js should equal("""{"i":1,"maybe":"ok"}""")
           js2 should equal("""{"i":1}""")
           db.toJson should equal("""{ "i" : 1, "maybe" : "ok" }""")
@@ -283,7 +285,7 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         it("Case class having List parameter - Foo[A](x:A) where A -> List of Bar[Int]") {
           val w = Carry("Trey", Wrap("Hobbies", List(Zoo("one", 1), Zoo("two", 2)), "all"))
           val js = jsonScalaJack.render(w)
-          val db = mongoScalaJack.render(w)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
           js should equal("""{"s":"Trey","w":{"name":"Hobbies","data":[{"name":"one","z":1},{"name":"two","z":2}],"stuff":"all"}}""")
           db.toJson should equal("""{ "s" : "Trey", "w" : { "name" : "Hobbies", "data" : [{ "name" : "one", "z" : 1 }, { "name" : "two", "z" : 2 }], "stuff" : "all" } }""")
           jsonScalaJack.read[Carry[List[Zoo[Int]]]](js) should equal(w)
@@ -292,7 +294,7 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         it("Case class having Map parameter - Foo[A](x:A) where A -> Map of Bar[Int,String]") {
           val w = Carry("Troy", Wrap("Articles", Map("OK" -> Zoo("q", false)), "all"))
           val js = jsonScalaJack.render(w)
-          val db = mongoScalaJack.render(w)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
           js should equal("""{"s":"Troy","w":{"name":"Articles","data":{"OK":{"name":"q","z":false}},"stuff":"all"}}""")
           db.toJson should equal("""{ "s" : "Troy", "w" : { "name" : "Articles", "data" : { "OK" : { "name" : "q", "z" : false } }, "stuff" : "all" } }""")
           jsonScalaJack.read[Carry[Map[String, Zoo[Boolean]]]](js) should equal(w)
@@ -303,8 +305,8 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
           val x = Carry[Option[Int]]("Terry", Wrap("Hobbies", None, "all"))
           val js = jsonScalaJack.render(w)
           val js2 = jsonScalaJack.render(x)
-          val db = mongoScalaJack.render(w)
-          val db2 = mongoScalaJack.render(x)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
+          val db2 = mongoScalaJack.render(x).asInstanceOf[BsonDocument]
           js should equal("""{"s":"Terri","w":{"name":"Hobbies","data":{"name":"a","z":"b"},"stuff":"all"}}""")
           js2 should equal("""{"s":"Terry","w":{"name":"Hobbies","stuff":"all"}}""")
           db.toJson should equal("""{ "s" : "Terri", "w" : { "name" : "Hobbies", "data" : { "name" : "a", "z" : "b" }, "stuff" : "all" } }""")
@@ -317,7 +319,7 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         it("Case class having List parameter - Foo[A](x:A) where A -> List of value class") {
           val w = Carry("Trey", Wrap("Hobbies", List(new Wrapper(99), new Wrapper(100)), "all"))
           val js = jsonScalaJack.render(w)
-          val db = mongoScalaJack.render(w)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
           js should equal("""{"s":"Trey","w":{"name":"Hobbies","data":[99,100],"stuff":"all"}}""")
           db.toJson should equal("""{ "s" : "Trey", "w" : { "name" : "Hobbies", "data" : [99, 100], "stuff" : "all" } }""")
           jsonScalaJack.read[Carry[List[Wrapper]]](js) should equal(w)
@@ -326,7 +328,7 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         it("Case class having Map parameter - Foo[A](x:A) where A -> Map of Bar[String,value class]") {
           val w = Carry("Troy", Wrap("Articles", Map("OK" -> new Wrapper(2)), "all"))
           val js = jsonScalaJack.render(w)
-          val db = mongoScalaJack.render(w)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
           js should equal("""{"s":"Troy","w":{"name":"Articles","data":{"OK":2},"stuff":"all"}}""")
           db.toJson should equal("""{ "s" : "Troy", "w" : { "name" : "Articles", "data" : { "OK" : 2 }, "stuff" : "all" } }""")
           jsonScalaJack.read[Carry[Map[String, Wrapper]]](js) should equal(w)
@@ -337,8 +339,8 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
           val x = Carry[Option[Wrapper]]("Terry", Wrap("Hobbies", None, "all"))
           val js = jsonScalaJack.render(w)
           val js2 = jsonScalaJack.render(x)
-          val db = mongoScalaJack.render(w)
-          val db2 = mongoScalaJack.render(x)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
+          val db2 = mongoScalaJack.render(x).asInstanceOf[BsonDocument]
           js should equal("""{"s":"Terri","w":{"name":"Hobbies","data":-2,"stuff":"all"}}""")
           js2 should equal("""{"s":"Terry","w":{"name":"Hobbies","stuff":"all"}}""")
           db.toJson should equal("""{ "s" : "Terri", "w" : { "name" : "Hobbies", "data" : -2, "stuff" : "all" } }""")
@@ -351,7 +353,7 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         it("Case class having List of parameterized value - Foo[A](x:List[A]) - where A -> Bar[Int]") {
           val w = BagList("list", List(Zoo("a", 1), Zoo("b", 2)))
           val js = jsonScalaJack.render(w)
-          val db = mongoScalaJack.render(w)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
           js should equal("""{"s":"list","many":[{"name":"a","z":1},{"name":"b","z":2}]}""")
           db.toJson should equal("""{ "s" : "list", "many" : [{ "name" : "a", "z" : 1 }, { "name" : "b", "z" : 2 }] }""")
           jsonScalaJack.read[BagList[Zoo[Int]]](js) should equal(w)
@@ -360,7 +362,7 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         it("Case class having Map of parameterized value - Foo[A,B](x:Map[A,B]) - where A,B -> String,Bar[Int]") {
           val w = BagMap(5, Map("one" -> Zoo("a", 1), "two" -> Zoo("b", 2)))
           val js = jsonScalaJack.render(w)
-          val db = mongoScalaJack.render(w)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
           js should equal("""{"i":5,"items":{"one":{"name":"a","z":1},"two":{"name":"b","z":2}}}""")
           db.toJson should equal("""{ "i" : 5, "items" : { "one" : { "name" : "a", "z" : 1 }, "two" : { "name" : "b", "z" : 2 } } }""")
           jsonScalaJack.read[BagMap[Zoo[Int]]](js) should equal(w)
@@ -371,8 +373,8 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
           val x = Carry[Option[Truck[Boolean]]]("Terry", Wrap("Hobbies", None, "all"))
           val js = jsonScalaJack.render(w)
           val js2 = jsonScalaJack.render(x)
-          val db = mongoScalaJack.render(w)
-          val db2 = mongoScalaJack.render(x)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
+          val db2 = mongoScalaJack.render(x).asInstanceOf[BsonDocument]
           js should equal("""{"s":"Terri","w":{"name":"Hobbies","data":{"s":false,"t":{"foo":"aaa","bar":true}},"stuff":"all"}}""")
           js2 should equal("""{"s":"Terry","w":{"name":"Hobbies","stuff":"all"}}""")
           db.toJson should equal("""{ "s" : "Terri", "w" : { "name" : "Hobbies", "data" : { "s" : false, "t" : { "foo" : "aaa", "bar" : true } }, "stuff" : "all" } }""")
@@ -385,7 +387,7 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         it("Case class having List of parameterized value - Foo[A](x:List[A]) - where A -> value class") {
           val w = BagList("list", List(Zoo("a", new Wrapper(1)), Zoo("b", new Wrapper(2))))
           val js = jsonScalaJack.render(w)
-          val db = mongoScalaJack.render(w)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
           js should equal("""{"s":"list","many":[{"name":"a","z":1},{"name":"b","z":2}]}""")
           db.toJson should equal("""{ "s" : "list", "many" : [{ "name" : "a", "z" : 1 }, { "name" : "b", "z" : 2 }] }""")
           jsonScalaJack.read[BagList[Zoo[Wrapper]]](js) should equal(w)
@@ -394,7 +396,7 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         it("Case class having Map of parameterized value - Foo[A,B](x:Map[A,B]) - where A,B -> String,value class") {
           val w = BagMap(5, Map("one" -> Zoo("a", new Wrapper(1)), "two" -> Zoo("b", new Wrapper(2))))
           val js = jsonScalaJack.render(w)
-          val db = mongoScalaJack.render(w)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
           js should equal("""{"i":5,"items":{"one":{"name":"a","z":1},"two":{"name":"b","z":2}}}""")
           db.toJson should equal("""{ "i" : 5, "items" : { "one" : { "name" : "a", "z" : 1 }, "two" : { "name" : "b", "z" : 2 } } }""")
           jsonScalaJack.read[BagMap[Zoo[Wrapper]]](js) should equal(w)
@@ -405,8 +407,8 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
           val x = Carry[Option[Truck[Boolean]]]("Terry", Wrap("Hobbies", None, "all"))
           val js = jsonScalaJack.render(w)
           val js2 = jsonScalaJack.render(x)
-          val db = mongoScalaJack.render(w)
-          val db2 = mongoScalaJack.render(x)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
+          val db2 = mongoScalaJack.render(x).asInstanceOf[BsonDocument]
           js should equal("""{"s":"Terri","w":{"name":"Hobbies","data":{"name":"a","z":12},"stuff":"all"}}""")
           js2 should equal("""{"s":"Terry","w":{"name":"Hobbies","stuff":"all"}}""")
           db.toJson should equal("""{ "s" : "Terri", "w" : { "name" : "Hobbies", "data" : { "name" : "a", "z" : 12 }, "stuff" : "all" } }""")
@@ -421,7 +423,7 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         it("Parameter is a simple trait") {
           val w = Carry[Pop]("Surprise", Wrap("Yellow", Wow2("three", 3), "Done"))
           val js = jsonScalaJack.render(w)
-          val db = mongoScalaJack.render(w)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
           js should equal("""{"s":"Surprise","w":{"name":"Yellow","data":{"_hint":"co.blocke.scalajack.mongo.test.Wow2","x":"three","y":3},"stuff":"Done"}}""")
           db.toJson should equal("""{ "s" : "Surprise", "w" : { "name" : "Yellow", "data" : { "_hint" : "co.blocke.scalajack.mongo.test.Wow2", "x" : "three", "y" : 3 }, "stuff" : "Done" } }""")
           jsonScalaJack.read[Carry[Pop]](js) should equal(w)
@@ -433,14 +435,14 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
             typeOf[Pop] -> ClassNameHintModifier(
               hint => s"co.blocke.scalajack.mongo.test.$hint",
               fullName => fullName.split('.').last))
-          val db = scalaJack.render(w)
+          val db = scalaJack.render(w).asInstanceOf[BsonDocument]
           db.toJson should equal("""{ "s" : "Surprise", "w" : { "name" : "Yellow", "data" : { "_hint" : "Wow2", "x" : "three", "y" : 4 }, "stuff" : "Done" } }""")
           scalaJack.read[Carry[Pop]](db) should equal(w)
         }
         it("Parameter is List of trait") {
           val w = Carry[List[Pop]]("Surprise", Wrap("Yellow", List(Wow1("four", 4), Wow2("three", 3)), "Done"))
           val js = jsonScalaJack.render(w)
-          val db = mongoScalaJack.render(w)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
           js should equal("""{"s":"Surprise","w":{"name":"Yellow","data":[{"_hint":"co.blocke.scalajack.mongo.test.Wow1","a":"four","b":4},{"_hint":"co.blocke.scalajack.mongo.test.Wow2","x":"three","y":3}],"stuff":"Done"}}""")
           db.toJson should equal("""{ "s" : "Surprise", "w" : { "name" : "Yellow", "data" : [{ "_hint" : "co.blocke.scalajack.mongo.test.Wow1", "a" : "four", "b" : 4 }, { "_hint" : "co.blocke.scalajack.mongo.test.Wow2", "x" : "three", "y" : 3 }], "stuff" : "Done" } }""")
           jsonScalaJack.read[Carry[List[Pop]]](js) should equal(w)
@@ -449,7 +451,7 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         it("Parameter is Map of String->trait") {
           val w = Carry[Map[String, Pop]]("Surprise", Wrap("Yellow", Map("a" -> Wow1("four", 4), "b" -> Wow2("three", 3)), "Done"))
           val js = jsonScalaJack.render(w)
-          val db = mongoScalaJack.render(w)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
           js should equal("""{"s":"Surprise","w":{"name":"Yellow","data":{"a":{"_hint":"co.blocke.scalajack.mongo.test.Wow1","a":"four","b":4},"b":{"_hint":"co.blocke.scalajack.mongo.test.Wow2","x":"three","y":3}},"stuff":"Done"}}""")
           db.toJson should equal("""{ "s" : "Surprise", "w" : { "name" : "Yellow", "data" : { "a" : { "_hint" : "co.blocke.scalajack.mongo.test.Wow1", "a" : "four", "b" : 4 }, "b" : { "_hint" : "co.blocke.scalajack.mongo.test.Wow2", "x" : "three", "y" : 3 } }, "stuff" : "Done" } }""")
           jsonScalaJack.read[Carry[Map[String, Pop]]](js) should equal(w)
@@ -460,8 +462,8 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
           val x = Carry[Option[Pop]]("Terry", Wrap("Hobbies", None, "all"))
           val js = jsonScalaJack.render(w)
           val js2 = jsonScalaJack.render(x)
-          val db = mongoScalaJack.render(w)
-          val db2 = mongoScalaJack.render(x)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
+          val db2 = mongoScalaJack.render(x).asInstanceOf[BsonDocument]
           js should equal("""{"s":"Terri","w":{"name":"Hobbies","data":{"_hint":"co.blocke.scalajack.mongo.test.Wow1","a":"ok","b":-99},"stuff":"all"}}""")
           js2 should equal("""{"s":"Terry","w":{"name":"Hobbies","stuff":"all"}}""")
           db.toJson should equal("""{ "s" : "Terri", "w" : { "name" : "Hobbies", "data" : { "_hint" : "co.blocke.scalajack.mongo.test.Wow1", "a" : "ok", "b" : -99 }, "stuff" : "all" } }""")
@@ -474,7 +476,7 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         it("List of parameter, where parameter is a trait") {
           val w = BagList[Pop]("list", List(Wow1("A", 1), Wow1("B", 2)))
           val js = jsonScalaJack.render(w)
-          val db = mongoScalaJack.render(w)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
           js should equal("""{"s":"list","many":[{"_hint":"co.blocke.scalajack.mongo.test.Wow1","a":"A","b":1},{"_hint":"co.blocke.scalajack.mongo.test.Wow1","a":"B","b":2}]}""")
           db.toJson should equal("""{ "s" : "list", "many" : [{ "_hint" : "co.blocke.scalajack.mongo.test.Wow1", "a" : "A", "b" : 1 }, { "_hint" : "co.blocke.scalajack.mongo.test.Wow1", "a" : "B", "b" : 2 }] }""")
           jsonScalaJack.read[BagList[Pop]](js) should equal(w)
@@ -483,7 +485,7 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         it("Map of String->parameter, where parameter is a trait") {
           val w = BagMap[Pop](5, Map("one" -> Wow2("q", 7), "two" -> Wow1("r", 3)))
           val js = jsonScalaJack.render(w)
-          val db = mongoScalaJack.render(w)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
           js should equal("""{"i":5,"items":{"one":{"_hint":"co.blocke.scalajack.mongo.test.Wow2","x":"q","y":7},"two":{"_hint":"co.blocke.scalajack.mongo.test.Wow1","a":"r","b":3}}}""")
           db.toJson should equal("""{ "i" : 5, "items" : { "one" : { "_hint" : "co.blocke.scalajack.mongo.test.Wow2", "x" : "q", "y" : 7 }, "two" : { "_hint" : "co.blocke.scalajack.mongo.test.Wow1", "a" : "r", "b" : 3 } } }""")
           jsonScalaJack.read[BagMap[Pop]](js) should equal(w)
@@ -494,8 +496,8 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
           val x = Carry[Option[Pop]]("Terry", Wrap("Hobbies", None, "all"))
           val js = jsonScalaJack.render(w)
           val js2 = jsonScalaJack.render(x)
-          val db = mongoScalaJack.render(w)
-          val db2 = mongoScalaJack.render(x)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
+          val db2 = mongoScalaJack.render(x).asInstanceOf[BsonDocument]
           js should equal("""{"s":"Terri","w":{"name":"Hobbies","data":{"_hint":"co.blocke.scalajack.mongo.test.Wow2","x":"finite","y":1000},"stuff":"all"}}""")
           js2 should equal("""{"s":"Terry","w":{"name":"Hobbies","stuff":"all"}}""")
           db.toJson should equal("""{ "s" : "Terri", "w" : { "name" : "Hobbies", "data" : { "_hint" : "co.blocke.scalajack.mongo.test.Wow2", "x" : "finite", "y" : 1000 }, "stuff" : "all" } }""")
@@ -510,7 +512,7 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         it("Case class having an embedded parameterized trait") {
           val w = Breakfast(true, Toast(7, "Burnt"))
           val js = jsonScalaJack.render(w)
-          val db = mongoScalaJack.render(w)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
           js should equal("""{"y":true,"bread":{"_hint":"co.blocke.scalajack.mongo.test.Toast","g":7,"yum":"Burnt"}}""")
           db.toJson should equal("""{ "y" : true, "bread" : { "_hint" : "co.blocke.scalajack.mongo.test.Toast", "g" : 7, "yum" : "Burnt" } }""")
           jsonScalaJack.read[Breakfast[String]](js) should equal(w)
@@ -519,7 +521,7 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         it("Case class having an embedded parameterized trait, with the trait's parameter another case class") {
           val w = Breakfast(true, Toast(7, Two("two", true)))
           val js = jsonScalaJack.render(w)
-          val db = mongoScalaJack.render(w)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
           js should equal("""{"y":true,"bread":{"_hint":"co.blocke.scalajack.mongo.test.Toast","g":7,"yum":{"foo":"two","bar":true}}}""")
           db.toJson should equal("""{ "y" : true, "bread" : { "_hint" : "co.blocke.scalajack.mongo.test.Toast", "g" : 7, "yum" : { "foo" : "two", "bar" : true } } }""")
           jsonScalaJack.read[Breakfast[Two]](js) should equal(w)
@@ -528,7 +530,7 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         it("Case class having an embedded parameterized trait, with the trait's parameter a value class") {
           val w = Breakfast(true, Toast(7, new Wrapper(-100)))
           val js = jsonScalaJack.render(w)
-          val db = mongoScalaJack.render(w)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
           js should equal("""{"y":true,"bread":{"_hint":"co.blocke.scalajack.mongo.test.Toast","g":7,"yum":-100}}""")
           db.toJson should equal("""{ "y" : true, "bread" : { "_hint" : "co.blocke.scalajack.mongo.test.Toast", "g" : 7, "yum" : -100 } }""")
           jsonScalaJack.read[Breakfast[Wrapper]](js) should equal(w)
@@ -537,7 +539,7 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         it("Parameter is a parameterized trait") { // I can't believe this one worked!
           val w = Carry[Tart[Soup[String]]]("Bill", Wrap("Betty", Bun(3, Cruton(8, "eight")), "ok"))
           val js = jsonScalaJack.render(w)
-          val db = mongoScalaJack.render(w)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
           js should equal("""{"s":"Bill","w":{"name":"Betty","data":{"_hint":"co.blocke.scalajack.mongo.test.Bun","g":3,"yum":{"_hint":"co.blocke.scalajack.mongo.test.Cruton","i":8,"sweet":"eight"}},"stuff":"ok"}}""")
           db.toJson should equal("""{ "s" : "Bill", "w" : { "name" : "Betty", "data" : { "_hint" : "co.blocke.scalajack.mongo.test.Bun", "g" : 3, "yum" : { "_hint" : "co.blocke.scalajack.mongo.test.Cruton", "i" : 8, "sweet" : "eight" } }, "stuff" : "ok" } }""")
           jsonScalaJack.read[Carry[Tart[Soup[String]]]](js) should equal(w)
@@ -546,7 +548,7 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         it("Parameter is List of parameterized trait") {
           val w = Carry[List[Tart[Boolean]]]("Trey", Wrap("Hobbies", List(Bun(1, false), Toast(2, true)), "all"))
           val js = jsonScalaJack.render(w)
-          val db = mongoScalaJack.render(w)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
           js should equal("""{"s":"Trey","w":{"name":"Hobbies","data":[{"_hint":"co.blocke.scalajack.mongo.test.Bun","g":1,"yum":false},{"_hint":"co.blocke.scalajack.mongo.test.Toast","g":2,"yum":true}],"stuff":"all"}}""")
           db.toJson should equal("""{ "s" : "Trey", "w" : { "name" : "Hobbies", "data" : [{ "_hint" : "co.blocke.scalajack.mongo.test.Bun", "g" : 1, "yum" : false }, { "_hint" : "co.blocke.scalajack.mongo.test.Toast", "g" : 2, "yum" : true }], "stuff" : "all" } }""")
           jsonScalaJack.read[Carry[List[Tart[Boolean]]]](js) should equal(w)
@@ -555,7 +557,7 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         it("Parameter is Map of String->parameterized trait") {
           val w = Carry[Map[String, Tart[String]]]("Troy", Wrap("Articles", Map("OK" -> Bun(27, "Hot")), "all"))
           val js = jsonScalaJack.render(w)
-          val db = mongoScalaJack.render(w)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
           js should equal("""{"s":"Troy","w":{"name":"Articles","data":{"OK":{"_hint":"co.blocke.scalajack.mongo.test.Bun","g":27,"yum":"Hot"}},"stuff":"all"}}""")
           db.toJson should equal("""{ "s" : "Troy", "w" : { "name" : "Articles", "data" : { "OK" : { "_hint" : "co.blocke.scalajack.mongo.test.Bun", "g" : 27, "yum" : "Hot" } }, "stuff" : "all" } }""")
           jsonScalaJack.read[Carry[Map[String, Tart[String]]]](js) should equal(w)
@@ -566,8 +568,8 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
           val x = Carry[Option[Tart[Int]]]("Terry", Wrap("Hobbies", None, "all"))
           val js = jsonScalaJack.render(w)
           val js2 = jsonScalaJack.render(x)
-          val db = mongoScalaJack.render(w)
-          val db2 = mongoScalaJack.render(x)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
+          val db2 = mongoScalaJack.render(x).asInstanceOf[BsonDocument]
           js should equal("""{"s":"Terri","w":{"name":"Hobbies","data":{"_hint":"co.blocke.scalajack.mongo.test.Toast","g":11,"yum":12},"stuff":"all"}}""")
           js2 should equal("""{"s":"Terry","w":{"name":"Hobbies","stuff":"all"}}""")
           db.toJson should equal("""{ "s" : "Terri", "w" : { "name" : "Hobbies", "data" : { "_hint" : "co.blocke.scalajack.mongo.test.Toast", "g" : 11, "yum" : 12 }, "stuff" : "all" } }""")
@@ -580,7 +582,7 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         it("List of parameter, where parameter is a parameterized trait") {
           val w = BagList[Tart[Boolean]]("list", List(Toast(1, true), Bun(2, false)))
           val js = jsonScalaJack.render(w)
-          val db = mongoScalaJack.render(w)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
           js should equal("""{"s":"list","many":[{"_hint":"co.blocke.scalajack.mongo.test.Toast","g":1,"yum":true},{"_hint":"co.blocke.scalajack.mongo.test.Bun","g":2,"yum":false}]}""")
           db.toJson should equal("""{ "s" : "list", "many" : [{ "_hint" : "co.blocke.scalajack.mongo.test.Toast", "g" : 1, "yum" : true }, { "_hint" : "co.blocke.scalajack.mongo.test.Bun", "g" : 2, "yum" : false }] }""")
           jsonScalaJack.read[BagList[Tart[Boolean]]](js) should equal(w)
@@ -589,7 +591,7 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         it("Map of String->parameter, where parameter is a parameterized trait") {
           val w = BagMap[Tart[Boolean]](5, Map("one" -> Bun(1, true), "two" -> Toast(2, false)))
           val js = jsonScalaJack.render(w)
-          val db = mongoScalaJack.render(w)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
           js should equal("""{"i":5,"items":{"one":{"_hint":"co.blocke.scalajack.mongo.test.Bun","g":1,"yum":true},"two":{"_hint":"co.blocke.scalajack.mongo.test.Toast","g":2,"yum":false}}}""")
           db.toJson should equal("""{ "i" : 5, "items" : { "one" : { "_hint" : "co.blocke.scalajack.mongo.test.Bun", "g" : 1, "yum" : true }, "two" : { "_hint" : "co.blocke.scalajack.mongo.test.Toast", "g" : 2, "yum" : false } } }""")
           jsonScalaJack.read[BagMap[Tart[Boolean]]](js) should equal(w)
@@ -600,8 +602,8 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
           val x = BagOpt[Tart[String]](1, None)
           val js = jsonScalaJack.render(w)
           val js2 = jsonScalaJack.render(x)
-          val db = mongoScalaJack.render(w)
-          val db2 = mongoScalaJack.render(x)
+          val db = mongoScalaJack.render(w).asInstanceOf[BsonDocument]
+          val db2 = mongoScalaJack.render(x).asInstanceOf[BsonDocument]
           js should equal("""{"i":1,"maybe":{"_hint":"co.blocke.scalajack.mongo.test.Bun","g":6,"yum":"ok"}}""")
           js2 should equal("""{"i":1}""")
           db.toJson should equal("""{ "i" : 1, "maybe" : { "_hint" : "co.blocke.scalajack.mongo.test.Bun", "g" : 6, "yum" : "ok" } }""")

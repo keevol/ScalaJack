@@ -2,9 +2,9 @@ package co.blocke.scalajack
 package mongo
 package typeadapter
 
-import org.mongodb.scala.bson.ObjectId
+import org.bson.types.ObjectId
 
-object BsonObjectIdTypeAdapter extends TypeAdapter.===[ObjectId] {
+object BsonObjectIdTypeAdapter extends TypeAdapter.=:=[ObjectId] {
 
   val CUSTOM_LABEL = "ObjectId"
 

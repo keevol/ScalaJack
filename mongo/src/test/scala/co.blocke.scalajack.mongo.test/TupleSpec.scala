@@ -2,10 +2,8 @@ package co.blocke.scalajack
 package mongo
 package test
 
-import mongo._
 import org.scalatest.FunSpec
 import org.scalatest.Matchers._
-import org.mongodb.scala._
 import org.mongodb.scala.bson.collection.immutable.Document
 import org.mongodb.scala.bson._
 
@@ -15,7 +13,7 @@ class TupleSpec extends FunSpec {
   val sjM = ScalaJack(MongoFlavor())
 
   object MongoMaster {
-    val a = Document("name" -> "Larry", "rec" -> BsonDocument("foo" -> BsonArray(BsonArray("a", 1, true)), "hey" -> BsonArray(BsonArray("x", 8, false), BsonArray("r", 3, true))))
+    val a = BsonDocument("name" -> "Larry", "rec" -> BsonDocument("foo" -> BsonArray(BsonArray("a", 1, true)), "hey" -> BsonArray(BsonArray("x", 8, false), BsonArray("r", 3, true))))
   }
 
   object ScalaMaster {

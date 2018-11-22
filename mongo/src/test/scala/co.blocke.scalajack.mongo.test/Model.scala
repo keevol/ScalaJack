@@ -3,6 +3,8 @@ package mongo
 package test
 
 import java.time._
+//import org.bson.types.ObjectId
+import org.mongodb.scala.bson.ObjectId
 
 object Num extends Enumeration {
   val A, B, C = Value
@@ -208,33 +210,30 @@ object MyTypes {
 }
 import MyTypes._
 
-class PhoneDeserializer()(implicit tt: TypeTag[Phone]) extends Deserializer[Phone] {
+class PhoneIRTransceiver()(implicit tt: TypeTag[Phone]) extends IRTransceiver[Phone] {
 
   private val nullTypeTagged: TypeTagged[Phone] = TypeTagged[Phone](null.asInstanceOf[Phone], tt.tpe)
 
-  override def deserialize[AST, S](path: Path, ast: AST)(implicit ops: AstOps[AST, S], guidance: SerializationGuidance): DeserializationResult[Phone] =
-    ast match {
-      case AstNull() => DeserializationSuccess(nullTypeTagged)
-      case AstString(s) =>
+  override def read[IR, WIRE](path: Path, ir: IR)(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): ReadResult[Phone] =
+    ir match {
+      case IRNull() => ReadSuccess(nullTypeTagged)
+      case IRString(s) =>
         val fixed: Phone = s.replaceAll("-", "")
-        DeserializationSuccess(TypeTagged(fixed, tt.tpe))
+        ReadSuccess(TypeTagged(fixed, tt.tpe))
     }
-}
 
-class PhoneSerializer()(implicit tt: TypeTag[Phone]) extends Serializer[Phone] {
-  def serialize[AST, S](tagged: TypeTagged[Phone])(implicit ops: AstOps[AST, S], guidance: SerializationGuidance): SerializationResult[AST] =
+  override def write[IR, WIRE](tagged: TypeTagged[Phone])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =
     tagged match {
-      case TypeTagged(null) => SerializationSuccess(AstNull())
+      case TypeTagged(null) => WriteSuccess(IRNull())
       case TypeTagged(value) =>
         val fixed = "%s-%s-%s".format(value.substring(0, 3), value.substring(3, 6), value.substring(6))
-        SerializationSuccess(AstString(fixed))
+        WriteSuccess(IRString(fixed))
     }
 }
 
 // Override just Phone
 object PhoneAdapter extends TypeAdapter.===[Phone] {
-  override val deserializer: Deserializer[Phone] = new PhoneDeserializer()
-  override val serializer: Serializer[Phone] = new PhoneSerializer()
+  override val irTransceiver: IRTransceiver[Phone] = new PhoneIRTransceiver()
 }
 
 case class Person(@DBKey name: String, phone: Phone)

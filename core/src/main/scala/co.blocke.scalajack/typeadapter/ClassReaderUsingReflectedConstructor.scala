@@ -134,7 +134,7 @@ trait ClassReaderUsingReflectedConstructor[CC] extends IRReader[CC] {
 
                     if (isSJCapture) {
                       val partitionedFields = ops.partitionObject(irobj, (name, _) => fieldMembersByName.keySet.contains(name))
-                      val captured = partitionedFields._2 // fields not in class we need to save
+                      val captured = partitionedFields._2.asInstanceOf[ops.ObjectType] // fields not in class we need to save
 
                       val aux = ops.asInstanceOf[Ops.Aux[IR, WIRE, ops.ObjectType]]
                       instanceOfCaseClass.asInstanceOf[SJCapture].captured = Some(IRAndOps[IR, WIRE, ops.ObjectType](captured)(aux))

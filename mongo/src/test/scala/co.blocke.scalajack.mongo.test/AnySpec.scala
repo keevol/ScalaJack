@@ -17,14 +17,14 @@ class AnySpec extends FunSpec {
   val sjM = ScalaJack(MongoFlavor())
 
   object MongoMaster {
-    val a = Document("name" -> "Fred", "stuff" -> BsonDocument("a" -> 1, "b" -> true))
-    val b = Document("name" -> "Fred", "stuff" -> BsonDocument("a" -> 1, "b" -> BsonArray(4, 5, 6)))
-    val c = Document("name" -> "Fred", "stuff" -> BsonDocument("a" -> 1, "b" -> BsonArray(
+    val a = BsonDocument("name" -> "Fred", "stuff" -> BsonDocument("a" -> 1, "b" -> true))
+    val b = BsonDocument("name" -> "Fred", "stuff" -> BsonDocument("a" -> 1, "b" -> BsonArray(4, 5, 6)))
+    val c = BsonDocument("name" -> "Fred", "stuff" -> BsonDocument("a" -> 1, "b" -> BsonArray(
       BsonDocument("x" -> "Fido", "y" -> false),
       BsonDocument("x" -> "Cat", "y" -> true))))
-    val e = Document("name" -> "Fred", "stuff" -> BsonDocument("a" -> 1, "b" -> BsonArray("foo", BsonNull(), "bar")))
-    val f = Document("name" -> "Fred", "stuff" -> BsonDocument("a" -> 1, "b" -> 1.23))
-    val g = Document("name" -> "Fred", "stuff" -> BsonDocument("a" -> 1, "b" -> 25L))
+    val e = BsonDocument("name" -> "Fred", "stuff" -> BsonDocument("a" -> 1, "b" -> BsonArray("foo", BsonNull(), "bar")))
+    val f = BsonDocument("name" -> "Fred", "stuff" -> BsonDocument("a" -> 1, "b" -> 1.23))
+    val g = BsonDocument("name" -> "Fred", "stuff" -> BsonDocument("a" -> 1, "b" -> 25L))
   }
 
   object ScalaMaster {

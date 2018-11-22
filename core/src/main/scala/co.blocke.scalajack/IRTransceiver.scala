@@ -17,3 +17,5 @@ trait IRWriter[T] {
 }
 
 trait IRTransceiver[T] extends IRReader[T] with IRWriter[T]
+
+object NoTransceiver extends IRTransceiver[Nothing]

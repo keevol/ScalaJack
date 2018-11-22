@@ -42,12 +42,12 @@ trait OpsBase[IR] {
 
   //------- Operations you get "for free", i.e. no need to implement these for a new AST
 
-  def partitionObject(obj: IR, fn: (String, IR) => Boolean): (ObjectType, ObjectType) = obj match {
+  def partitionObject(obj: IR, fn: (String, IR) => Boolean): (IR, IR) = obj match {
     case IRObject(elements) =>
       val m1 = scala.collection.mutable.ListBuffer.empty[(String, IR)]
       val m2 = scala.collection.mutable.ListBuffer.empty[(String, IR)]
       elements.map(e => if (fn(e._1, e._2)) m1 += e else m2 += e)
-      (IRObject(m1).asInstanceOf[ObjectType], IRObject(m2).asInstanceOf[ObjectType])
+      (IRObject(m1), IRObject(m2))
     case _ => throw new IllegalArgumentException("partitionObject() requires IRObject as input")
   }
 

@@ -38,45 +38,47 @@ class LooseChange extends FunSpec {
     }
     it("Should blow up for unsupported BSON type") {
       val dbo = BsonDocument("name" -> "Fred", "stuff" -> BsonDocument("a" -> BsonJavaScript("code here")))
-      val msg = """DeserializationException(1 error):
-                  |  [$.stuff.a] Given value is of unknown type: BsonJavaScript{code='code here'} (reported by: co.blocke.scalajack.typeadapter.AnyDeserializer)""".stripMargin
+      val msg = """ReadException(1 error):
+                  |  [$] BSON type BsonJavaScript{code='code here'} is currently unsupported. (reported by: co.blocke.scalajack.NoTransceiver$)""".stripMargin
       the[ReadException] thrownBy sjM.read[Something](dbo) should have message msg
     }
+    /*
     it("No withTypeModifier") {
       the[java.lang.UnsupportedOperationException] thrownBy
         ScalaJack(MongoFlavor()).withTypeModifier(null.asInstanceOf[HintModifier]) should have message "Not available for Mongo formatting"
     }
     it("ZonedDateTime must work") {
-      val dbo = Document("o1" -> BsonDateTime(1540922698874L), "o2" -> BsonNull())
+      val dbo = BsonDocument("o1" -> BsonDateTime(1540922698874L), "o2" -> BsonNull())
       val z = sjM.read[SampleZonedDateTime](dbo)
       z.o1.toString should be("2018-10-30T18:04:58.874Z[UTC]")
       z.o2 should be(null)
       sjM.render(z) should be(dbo)
     }
     it("Handles Null") {
-      val dbo = Document("o1" -> BsonNull(), "o2" -> BsonNull())
+      val dbo = BsonDocument("o1" -> BsonNull(), "o2" -> BsonNull())
       val inst = sjM.read[SampleZonedDateTime](dbo)
       inst should be(SampleZonedDateTime(null, null))
       sjM.render(inst) should be(dbo)
     }
     it("Field name remapping must work") {
       val mfp = MapFactor("wonder", 25L, 3, "hungry")
-      val dbo = sjM.render(mfp)
+      val dbo = sjM.render(mfp).asInstanceOf[BsonDocument]
       dbo.toJson should be("""{ "foo_bar" : "wonder", "a_b" : { "$numberLong" : "25" }, "count" : 3, "big_mac" : "hungry" }""")
       sjM.read[MapFactor](dbo) should be(mfp)
     }
     it("Field name remapping on dbkey must work") {
       // val mfp = MapFactorId2("wonder", 25L, 1, 3)
       val mfp = MapFactorId("wonder", 25L, 3, "hungry")
-      val dbo = sjM.render(mfp)
+      val dbo = sjM.render(mfp).asInstanceOf[BsonDocument]
       dbo.toJson should be("""{ "_id" : "wonder", "a_b" : { "$numberLong" : "25" }, "count" : 3, "big_mac" : "hungry" }""")
       sjM.read[MapFactorId](dbo) should be(mfp)
     }
     it("Field name remapping on dbkey with multi-part keys must work") {
       val mfp = MapFactorId2("wonder", 25L, 1, 3, "hungry")
-      val dbo = sjM.render(mfp)
+      val dbo = sjM.render(mfp).asInstanceOf[BsonDocument]
       dbo.toJson should be("""{ "_id" : { "a_b" : { "$numberLong" : "25" }, "hey" : 1, "foo_bar" : "wonder" }, "big_mac" : "hungry", "count" : 3 }""")
       sjM.read[MapFactorId2](dbo) should be(mfp)
     }
+    */
   }
 }
