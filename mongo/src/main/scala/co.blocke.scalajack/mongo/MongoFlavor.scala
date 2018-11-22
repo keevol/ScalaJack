@@ -1,7 +1,9 @@
 package co.blocke.scalajack
 package mongo
 
-import org.bson.BsonValue
+import org.bson.{ BsonDocument, BsonValue }
+import org.json4s.JValue
+import org.json4s.JsonAST.JValue
 import org.mongodb.scala.bson.collection.immutable.Document
 import typeadapter._
 
@@ -15,7 +17,7 @@ case class MongoFlavor(
     parseOrElseMap:    Map[Type, Type]          = Map.empty[Type, Type],
     defaultHint:       String                   = "_hint",
     isCanonical:       Boolean                  = true,
-    secondLookParsing: Boolean                  = false) extends ScalaJackLike[BsonValue, Document] with JackFlavor[BsonValue, Document] {
+    secondLookParsing: Boolean                  = false) extends ScalaJackLike[JValue, BsonValue] with JackFlavor[JValue, BsonValue] {
 
   def withAdapters(ta: TypeAdapterFactory*) = this.copy(customAdapters = this.customAdapters ++ ta.toList)
   def withHints(h: (Type, String)*) = this.copy(hintMap = this.hintMap ++ h)
@@ -29,39 +31,39 @@ case class MongoFlavor(
   implicit val ops = BsonOps
   implicit val guidance: SerializationGuidance = SerializationGuidance()
 
-  def readSafely[T](doc: Document)(implicit tt: TypeTag[T]): Either[DeserializationFailure, T] = {
-    val typeAdapter = context.typeAdapterOf[T]
-    val deserializer = typeAdapter.deserializer
-    val ast = ops.parse(doc)
-    deserializer.deserialize[BsonValue, Document](Path.Root, ast) match {
-      case DeserializationSuccess(s)    => Right(s.get)
-      case fail: DeserializationFailure => Left(fail)
+  def readSafely[T](doc: BsonDocument)(implicit tt: TypeTag[T]): Either[ReadFailure, T] = {
+    val irTransceiver = context.typeAdapterOf[T].irTransceiver
+    ops.deserialize(doc).mapToReadResult(Path.Root, (dsIR: JValue) => irTransceiver.read(Path.Root, dsIR)) match {
+      case ReadSuccess(ir) =>
+        irTransceiver.read(Path.Root, ir.get) match {
+          case ReadSuccess(s)    => Right(s.get)
+          case fail: ReadFailure => Left(fail)
+        }
+      case f: ReadFailure => Left(f)
     }
   }
 
-  def render[T](value: T)(implicit valueTypeTag: TypeTag[T]): Document = {
-    val typeAdapter = context.typeAdapterOf[T]
-    val serializer = typeAdapter.serializer
-    serializer.serialize[BsonValue, Document](TypeTagged(value, valueTypeTag.tpe)) match {
-      case SerializationSuccess(doc)                                       => ops.renderCompact(doc, this)
-      case SerializationFailure(f) if f == Seq(SerializationError.Nothing) => null // throw SerializationException here???
+  def render[T](value: T)(implicit valueTypeTag: TypeTag[T]): BsonValue = {
+    val irTransceiver = context.typeAdapterOf[T].irTransceiver
+    irTransceiver.write[JValue, BsonDocument](TypeTagged(value, valueTypeTag.tpe)) match {
+      case WriteSuccess(doc)                               => ops.serialize(doc, this)
+      case WriteFailure(f) if f == Seq(WriteError.Nothing) => null // throw WriteException here???
     }
   }
 
-  def parseToAST(doc: Document): BsonValue = ops.parse(doc)
+  override def parse(doc: BsonValue): DeserializationResult[JValue] = ops.deserialize(doc)
+  override def emit(ir: JValue): BsonValue = ops.serialize(ir, this)
 
-  def emitFromAST(ast: BsonValue): Document = ops.renderCompact(ast, this)
-
-  def materialize[T](ast: BsonValue)(implicit tt: TypeTag[T]): T =
-    context.typeAdapterOf[T].deserializer.deserialize(Path.Root, ast) match {
-      case DeserializationSuccess(ok)   => ok.get
-      case fail: DeserializationFailure => throw new ReadException(fail)
+  override def materialize[T](ir: BsonValue)(implicit tt: TypeTag[T]): ReadResult[T] =
+    context.typeAdapterOf[T].irTransceiver.read(Path.Root, ir) match {
+      case res @ ReadSuccess(_) => res
+      case fail: ReadFailure    => fail
     }
 
-  def dematerialize[T](t: T)(implicit tt: TypeTag[T]): BsonValue = {
-    context.typeAdapterOf[T].serializer.serialize(TypeTagged(t, typeOf[T]))(BsonOps, guidance) match {
-      case SerializationSuccess(ast)     => ast
-      case fail: SerializationFailure[_] => throw new SerializationException(fail)
+  override def dematerialize[T](t: T)(implicit tt: TypeTag[T]): WriteResult[JValue] = {
+    context.typeAdapterOf[T].writer.write(TypeTagged(t, typeOf[T]))(BsonOps, guidance) match {
+      case WriteSuccess(ast)     => ast
+      case fail: WriteFailure[_] => throw new WriteException(fail)
     }
   }
   override protected def bakeContext(): Context = {

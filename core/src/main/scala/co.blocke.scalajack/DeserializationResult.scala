@@ -17,6 +17,7 @@ import scala.util.control.NonFatal
 
 sealed trait DeserializationResult[IR] {
   def get: IR
+  def getOrElse(substitute: IR): IR
   def errors: immutable.Seq[ReadError]
   def mapToReadResult[T](path: Path, fn: IR => ReadResult[T]) =
     this match {
@@ -35,6 +36,7 @@ object DeserializationResult {
 
 case class DeserializationSuccess[IR](get: IR) extends DeserializationResult[IR] {
   override def errors: immutable.Seq[ReadError] = immutable.Seq.empty
+  override def getOrElse(substitute: IR): IR = get
 }
 
 object DeserializationFailure {
@@ -43,6 +45,7 @@ object DeserializationFailure {
 
 case class DeserializationFailure[IR](errors: immutable.Seq[ReadError]) extends DeserializationResult[IR] {
   override def get: IR = throw new UnsupportedOperationException("DeserializationFailure.get not supported")
+  override def getOrElse(substitute: IR): IR = substitute
   override def toString: String = productPrefix + errors.mkString("(", ", ", ")")
 }
 
