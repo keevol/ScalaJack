@@ -216,9 +216,7 @@ trait JsonDeserializer[IR] extends WireDeserializer[IR, String] {
         char match {
           case '.' =>
             containsDecimal = true
-            if (char != '-') {
-              onlyContainsDigits = false
-            }
+            onlyContainsDigits = false
             position += 1
           case _ if (isDigitChar(char)) =>
             position += 1

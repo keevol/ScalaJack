@@ -30,8 +30,10 @@ class OffsetDateTimeTypeAdapter(formatter: DateTimeFormatter) extends TypeAdapte
               ReadError.Malformed(e, reportedBy = self)
           })
         case IRCustom((ZonedDateTimeTypeAdapter.CUSTOM_LABEL, IRString(zonedDateTimeString))) =>
-          val zoned = ZonedDateTime.parse(zonedDateTimeString, DateTimeFormatter.ISO_ZONED_DATE_TIME)
-          ReadResult(path)(TypeTagged(zoned.toOffsetDateTime, OffsetDateTimeType), {
+          ReadResult(path)({
+            val zoned = ZonedDateTime.parse(zonedDateTimeString, DateTimeFormatter.ISO_ZONED_DATE_TIME)
+            TypeTagged(zoned.toOffsetDateTime, OffsetDateTimeType)
+          }, {
             case e: DateTimeParseException =>
               ReadError.Malformed(e, reportedBy = self)
           })

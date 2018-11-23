@@ -59,9 +59,13 @@ case class CSVFlavor() extends {
               case Some(arta) =>
                 arta.irTransceiver.read(Path.Root, ir) match {
                   case ReadSuccess(t)       => Right(t.get.asInstanceOf[T])
+                  // $COVERAGE-OFF$WriteFailure not fully socialized
                   case failure: ReadFailure => Left(failure)
+                  // $COVERAGE-ON$            }
                 }
+              // $COVERAGE-OFF$Don't know how to trigger this
               case None => Left(ReadFailure(Path.Root, ReadError.Unexpected("Unable to successfully deserialize this CSV", typeAdapter.irTransceiver)))
+              // $COVERAGE-ON$
             }
         }
 
@@ -86,9 +90,7 @@ case class CSVFlavor() extends {
     serializer.write[JValue, String](TypeTagged(value, valueTypeTag.tpe)) match {
       case WriteSuccess(objectOutput) =>
         ops.serialize(objectOutput, this)
-      // $COVERAGE-OFF$WriteFailure not fully socialized
       case WriteFailure(f) if f == Seq(WriteError.Nothing) => ""
-      // $COVERAGE-ON$
     }
   }
 

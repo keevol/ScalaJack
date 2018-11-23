@@ -41,7 +41,9 @@ case class MongoFlavor(
     val irTransceiver = context.typeAdapterOf[T].irTransceiver
     irTransceiver.write[JValue, BsonValue](TypeTagged(value, valueTypeTag.tpe)) match {
       case WriteSuccess(doc)                               => ops.serialize(doc, this)
+      // $COVERAGE-OFF$Don't know how to trigger this
       case WriteFailure(f) if f == Seq(WriteError.Nothing) => null // throw WriteException here???
+      // $COVERAGE-ON$
     }
   }
 
@@ -57,12 +59,13 @@ case class MongoFlavor(
   override def dematerialize[T](t: T)(implicit tt: TypeTag[T]): WriteResult[JValue] = {
     context.typeAdapterOf[T].irTransceiver.write(TypeTagged(t, typeOf[T]))(BsonOps, guidance) match {
       case res: WriteSuccess[_] => res
+      // $COVERAGE-OFF$Don't know how to trigger this
       case fail: WriteFailure   => fail
+      // $COVERAGE-ON$
     }
   }
   override protected def bakeContext(): Context = {
     val ctx = super.bakeContext()
-    //    ctx.copy(factories = MongoCaseClassTypeAdapter :: BsonDateTimeTypeAdapter :: MongoOffsetDateTimeTypeAdapter :: MongoZonedDateTimeTypeAdapter :: BsonObjectIdTypeAdapter :: ctx.factories)
     ctx.copy(factories = MongoCaseClassTypeAdapter :: BsonObjectIdTypeAdapter :: ctx.factories)
   }
 

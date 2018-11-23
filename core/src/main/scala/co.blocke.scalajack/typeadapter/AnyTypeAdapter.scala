@@ -108,7 +108,9 @@ class AnyIRTransceiver(
       case IRNull() =>
         ReadSuccess(nullTypeTagged)
 
+      // $COVERAGE-OFF$Should never happen(tm).  Should always best-fit all IRValues to *some* Scala thingy
       case _ => ReadFailure(path, ReadError.Unexpected(s"Given value is of unknown type: $ir", reportedBy = self))
+      // $COVERAGE-ON$
     }
 
   override def write[IR, WIRE](tagged: TypeTagged[Any])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =

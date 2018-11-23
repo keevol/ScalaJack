@@ -176,6 +176,8 @@ class PlugTestHoles extends FunSpec {
       it("JsonDeserializer") {
         val js = """This is an "easy" \"peasy\" test"""
         ops.deserialize(Path.Root, js).toString should be("""DeserializationSuccess(JString(This is an "easy" \"peasy\" test))""")
+        val js2 = """{"a":true}123"""
+        ops.deserialize(Path.Root, js2).toString should be("""DeserializationFailure(Vector(($,Exception was thrown: java.lang.IllegalArgumentException: Extra, unparsed JSON: '123' (reported by: unknown))))""")
       }
       it("JsonDiff") {
         val a = LeftD("Fred", 1)
@@ -224,6 +226,8 @@ class PlugTestHoles extends FunSpec {
           sj.materialize[LocalDateTime](ir2).toString should be("ReadSuccess(2007-12-03T10:15:30 as java.time.LocalDateTime)")
           val ir3 = IRCustom("ZonedDateTime", IRString("2007-12-03T10:15:30+01:00[Europe/Paris]"))
           sj.materialize[LocalDateTime](ir3).toString should be("ReadSuccess(2007-12-03T10:15:30 as java.time.LocalDateTime)")
+          val ir4 = IRCustom("ZonedDateTime", IRString("malformed"))
+          sj.materialize[LocalDateTime](ir4).toString should be("ReadFailure(Vector(($,Text 'malformed' could not be parsed at index 0 (reported by: co.blocke.scalajack.typeadapter.javatime.LocalDateTimeTypeAdapter$$anon$1))))")
         }
         it("LocalDateTypeAdapter") {
           val ir = IRCustom("LocalDate", IRString("foo"))
@@ -232,6 +236,8 @@ class PlugTestHoles extends FunSpec {
           sj.materialize[LocalDate](ir2).toString should be("ReadSuccess(2007-12-03 as java.time.LocalDate)")
           val ir3 = IRCustom("ZonedDateTime", IRString("2007-12-03T10:15:30+01:00[Europe/Paris]"))
           sj.materialize[LocalDate](ir3).toString should be("ReadSuccess(2007-12-03 as java.time.LocalDate)")
+          val ir4 = IRCustom("ZonedDateTime", IRString("malformed"))
+          sj.materialize[LocalDate](ir4).toString should be("ReadFailure(Vector(($,Text 'malformed' could not be parsed at index 0 (reported by: co.blocke.scalajack.typeadapter.javatime.LocalDateTypeAdapter$$anon$1))))")
         }
         it("LocalTimeTypeAdapter") {
           val ir = IRCustom("LocalTime", IRString("foo"))
@@ -240,6 +246,8 @@ class PlugTestHoles extends FunSpec {
           sj.materialize[LocalTime](ir2).toString should be("ReadSuccess(10:15:30 as java.time.LocalTime)")
           val ir3 = IRCustom("ZonedDateTime", IRString("2007-12-03T10:15:30+01:00[Europe/Paris]"))
           sj.materialize[LocalTime](ir3).toString should be("ReadSuccess(10:15:30 as java.time.LocalTime)")
+          val ir4 = IRCustom("ZonedDateTime", IRString("malformed"))
+          sj.materialize[LocalTime](ir4).toString should be("ReadFailure(Vector(($,Text 'malformed' could not be parsed at index 0 (reported by: co.blocke.scalajack.typeadapter.javatime.LocalTimeTypeAdapter$$anon$1))))")
         }
         it("OffsetDateTimeTypeAdapter") {
           val ir = IRCustom("OffsetDateTime", IRString("foo"))
@@ -248,6 +256,8 @@ class PlugTestHoles extends FunSpec {
           sj.materialize[OffsetDateTime](ir2).toString should be("ReadSuccess(2007-12-03T10:15:30+01:00 as java.time.OffsetDateTime)")
           val ir3 = IRCustom("ZonedDateTime", IRString("2007-12-03T10:15:30+01:00[Europe/Paris]"))
           sj.materialize[OffsetDateTime](ir3).toString should be("ReadSuccess(2007-12-03T10:15:30+01:00 as java.time.OffsetDateTime)")
+          val ir4 = IRCustom("ZonedDateTime", IRString("malformed"))
+          sj.materialize[OffsetDateTime](ir4).toString should be("ReadFailure(Vector(($,Text 'malformed' could not be parsed at index 0 (reported by: co.blocke.scalajack.typeadapter.javatime.OffsetDateTimeTypeAdapter$$anon$1))))")
         }
         it("OffsetTimeTypeAdapter") {
           val ir = IRCustom("OffsetTime", IRString("foo"))
@@ -256,6 +266,8 @@ class PlugTestHoles extends FunSpec {
           sj.materialize[OffsetTime](ir2).toString should be("ReadSuccess(10:15:30+01:00 as java.time.OffsetTime)")
           val ir3 = IRCustom("ZonedDateTime", IRString("2007-12-03T10:15:30+01:00[Europe/Paris]"))
           sj.materialize[OffsetTime](ir3).toString should be("ReadSuccess(10:15:30+01:00 as java.time.OffsetTime)")
+          val ir4 = IRCustom("ZonedDateTime", IRString("malformed"))
+          sj.materialize[OffsetTime](ir4).toString should be("ReadFailure(Vector(($,Text 'malformed' could not be parsed at index 0 (reported by: co.blocke.scalajack.typeadapter.javatime.OffsetTimeTypeAdapter$$anon$1))))")
         }
         it("PeriodTypeAdapter") {
           val ir = IRCustom("Period", IRString("foo"))
@@ -278,6 +290,7 @@ class PlugTestHoles extends FunSpec {
         val m = Map("a" -> 1, "b" -> 2)
         val ir3 = sj.dematerialize(m).get
         ta.irTransceiver.read(Path.Root, ir3).toString should be("""ReadSuccess(Map(b -> 2, a -> 1) as scala.collection.mutable.Map[Any,Any])""")
+        val ir4 = IRCustom("Bogus", IRString("foo"))
       }
       it("BigDecimalTypeAdapter") {
         val ir = IRDouble(123.45)

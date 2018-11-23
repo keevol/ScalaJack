@@ -12,6 +12,14 @@ class CSVTests() extends FunSpec with Matchers {
 
   describe("---------------\n:  CSV Tests  :\n---------------") {
     describe("Primitives (non-null):") {
+      it("tuples fail") {
+        val csv = "123.45,192375323"
+        sj.readSafely[(Double, Long)](csv).left.get.toString should be("""ReadFailure(Vector(($,Unable to successfully deserialize this CSV (reported by: co.blocke.scalajack.typeadapter.IRParsingFallbackTypeAdapter$$anon$1))))""")
+      }
+      it("Double and Long") {
+        val csv = "123.45,192375323"
+        sj.read[List[Number]](csv) should be(List(123.45D, 192375323L))
+      }
       it("Writes out basic Scala primitive types") {
         val inst = BasicScala(BigDecimal(123.45), BigInt(123), true, 64.asInstanceOf[Byte],
           'Z', 12.34, Size.Large, 12.34F, 5L, 5.asInstanceOf[Short], "wow", UUID.fromString("54cab778-7b9e-4b07-9d37-87b97a011e55"))

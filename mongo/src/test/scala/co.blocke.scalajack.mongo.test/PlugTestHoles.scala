@@ -6,6 +6,7 @@ import org.bson.types.ObjectId
 import org.scalatest.FunSpec
 import org.scalatest.Matchers._
 import org.mongodb.scala.bson._
+import co.blocke.scalajack.typeadapter.BinaryTypeAdapter
 
 case class Lifecycle(a: String, b: Boolean, c: Array[Byte])
 
@@ -25,10 +26,23 @@ class PlugTestHoles extends FunSpec {
       val bson = BsonDocument(List(("a", BsonNull()), ("b", BsonBoolean(true)), ("c", BsonBinary("foo".getBytes))))
       val ir = sj.parse(bson)
       ir.toString should be("DeserializationSuccess(JObject(List((a,JNull), (c,JString(666f6f)), (b,JBool(true)))))")
+
+      val bson2 = BsonSymbol(scala.Symbol("symbol"))
+      val bson3 = BsonArray(List(bson2, bson2, bson2))
+      sj.parse(bson3).toString should be("""DeserializationFailure(List(($[2],BSON type symbol is currently unsupported. (reported by: co.blocke.scalajack.NoTransceiver$)), ($[1],BSON type symbol is currently unsupported. (reported by: co.blocke.scalajack.NoTransceiver$)), ($[0],BSON type symbol is currently unsupported. (reported by: co.blocke.scalajack.NoTransceiver$))))""")
     }
     it("MongoFlavor") {
       sj.secondLookParsing should be(false)
       sj.withSecondLookParsing().secondLookParsing should be(true)
+    }
+    it("BsonSerializer") {
+      val map: Map[Any, String] = Map(true -> "a", 123 -> "b", "Fred" -> "c")
+      val ir = (sj.dematerialize(map)).get
+      sj.emit(ir).toString should be("""BsonArray{values=[BsonArray{values=[BsonBoolean{value=true}, BsonString{value='a'}]}, BsonArray{values=[BsonInt32{value=123}, BsonString{value='b'}]}, BsonArray{values=[BsonString{value='Fred'}, BsonString{value='c'}]}]}""")
+      val ir2 = IRCustom(BinaryTypeAdapter.CUSTOM_LABEL, IRString("a0a0a0"))
+      sj.emit(ir2).toString should be("""BsonBinary{type=0, data=[-96, -96, -96]}""")
+      val ir3 = IRDecimal(BigDecimal(123.45))
+      sj.emit(ir3).toString should be("BsonDouble{value=123.45}")
     }
     it("Lifecycle") {
       val inst = Lifecycle(null, false, "test".getBytes())
@@ -42,47 +56,5 @@ class PlugTestHoles extends FunSpec {
       bson.toJson should be("""{ "a" : null, "b" : false, "c" : "74657374" }""")
       sj.parse(bson).get should be(ir)
     }
-    /*
-    it("Ast Transform (transform from one AST to another one") {
-      implicit val ops = Json4sOps
-      val nums: List[JValue] = List(AstInt(1), AstInt(2), AstInt(3))
-      val objstuff: List[(String, JValue)] = List(("a", AstInt(5)), ("b", AstInt(6)))
-      val jsonStuff = List(
-        ops.applyArray(nums),
-        AstBoolean(true),
-        AstDecimal(BigDecimal(123.45)),
-        AstDouble(12.34),
-        AstInt(5),
-        AstLong(5L),
-        AstNull(),
-        ops.applyObject(objstuff),
-        AstString("wow"))
-      val result = AstValue.transform[JValue, BsonValue, String, Document](ops.applyArray(jsonStuff))(Json4sOps, BsonOps)
-      val wrapper = Document("m" -> result)
-      assertResult("""{ "m" : [[1, 2, 3], true, { "$numberDecimal" : "123.45" }, 12.34, 5, { "$numberLong" : "5" }, null, { "a" : 5, "b" : 6 }, "wow"] }""")(wrapper.toJson())
-    }
-    it("materialize, dematerialize, parseToAST, and emitFromAST") {
-      val one = One("Greg", List("a", "b"), List(Two("x", false), Two("y", true)), Two("Nest!", true), Some("wow"), Map("hey" -> 17, "you" -> 21), true, 99123986123L, Num.C, 46)
-      sj.materialize[One](sj.dematerialize(one)) should be(one)
-
-      val ast = sj.dematerialize(one)
-      sj.parseToAST(sj.emitFromAST(ast)) should be(ast)
-
-      implicit val ops = BsonOps
-      ops.isArray(ops.applyArray(List(AstInt(1)))) should be(true)
-      ops.isArray(AstInt(1)) should be(false)
-      ops.isObject(ops.applyObject(List(("a", AstInt(1))))) should be(true)
-      ops.isObject(AstInt(1)) should be(false)
-    }
-    it("ObjectId") {
-      implicit val ops = sj.ops
-      implicit val g = sj.guidance
-      val ta = sj.context.typeAdapterOf[ObjectId].deserializer
-      ta.deserialize(Path.Root, AstInt(5)).toString should be("DeserializationFailure(Vector(($,Expected a Bson ObjectId value (reported by: co.blocke.scalajack.mongo.typeadapter.BsonObjectIdDeserializer))))")
-
-      val ta2 = sj.context.typeAdapterOf[String].deserializer
-      ta2.deserialize(Path.Root, AstInt(5)).toString should be("DeserializationFailure(Vector(($,Expected a JSON string (reported by: co.blocke.scalajack.typeadapter.StringDeserializer))))")
-    }
-    */
   }
 }
