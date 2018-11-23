@@ -19,6 +19,7 @@ object Context {
     .withFactory(AnyTypeAdapter)
     .withFactory(TypeTypeAdapter)
     .withFactory(MapTypeAdapter)
+    .withFactory(BinaryTypeAdapter)
     .withFactory(CanBuildFromTypeAdapter)
     .withFactory(TupleTypeAdapter)
 

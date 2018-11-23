@@ -38,7 +38,7 @@ class ZonedDateTimeTypeAdapter(formatter: DateTimeFormatter) extends TypeAdapter
     override def write[IR, WIRE](tagged: TypeTagged[ZonedDateTime])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =
       tagged match {
         case TypeTagged(null) => WriteSuccess(IRNull())
-        case TypeTagged(x)    => WriteSuccess(IRString(x.format(formatter)))
+        case TypeTagged(x)    => WriteSuccess(IRCustom(CUSTOM_LABEL, IRString(x.format(formatter))))
       }
   }
 }

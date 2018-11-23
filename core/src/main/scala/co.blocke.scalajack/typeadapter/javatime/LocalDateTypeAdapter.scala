@@ -2,7 +2,7 @@ package co.blocke.scalajack
 package typeadapter
 package javatime
 
-import java.time.LocalDate
+import java.time.{ LocalDate, ZonedDateTime }
 import java.time.format.{ DateTimeFormatter, DateTimeParseException }
 
 object LocalDateTypeAdapter extends LocalDateTypeAdapter(DateTimeFormatter.ISO_LOCAL_DATE)
@@ -25,6 +25,12 @@ class LocalDateTypeAdapter(formatter: DateTimeFormatter) extends TypeAdapter.=:=
 
         case IRCustom((CUSTOM_LABEL, IRString(localDateString))) =>
           ReadResult(path)(TypeTagged(LocalDate.parse(localDateString, formatter), LocalDateType), {
+            case e: DateTimeParseException =>
+              ReadError.Malformed(e, reportedBy = self)
+          })
+        case IRCustom((ZonedDateTimeTypeAdapter.CUSTOM_LABEL, IRString(zonedDateTimeString))) =>
+          val zoned = ZonedDateTime.parse(zonedDateTimeString, DateTimeFormatter.ISO_ZONED_DATE_TIME)
+          ReadResult(path)(TypeTagged(zoned.toLocalDate, LocalDateType), {
             case e: DateTimeParseException =>
               ReadError.Malformed(e, reportedBy = self)
           })

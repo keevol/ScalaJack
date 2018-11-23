@@ -1,10 +1,15 @@
 package co.blocke.scalajack
 package mongo
 
+import java.time.format.DateTimeFormatter
+
+import co.blocke.scalajack.typeadapter.javatime.ZonedDateTimeTypeAdapter
 import org.bson._
 import org.apache.commons.codec.binary.Hex
+
 import scala.collection.JavaConverters._
 import mongo.typeadapter.BsonObjectIdTypeAdapter
+import java.time.{ Instant, ZoneId, ZonedDateTime }
 
 trait BsonDeserializer[IR] extends WireDeserializer[IR, BsonValue] {
 
@@ -28,10 +33,13 @@ trait BsonDeserializer[IR] extends WireDeserializer[IR, BsonValue] {
           DeserializationFailure(flattened)
         }
 
-      case b: BsonBinary   => DeserializationSuccess(IRString(Hex.encodeHexString(b.getData())))
-      case _: BsonNull     => DeserializationSuccess(IRNull())
-      case b: BsonBoolean  => DeserializationSuccess(IRBoolean(b.getValue()))
-      case b: BsonDateTime => DeserializationSuccess(IRLong(b.getValue))
+      case b: BsonBinary  => DeserializationSuccess(IRString(Hex.encodeHexString(b.getData())))
+      case _: BsonNull    => DeserializationSuccess(IRNull())
+      case b: BsonBoolean => DeserializationSuccess(IRBoolean(b.getValue()))
+      case b: BsonDateTime =>
+        DeserializationSuccess(
+          IRCustom(ZonedDateTimeTypeAdapter.CUSTOM_LABEL, IRString(ZonedDateTime.ofInstant(Instant.ofEpochMilli(b.getValue), ZoneId.of("UTC")).format(DateTimeFormatter.ISO_ZONED_DATE_TIME)))
+        )
 
       case b: BsonDocument =>
         val entries = b.entrySet().asScala.map(entry => (entry.getKey, deserialize(path \ entry.getKey, entry.getValue)))

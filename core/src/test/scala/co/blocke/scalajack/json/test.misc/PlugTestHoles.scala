@@ -222,22 +222,40 @@ class PlugTestHoles extends FunSpec {
           sj.materialize[LocalDateTime](ir).toString should be("ReadFailure(Vector(($,Text 'foo' could not be parsed at index 0 (reported by: co.blocke.scalajack.typeadapter.javatime.LocalDateTimeTypeAdapter$$anon$1))))")
           val ir2 = IRCustom("LocalDateTime", IRString("2007-12-03T10:15:30"))
           sj.materialize[LocalDateTime](ir2).toString should be("ReadSuccess(2007-12-03T10:15:30 as java.time.LocalDateTime)")
+          val ir3 = IRCustom("ZonedDateTime", IRString("2007-12-03T10:15:30+01:00[Europe/Paris]"))
+          sj.materialize[LocalDateTime](ir3).toString should be("ReadSuccess(2007-12-03T10:15:30 as java.time.LocalDateTime)")
         }
         it("LocalDateTypeAdapter") {
           val ir = IRCustom("LocalDate", IRString("foo"))
           sj.materialize[LocalDate](ir).toString should be("ReadFailure(Vector(($,Text 'foo' could not be parsed at index 0 (reported by: co.blocke.scalajack.typeadapter.javatime.LocalDateTypeAdapter$$anon$1))))")
           val ir2 = IRCustom("LocalDate", IRString("2007-12-03"))
           sj.materialize[LocalDate](ir2).toString should be("ReadSuccess(2007-12-03 as java.time.LocalDate)")
+          val ir3 = IRCustom("ZonedDateTime", IRString("2007-12-03T10:15:30+01:00[Europe/Paris]"))
+          sj.materialize[LocalDate](ir3).toString should be("ReadSuccess(2007-12-03 as java.time.LocalDate)")
         }
         it("LocalTimeTypeAdapter") {
           val ir = IRCustom("LocalTime", IRString("foo"))
           sj.materialize[LocalTime](ir).toString should be("ReadFailure(Vector(($,Text 'foo' could not be parsed at index 0 (reported by: co.blocke.scalajack.typeadapter.javatime.LocalTimeTypeAdapter$$anon$1))))")
+          val ir2 = IRCustom("LocalTime", IRString("10:15:30"))
+          sj.materialize[LocalTime](ir2).toString should be("ReadSuccess(10:15:30 as java.time.LocalTime)")
+          val ir3 = IRCustom("ZonedDateTime", IRString("2007-12-03T10:15:30+01:00[Europe/Paris]"))
+          sj.materialize[LocalTime](ir3).toString should be("ReadSuccess(10:15:30 as java.time.LocalTime)")
         }
         it("OffsetDateTimeTypeAdapter") {
           val ir = IRCustom("OffsetDateTime", IRString("foo"))
           sj.materialize[OffsetDateTime](ir).toString should be("ReadFailure(Vector(($,Text 'foo' could not be parsed at index 0 (reported by: co.blocke.scalajack.typeadapter.javatime.OffsetDateTimeTypeAdapter$$anon$1))))")
           val ir2 = IRCustom("OffsetDateTime", IRString("2007-12-03T10:15:30+01:00"))
           sj.materialize[OffsetDateTime](ir2).toString should be("ReadSuccess(2007-12-03T10:15:30+01:00 as java.time.OffsetDateTime)")
+          val ir3 = IRCustom("ZonedDateTime", IRString("2007-12-03T10:15:30+01:00[Europe/Paris]"))
+          sj.materialize[OffsetDateTime](ir3).toString should be("ReadSuccess(2007-12-03T10:15:30+01:00 as java.time.OffsetDateTime)")
+        }
+        it("OffsetTimeTypeAdapter") {
+          val ir = IRCustom("OffsetTime", IRString("foo"))
+          sj.materialize[OffsetTime](ir).toString should be("ReadFailure(Vector(($,Text 'foo' could not be parsed at index 0 (reported by: co.blocke.scalajack.typeadapter.javatime.OffsetTimeTypeAdapter$$anon$1))))")
+          val ir2 = IRCustom("OffsetTime", IRString("10:15:30+01:00"))
+          sj.materialize[OffsetTime](ir2).toString should be("ReadSuccess(10:15:30+01:00 as java.time.OffsetTime)")
+          val ir3 = IRCustom("ZonedDateTime", IRString("2007-12-03T10:15:30+01:00[Europe/Paris]"))
+          sj.materialize[OffsetTime](ir3).toString should be("ReadSuccess(10:15:30+01:00 as java.time.OffsetTime)")
         }
         it("PeriodTypeAdapter") {
           val ir = IRCustom("Period", IRString("foo"))

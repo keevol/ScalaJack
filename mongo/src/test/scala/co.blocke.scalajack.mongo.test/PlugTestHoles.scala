@@ -2,19 +2,47 @@ package co.blocke.scalajack
 package mongo
 package test
 
-import co.blocke.scalajack.mongo.ObjectId
+import org.bson.types.ObjectId
 import org.scalatest.FunSpec
 import org.scalatest.Matchers._
-import org.json4s.JsonAST._
-import json.Json4sOps
 import org.mongodb.scala.bson._
-import org.mongodb.scala.bson.collection.immutable.Document
+
+case class Lifecycle(a: String, b: Boolean, c: Array[Byte])
 
 class PlugTestHoles extends FunSpec {
 
   val sj = ScalaJack(MongoFlavor())
 
+  implicit val ops = BsonOps
+  implicit val g = SerializationGuidance()
+
   describe("Plug Holes in Test Coverage (via Coveralls)") {
+    it("BsonObjectIdTypeAdapter") {
+      val ta = sj.context.typeAdapterOf[ObjectId].resolved
+      ta.irTransceiver.read(Path.Root, IRLong(5)).toString should be("""ReadFailure(Vector(($,Expected a Bson ObjectId value (reported by: co.blocke.scalajack.mongo.typeadapter.BsonObjectIdTypeAdapter$$anon$1))))""")
+    }
+    it("BsonDeserializer") {
+      val bson = BsonDocument(List(("a", BsonNull()), ("b", BsonBoolean(true)), ("c", BsonBinary("foo".getBytes))))
+      val ir = sj.parse(bson)
+      ir.toString should be("DeserializationSuccess(JObject(List((a,JNull), (c,JString(666f6f)), (b,JBool(true)))))")
+    }
+    it("MongoFlavor") {
+      sj.secondLookParsing should be(false)
+      sj.withSecondLookParsing().secondLookParsing should be(true)
+    }
+    it("Lifecycle") {
+      val inst = Lifecycle(null, false, "test".getBytes())
+      val one = sj.dematerialize(inst)
+      one.toString should be("WriteSuccess(JObject(List((a,JNull), (b,JBool(false)), (c,JString(74657374)))))")
+      val two = sj.materialize[Lifecycle](one.get).get
+      two.c.toSeq should be(inst.c.toSeq)
+
+      val ir = one.get
+      val bson = sj.emit(ir).asInstanceOf[BsonDocument]
+      bson.toJson should be("""{ "a" : null, "b" : false, "c" : "74657374" }""")
+      sj.parse(bson).get should be(ir)
+    }
+    /*
     it("Ast Transform (transform from one AST to another one") {
       implicit val ops = Json4sOps
       val nums: List[JValue] = List(AstInt(1), AstInt(2), AstInt(3))
@@ -32,10 +60,6 @@ class PlugTestHoles extends FunSpec {
       val result = AstValue.transform[JValue, BsonValue, String, Document](ops.applyArray(jsonStuff))(Json4sOps, BsonOps)
       val wrapper = Document("m" -> result)
       assertResult("""{ "m" : [[1, 2, 3], true, { "$numberDecimal" : "123.45" }, 12.34, 5, { "$numberLong" : "5" }, null, { "a" : 5, "b" : 6 }, "wow"] }""")(wrapper.toJson())
-    }
-    it("MongoFlavor") {
-      sj.secondLookParsing should be(false)
-      sj.withSecondLookParsing().secondLookParsing should be(true)
     }
     it("materialize, dematerialize, parseToAST, and emitFromAST") {
       val one = One("Greg", List("a", "b"), List(Two("x", false), Two("y", true)), Two("Nest!", true), Some("wow"), Map("hey" -> 17, "you" -> 21), true, 99123986123L, Num.C, 46)
@@ -59,5 +83,6 @@ class PlugTestHoles extends FunSpec {
       val ta2 = sj.context.typeAdapterOf[String].deserializer
       ta2.deserialize(Path.Root, AstInt(5)).toString should be("DeserializationFailure(Vector(($,Expected a JSON string (reported by: co.blocke.scalajack.typeadapter.StringDeserializer))))")
     }
+    */
   }
 }

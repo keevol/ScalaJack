@@ -6,9 +6,11 @@ import java.time.format.DateTimeFormatter
 
 import org.mongodb.scala.bson._
 import co.blocke.scalajack.typeadapter.javatime._
+import co.blocke.scalajack.typeadapter.BinaryTypeAdapter
 
 import scala.collection.JavaConverters._
 import mongo.typeadapter._
+import org.apache.commons.codec.binary.Hex
 
 trait BsonSerializer[IR] extends WireSerializer[IR, BsonValue] {
 
@@ -33,18 +35,39 @@ trait BsonSerializer[IR] extends WireSerializer[IR, BsonValue] {
 
       case IRCustom(label, ir) =>
         label match {
+          case BinaryTypeAdapter.CUSTOM_LABEL =>
+            val IRString(hex) = ir
+            BsonBinary(Hex.decodeHex(hex))
           case BsonObjectIdTypeAdapter.CUSTOM_LABEL =>
             val IRString(hex) = ir
             BsonObjectId(hex)
           case ZonedDateTimeTypeAdapter.CUSTOM_LABEL =>
             val IRString(zonedDateTimeString) = ir
-//            val normalized = ZonedDateTime.parse(zonedDateTimeString, DateTimeFormatter.ISO_ZONED_DATE_TIME).withZoneSameInstant(ZoneId.of("UTC"))
             val normalized = ZonedDateTime.parse(zonedDateTimeString, DateTimeFormatter.ISO_ZONED_DATE_TIME)
-            BsonDateTime(normalized.toEpochSecond)
+            BsonDateTime(normalized.toInstant.toEpochMilli)
           case OffsetDateTimeTypeAdapter.CUSTOM_LABEL =>
             val IRString(dateTimeString) = ir
             val normalized = OffsetDateTime.parse(dateTimeString, DateTimeFormatter.ISO_OFFSET_DATE_TIME)
-            BsonDateTime(normalized.toZonedDateTime.withZoneSameInstant(ZoneId.of("UTC")).toEpochSecond)
+            BsonDateTime(normalized.toZonedDateTime.withZoneSameInstant(ZoneId.of("UTC")).toInstant.toEpochMilli)
+          case OffsetTimeTypeAdapter.CUSTOM_LABEL =>
+            val IRString(dateTimeString) = ir
+            val normalized = OffsetTime.parse(dateTimeString, DateTimeFormatter.ISO_OFFSET_TIME)
+            BsonDateTime(normalized.atDate(LocalDate.now()).toZonedDateTime.withZoneSameInstant(ZoneId.of("UTC")).toInstant.toEpochMilli)
+          case LocalDateTimeTypeAdapter.CUSTOM_LABEL =>
+            val IRString(dateTimeString) = ir
+            val normalized = LocalDateTime.parse(dateTimeString, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            println("Normal: " + normalized)
+            val z = BsonDateTime(normalized.atZone(ZoneId.of("UTC")).toInstant.toEpochMilli)
+            println("z: " + z)
+            z
+          case LocalDateTypeAdapter.CUSTOM_LABEL =>
+            val IRString(dateTimeString) = ir
+            val normalized = LocalDate.parse(dateTimeString, DateTimeFormatter.ISO_LOCAL_DATE)
+            BsonDateTime(normalized.atStartOfDay().atZone(ZoneId.of("UTC")).toInstant.toEpochMilli)
+          case LocalTimeTypeAdapter.CUSTOM_LABEL =>
+            val IRString(dateTimeString) = ir
+            val normalized = LocalTime.parse(dateTimeString, DateTimeFormatter.ISO_LOCAL_TIME)
+            BsonDateTime(normalized.atDate(LocalDate.now()).atZone(ZoneId.of("UTC")).toInstant.toEpochMilli)
         }
 
       case IRArray(_) =>

@@ -2,7 +2,7 @@ package co.blocke.scalajack
 package typeadapter
 package javatime
 
-import java.time.LocalDateTime
+import java.time.{ LocalDateTime, ZonedDateTime }
 import java.time.format.{ DateTimeFormatter, DateTimeParseException }
 
 object LocalDateTimeTypeAdapter extends LocalDateTimeTypeAdapter(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
@@ -28,6 +28,12 @@ class LocalDateTimeTypeAdapter(formatter: DateTimeFormatter) extends TypeAdapter
             case e: DateTimeParseException =>
               ReadError.Malformed(e, reportedBy = self)
           })
+        case IRCustom((ZonedDateTimeTypeAdapter.CUSTOM_LABEL, IRString(zonedDateTimeString))) =>
+          val zoned = ZonedDateTime.parse(zonedDateTimeString, DateTimeFormatter.ISO_ZONED_DATE_TIME)
+          ReadResult(path)(TypeTagged(zoned.toLocalDateTime, LocalDateTimeType), {
+            case e: DateTimeParseException =>
+              ReadError.Malformed(e, reportedBy = self)
+          })
 
         case IRNull() =>
           ReadSuccess(TypeTagged(null, LocalDateTimeType))
@@ -39,7 +45,7 @@ class LocalDateTimeTypeAdapter(formatter: DateTimeFormatter) extends TypeAdapter
     override def write[IR, WIRE](tagged: TypeTagged[LocalDateTime])(implicit ops: Ops[IR, WIRE], guidance: SerializationGuidance): WriteResult[IR] =
       tagged match {
         case TypeTagged(null) => WriteSuccess(IRNull())
-        case TypeTagged(x)    => WriteSuccess(IRString(x.format(formatter)))
+        case TypeTagged(x)    => WriteSuccess(IRCustom(CUSTOM_LABEL, IRString(x.format(formatter))))
       }
 
   }

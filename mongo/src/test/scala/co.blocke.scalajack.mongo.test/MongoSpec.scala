@@ -22,7 +22,7 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
 
   def mongoScalaJack = ScalaJack(MongoFlavor())
 
-  def jsonScalaJack = ScalaJack(JsonFlavor()).withAdapters(typeadapter.BsonObjectIdTypeAdapter) //MongoOffsetDateTimeTypeAdapter, BsonDateTimeTypeAdapter, BsonObjectIdTypeAdapter)
+  def jsonScalaJack = ScalaJack(JsonFlavor()).withAdapters(typeadapter.BsonObjectIdTypeAdapter)
 
   describe("---------------------------\n:  Mongo Tests (MongoDB)  :\n---------------------------") {
     describe("MongoDB/Casbah Support") {
@@ -199,7 +199,8 @@ class MongoSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
           val timeval = t.toInstant.toEpochMilli
           db.toJson should equal(s"""{ "s" : "Mike", "w" : { "name" : "Sally", "data" : { "$$date" : $timeval }, "stuff" : "Fine" } }""")
           jsonScalaJack.read[Carry[WrappedOffsetDateTime]](js) should equal(w)
-          mongoScalaJack.read[Carry[WrappedOffsetDateTime]](db) should equal(w)
+          val z = mongoScalaJack.read[Carry[WrappedOffsetDateTime]](db)
+          t.isEqual(z.w.data.offsetDateTime) should equal(true)
         }
         it("Case class having parameterized case class as a parameter: Foo[A](x:A) where A -> Bar[Blah[Long]]") {
           val w = Carry("Bill", Wrap("Betty", Zoo("dog", false), "ok"))

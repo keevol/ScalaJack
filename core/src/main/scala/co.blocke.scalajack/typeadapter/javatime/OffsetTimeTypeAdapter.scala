@@ -2,7 +2,7 @@ package co.blocke.scalajack
 package typeadapter
 package javatime
 
-import java.time.OffsetTime
+import java.time.{ OffsetTime, ZonedDateTime }
 import java.time.format.{ DateTimeFormatter, DateTimeParseException }
 
 object OffsetTimeTypeAdapter extends OffsetTimeTypeAdapter(DateTimeFormatter.ISO_OFFSET_TIME)
@@ -26,6 +26,12 @@ class OffsetTimeTypeAdapter(formatter: DateTimeFormatter) extends TypeAdapter.=:
 
         case IRCustom((CUSTOM_LABEL, IRString(offsetTimeString))) =>
           ReadResult(path)(TypeTagged(OffsetTime.parse(offsetTimeString, formatter), OffsetTimeType), {
+            case e: DateTimeParseException =>
+              ReadError.Malformed(e, reportedBy = self)
+          })
+        case IRCustom((ZonedDateTimeTypeAdapter.CUSTOM_LABEL, IRString(zonedDateTimeString))) =>
+          val zoned = ZonedDateTime.parse(zonedDateTimeString, DateTimeFormatter.ISO_ZONED_DATE_TIME)
+          ReadResult(path)(TypeTagged(zoned.toOffsetDateTime.toOffsetTime, OffsetTimeType), {
             case e: DateTimeParseException =>
               ReadError.Malformed(e, reportedBy = self)
           })

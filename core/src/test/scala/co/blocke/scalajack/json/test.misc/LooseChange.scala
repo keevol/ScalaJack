@@ -1,8 +1,10 @@
 package co.blocke.scalajack
 package json.test.misc
 
-import org.scalatest.{ FunSpec, GivenWhenThen, BeforeAndAfterAll }
+import co.blocke.scalajack.json.Json4sOps
+import org.scalatest.{ BeforeAndAfterAll, FunSpec, GivenWhenThen }
 import org.scalatest.Matchers._
+
 import scala.reflect.runtime.universe.typeOf
 import typeadapter.{ CaseClassTypeAdapter, PlainClassTypeAdapter }
 import org.json4s._
@@ -44,6 +46,18 @@ class LooseChange extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
         case JField("name", _) => ("name", JString("Sally"))
       }
       sj.materialize[View1](modded).get should be(View1("Sally", 123L, Some("I'm here")))
+    }
+    it("BinaryTypeAdapter") {
+      implicit val ops = Json4sOps
+      implicit val g = SerializationGuidance()
+      val bytes = "This is a test".getBytes
+      val x = sj.context.typeAdapterOf[Array[Byte]].resolved.irTransceiver
+      val written = x.write(TypeTagged(bytes, typeOf[Array[Byte]]))
+      written.toString should be("WriteSuccess(JString(5468697320697320612074657374))")
+      val readin = x.read(Path.Root, written.get).get.toSeq
+      readin.toString should be("WrappedArray(84, 104, 105, 115, 32, 105, 115, 32, 97, 32, 116, 101, 115, 116)")
+      x.read(Path.Root, IRNull()).get should be(null)
+      x.read(Path.Root, IRBoolean(true)).toString should be("""ReadFailure(Vector(($,Expected hex string (binary data) (reported by: co.blocke.scalajack.typeadapter.BinaryTypeAdapter$$anon$1))))""")
     }
   }
 }
