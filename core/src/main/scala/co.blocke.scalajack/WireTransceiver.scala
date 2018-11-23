@@ -7,7 +7,7 @@ trait WireSerializer[IR, WIRE] {
 
 trait WireDeserializer[IR, WIRE] {
   this: Ops[IR, WIRE] =>
-  def deserialize(wire: WIRE): DeserializationResult[IR]
+  def deserialize(path: Path, wire: WIRE): DeserializationResult[IR]
 }
 
 trait WireTransceiver[IR, WIRE] extends WireSerializer[IR, WIRE] with WireDeserializer[IR, WIRE] {

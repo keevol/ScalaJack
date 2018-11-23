@@ -39,10 +39,9 @@ class LooseChange extends FunSpec {
     it("Should blow up for unsupported BSON type") {
       val dbo = BsonDocument("name" -> "Fred", "stuff" -> BsonDocument("a" -> BsonJavaScript("code here")))
       val msg = """ReadException(1 error):
-                  |  [$] BSON type BsonJavaScript{code='code here'} is currently unsupported. (reported by: co.blocke.scalajack.NoTransceiver$)""".stripMargin
+                  |  [$.stuff.a] BSON type BsonJavaScript{code='code here'} is currently unsupported. (reported by: co.blocke.scalajack.NoTransceiver$)""".stripMargin
       the[ReadException] thrownBy sjM.read[Something](dbo) should have message msg
     }
-    /*
     it("No withTypeModifier") {
       the[java.lang.UnsupportedOperationException] thrownBy
         ScalaJack(MongoFlavor()).withTypeModifier(null.asInstanceOf[HintModifier]) should have message "Not available for Mongo formatting"
@@ -76,9 +75,8 @@ class LooseChange extends FunSpec {
     it("Field name remapping on dbkey with multi-part keys must work") {
       val mfp = MapFactorId2("wonder", 25L, 1, 3, "hungry")
       val dbo = sjM.render(mfp).asInstanceOf[BsonDocument]
-      dbo.toJson should be("""{ "_id" : { "a_b" : { "$numberLong" : "25" }, "hey" : 1, "foo_bar" : "wonder" }, "big_mac" : "hungry", "count" : 3 }""")
+      dbo.toJson should be("""{ "_id" : { "foo_bar" : "wonder", "a_b" : { "$numberLong" : "25" }, "hey" : 1 }, "count" : 3, "big_mac" : "hungry" }""")
       sjM.read[MapFactorId2](dbo) should be(mfp)
     }
-    */
   }
 }

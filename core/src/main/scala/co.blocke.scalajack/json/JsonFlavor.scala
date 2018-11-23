@@ -38,9 +38,9 @@ case class JsonFlavor(
   implicit val ops: Ops[JValue, String] = Json4sOps
 
   def readSafely[T](json: String)(implicit tt: TypeTag[T]): Either[ReadFailure, T] =
-    Json4sOps.deserialize(json) match {
-      case DeserializationFailure(df) =>
-        Left(ReadFailure(Path.Root, df: _*))
+    Json4sOps.deserialize(Path.Root, json) match {
+      case DeserializationFailure(dfErrors) =>
+        Left(ReadFailure(dfErrors))
       case DeserializationSuccess(ir) =>
         try {
           context.typeAdapterOf[T].irTransceiver.read(Path.Root, ir) match {
@@ -60,7 +60,7 @@ case class JsonFlavor(
     }
   }
 
-  def parse(json: String): DeserializationResult[JValue] = Json4sOps.deserialize(json)
+  def parse(json: String): DeserializationResult[JValue] = Json4sOps.deserialize(Path.Root, json)
   def emit(ir: JValue): String = Json4sOps.serialize(ir, this)
   def materialize[T](ir: JValue)(implicit tt: TypeTag[T]): ReadResult[T] = context.typeAdapterOf[T].irTransceiver.read(Path.Root, ir)
   def dematerialize[T](t: T)(implicit tt: TypeTag[T]): WriteResult[JValue] = context.typeAdapterOf[T].irTransceiver.write(TypeTagged(t, typeOf[T]))

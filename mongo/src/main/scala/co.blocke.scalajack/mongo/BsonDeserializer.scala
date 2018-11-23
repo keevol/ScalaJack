@@ -10,17 +10,31 @@ trait BsonDeserializer[IR] extends WireDeserializer[IR, BsonValue] {
 
   this: Ops[IR, BsonValue] =>
 
-  override def deserialize(wire: BsonValue): DeserializationResult[IR] =
+  override def deserialize(path: Path, wire: BsonValue): DeserializationResult[IR] =
     wire match {
       case b: BsonArray =>
-        val vvv = b.getValues.asScala
-        DeserializationSuccess(IRArray(vvv.map(v => deserialize(v).getOrElse(IRNull())).toSeq))
+        val (worked, broken) = b.getValues.asScala.zipWithIndex.map { case (item, index) => deserialize(path \ index, item) }
+          .partition(_ match {
+            case _: DeserializationSuccess[IR] => true
+            case _                             => false
+          })
+        if (broken.isEmpty)
+          DeserializationSuccess(IRArray(worked.map(_.get)))
+        else {
+          val flattened = broken.foldRight(Seq.empty[(Path, ReadError)]) {
+            case (res, acc) =>
+              acc ++ res.asInstanceOf[DeserializationFailure[IR]].errors
+          }.toList
+          DeserializationFailure(flattened)
+        }
+
       case b: BsonBinary   => DeserializationSuccess(IRString(Hex.encodeHexString(b.getData())))
       case _: BsonNull     => DeserializationSuccess(IRNull())
       case b: BsonBoolean  => DeserializationSuccess(IRBoolean(b.getValue()))
       case b: BsonDateTime => DeserializationSuccess(IRLong(b.getValue))
+
       case b: BsonDocument =>
-        val entries = b.entrySet().asScala.map(entry => (entry.getKey, deserialize(entry.getValue)))
+        val entries = b.entrySet().asScala.map(entry => (entry.getKey, deserialize(path \ entry.getKey, entry.getValue)))
         val errors = entries.filter {
           case (_, DeserializationFailure(_)) => true
           case _                              => false
@@ -32,6 +46,7 @@ trait BsonDeserializer[IR] extends WireDeserializer[IR, BsonValue] {
           val errDetails = errors.map { case (_, v) => v.asInstanceOf[DeserializationFailure[IR]].errors }.flatten.toList
           DeserializationFailure(errDetails)
         }
+
       case b: BsonDouble   => DeserializationSuccess(IRDouble(b.getValue()))
       case b: BsonInt32    => DeserializationSuccess(IRInt(b.getValue()))
       case b: BsonInt64    => DeserializationSuccess(IRLong(b.getValue()))
@@ -41,6 +56,6 @@ trait BsonDeserializer[IR] extends WireDeserializer[IR, BsonValue] {
       case b: BsonObjectId => DeserializationSuccess(IRCustom(BsonObjectIdTypeAdapter.CUSTOM_LABEL, IRString(b.getValue().toHexString)))
 
       // Catch-all for anything unsupported
-      case u               => DeserializationFailure(ReadError.Unsupported(s"BSON type $u is currently unsupported.", NoTransceiver))
+      case u               => DeserializationFailure(path, ReadError.Unsupported(s"BSON type $u is currently unsupported.", NoTransceiver))
     }
 }

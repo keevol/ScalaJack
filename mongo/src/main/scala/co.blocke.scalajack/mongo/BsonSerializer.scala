@@ -1,7 +1,11 @@
 package co.blocke.scalajack
 package mongo
 
+import java.time._
+import java.time.format.DateTimeFormatter
+
 import org.mongodb.scala.bson._
+import co.blocke.scalajack.typeadapter.javatime._
 
 import scala.collection.JavaConverters._
 import mongo.typeadapter._
@@ -32,6 +36,15 @@ trait BsonSerializer[IR] extends WireSerializer[IR, BsonValue] {
           case BsonObjectIdTypeAdapter.CUSTOM_LABEL =>
             val IRString(hex) = ir
             BsonObjectId(hex)
+          case ZonedDateTimeTypeAdapter.CUSTOM_LABEL =>
+            val IRString(zonedDateTimeString) = ir
+//            val normalized = ZonedDateTime.parse(zonedDateTimeString, DateTimeFormatter.ISO_ZONED_DATE_TIME).withZoneSameInstant(ZoneId.of("UTC"))
+            val normalized = ZonedDateTime.parse(zonedDateTimeString, DateTimeFormatter.ISO_ZONED_DATE_TIME)
+            BsonDateTime(normalized.toEpochSecond)
+          case OffsetDateTimeTypeAdapter.CUSTOM_LABEL =>
+            val IRString(dateTimeString) = ir
+            val normalized = OffsetDateTime.parse(dateTimeString, DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+            BsonDateTime(normalized.toZonedDateTime.withZoneSameInstant(ZoneId.of("UTC")).toEpochSecond)
         }
 
       case IRArray(_) =>

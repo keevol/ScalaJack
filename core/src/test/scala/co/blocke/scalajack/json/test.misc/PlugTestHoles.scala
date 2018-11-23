@@ -23,9 +23,9 @@ class PlugTestHoles extends FunSpec {
     it("DeserializationResult") {
       val s = DeserializationSuccess(IRString("Yay"))
       s.errors should be(List.empty)
-      val f = DeserializationFailure(ReadError.Missing("foo", sj.context.typeAdapterOf[Byte].resolved.irTransceiver))
+      val f = DeserializationFailure(Path.Root, ReadError.Missing("foo", sj.context.typeAdapterOf[Byte].resolved.irTransceiver))
       the[UnsupportedOperationException] thrownBy f.get should have message "DeserializationFailure.get not supported"
-      assertResult("""DeserializationFailure(Required field foo missing (reported by: co.blocke.scalajack.typeadapter.ByteTypeAdapter$$anon$1))""") { f.toString }
+      assertResult("""DeserializationFailure(Vector(($,Required field foo missing (reported by: co.blocke.scalajack.typeadapter.ByteTypeAdapter$$anon$1))))""") { f.toString }
     }
     it("Default IRTransceiver") {
       val t = new IRTransceiver[Int] {}
@@ -175,7 +175,7 @@ class PlugTestHoles extends FunSpec {
       }
       it("JsonDeserializer") {
         val js = """This is an "easy" \"peasy\" test"""
-        ops.deserialize(js).toString should be("""DeserializationSuccess(JString(This is an "easy" \"peasy\" test))""")
+        ops.deserialize(Path.Root, js).toString should be("""DeserializationSuccess(JString(This is an "easy" \"peasy\" test))""")
       }
       it("JsonDiff") {
         val a = LeftD("Fred", 1)

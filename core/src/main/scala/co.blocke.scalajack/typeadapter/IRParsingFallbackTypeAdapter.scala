@@ -23,7 +23,7 @@ object IRParsingFallbackTypeAdapter extends TypeAdapterFactory {
             case readFailure @ ReadFailure(errors) if readFailure.isUnexpected(path) =>
               ir match {
                 case IRString(string) if (guidance.isMapKey || guidance.secondLookParsing) =>
-                  Try(ops.deserialize(string.asInstanceOf[WIRE]).get) match {
+                  Try(ops.deserialize(path, string.asInstanceOf[WIRE]).get) match {
                     case Success(fallbackAst) =>
                       next.read(path, fallbackAst) match {
                         case readSuccess @ ReadSuccess(_) => readSuccess

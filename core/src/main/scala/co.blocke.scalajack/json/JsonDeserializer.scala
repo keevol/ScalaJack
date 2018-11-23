@@ -7,13 +7,13 @@ trait JsonDeserializer[IR] extends WireDeserializer[IR, String] {
 
   private val NumberOfDigitsInMaxLongValue: Int = Long.MaxValue.toString.length
 
-  def deserialize(source: String): DeserializationResult[IR] =
-    deserialize(source.toCharArray)
+  override def deserialize(path: Path, source: String): DeserializationResult[IR] =
+    deserialize(path, source.toCharArray)
 
-  def deserialize(source: Array[Char]): DeserializationResult[IR] =
-    deserialize(source, 0, source.length)
+  def deserialize(path: Path, source: Array[Char]): DeserializationResult[IR] =
+    deserialize(path, source, 0, source.length)
 
-  def deserialize(source: Array[Char], offset: Int, length: Int): DeserializationResult[IR] = {
+  def deserialize(path: Path, source: Array[Char], offset: Int, length: Int): DeserializationResult[IR] = {
     var position = offset
     val maxPosition = offset + length
 
@@ -330,16 +330,12 @@ trait JsonDeserializer[IR] extends WireDeserializer[IR, String] {
     if (position == maxPosition) {
       DeserializationSuccess(IRNull()) // Nothing to parse!
     } else {
-      //      val result = DeserializationSuccess(readJsonValue())
-      val result = DeserializationResult {
-        readJsonValue()
-      }
-      result match {
-        case DeserializationSuccess(_) if (position == maxPosition) => result
+      DeserializationResult(path) { readJsonValue() } match {
+        case res @ DeserializationSuccess(_) if (position == maxPosition) => res
         case DeserializationSuccess(ir) =>
           ir match {
             case IRObject(_) =>
-              DeserializationFailure(ReadError.ExceptionThrown(new IllegalArgumentException(s"Extra, unparsed JSON: '${new String(source.drop(position))}'")))
+              DeserializationFailure(path, ReadError.ExceptionThrown(new IllegalArgumentException(s"Extra, unparsed JSON: '${new String(source.drop(position))}'")))
             case _ =>
               DeserializationSuccess(applyString(source.mkString))
           }

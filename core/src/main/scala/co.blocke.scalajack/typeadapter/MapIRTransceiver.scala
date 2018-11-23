@@ -114,7 +114,7 @@ class MapIRTransceiver[K, V, M <: GenMap[K, V]](
         }
 
       case IRString(s) if (guidance.isMapKey) => // Parse and deserialize non-string Map key (embedded in a string, e.g. Map as a key to another Map)
-        context.typeAdapterOf[M].irTransceiver.read(Path.Root, ops.deserialize(s.asInstanceOf[WIRE]).get)
+        context.typeAdapterOf[M].irTransceiver.read(Path.Root, ops.deserialize(path, s.asInstanceOf[WIRE]).get)
 
       case _ =>
         ReadFailure(path, ReadError.Unsupported("Expected a JSON object", reportedBy = self))

@@ -40,7 +40,7 @@ case class CSVFlavor() extends {
   def readSafely[T](csv: String)(implicit tt: TypeTag[T]): Either[ReadFailure, T] = {
     val typeAdapter = context.typeAdapterOf[T]
 
-    ops.deserialize(csv).get match {
+    ops.deserialize(Path.Root, csv).get match {
       case ir @ IRArray(elements) =>
         // T could validly be either an Array or an Object... but which?
         typeAdapter.maybeAs[CaseClassTypeAdapter[T]] match {
@@ -92,7 +92,7 @@ case class CSVFlavor() extends {
     }
   }
 
-  override def parse(wire: String): DeserializationResult[JValue] = ops.deserialize(wire)
+  override def parse(wire: String): DeserializationResult[JValue] = ops.deserialize(Path.Root, wire)
   override def emit(ir: JValue): String = ops.serialize(ir, this)
 
   override def materialize[T](ir: JValue)(implicit tt: TypeTag[T]): ReadResult[T] =

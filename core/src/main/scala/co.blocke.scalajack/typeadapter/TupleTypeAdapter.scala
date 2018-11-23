@@ -128,7 +128,7 @@ class TupleIRTransceiver[Tuple](fields: IndexedSeq[Field[Tuple]], tupleConstruct
             new TaggedTuple(tuple, taggedElements)
           })
         }
-      case IRString(s) if (guidance.isMapKey) => this.read(path, ops.deserialize(s.asInstanceOf[WIRE]).get)(ops, guidance = guidance.copy(isMapKey = false))
+      case IRString(s) if (guidance.isMapKey) => this.read(path, ops.deserialize(path, s.asInstanceOf[WIRE]).get)(ops, guidance = guidance.copy(isMapKey = false))
       case IRNull()                           => ReadSuccess(nullTypeTagged)
       case _                                  => ReadFailure(path, ReadError.Unexpected(s"Expected a JSON array, not $ir", reportedBy = self))
     }

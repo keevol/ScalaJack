@@ -1,7 +1,7 @@
 package co.blocke.scalajack
 package mongo
 
-import org.bson.{ BsonValue, BsonDocument }
+import org.bson.BsonValue
 import org.json4s.JsonAST.JValue
 import typeadapter._
 
@@ -31,8 +31,7 @@ case class MongoFlavor(
 
   override def readSafely[T](doc: BsonValue)(implicit tt: TypeTag[T]): Either[ReadFailure, T] = {
     val irTransceiver = context.typeAdapterOf[T].irTransceiver
-    println("HERE: " + ops.deserialize(doc))
-    ops.deserialize(doc).mapToReadResult(Path.Root, (dsIR: JValue) => irTransceiver.read(Path.Root, dsIR)) match {
+    ops.deserialize(Path.Root, doc).mapToReadResult(Path.Root, (dsIR: JValue) => irTransceiver.read(Path.Root, dsIR)) match {
       case rs: ReadSuccess[T] => Right(rs.get)
       case rf: ReadFailure    => Left(rf)
     }
@@ -46,7 +45,7 @@ case class MongoFlavor(
     }
   }
 
-  override def parse(doc: BsonValue): DeserializationResult[JValue] = ops.deserialize(doc)
+  override def parse(doc: BsonValue): DeserializationResult[JValue] = ops.deserialize(Path.Root, doc)
   override def emit(ir: JValue): BsonValue = ops.serialize(ir, this)
 
   override def materialize[T](ir: JValue)(implicit tt: TypeTag[T]): ReadResult[T] =

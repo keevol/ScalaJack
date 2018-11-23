@@ -23,7 +23,7 @@ trait NumberIRReader extends IRReader[Number] {
       case IRLong(longValue) => ReadSuccess(TypeTagged(java.lang.Long.valueOf(longValue), BoxedLongType))
       case IRString(s) if (guidance.isMapKey) =>
         try {
-          ops.deserialize(s.asInstanceOf[WIRE]).mapToReadResult(path, (dsIR: IR) => this.read(path, dsIR)(ops, guidance = guidance.copy(isMapKey = false)))
+          ops.deserialize(path, s.asInstanceOf[WIRE]).mapToReadResult(path, (dsIR: IR) => this.read(path, dsIR)(ops, guidance = guidance.copy(isMapKey = false)))
         } catch {
           // $COVERAGE-OFF$Not sure how to trigger this! Here for extra safety, really.
           case t: Throwable => ReadFailure(path, ReadError.ExceptionThrown(t))

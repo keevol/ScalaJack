@@ -31,7 +31,7 @@ object JavaNumberTypeAdapter extends TypeAdapterFactory.=:=[java.lang.Number] {
             case IRDouble(doubleValue) => ReadSuccess(TypeTagged(java.lang.Double.valueOf(doubleValue), BoxedDoubleType))
             case IRInt(scalaBigInt) => ReadSuccess(TypeTagged(scalaBigInt.bigInteger, JavaBigIntegerType))
             case IRLong(longValue) => ReadSuccess(TypeTagged(java.lang.Long.valueOf(longValue), BoxedLongType))
-            case IRString(s) if (guidance.isMapKey) => this.read(path, ops.deserialize(s.asInstanceOf[WIRE]).get)(ops, guidance = guidance.copy(isMapKey = false))
+            case IRString(s) if (guidance.isMapKey) => this.read(path, ops.deserialize(path, s.asInstanceOf[WIRE]).get)(ops, guidance = guidance.copy(isMapKey = false))
             case IRString(_) => ReadFailure(path, ReadError.Unsupported("Expected a JSON number", reportedBy = self))
             case _ => ReadFailure(path, ReadError.Unsupported("Expected a JSON number", reportedBy = self))
           }
