@@ -71,7 +71,9 @@ case class CSVFlavor() extends {
 
       case IRNull() => Right(null.asInstanceOf[T])
       case _ =>
+        // $COVERAGE-OFF$Should never happen(tm).  Means we had something in CSV that wasn't Null or an Array, which isn't possible in this model.
         Left(ReadFailure(Path.Root, ReadError.Unexpected("Unable to successfully deserialize this CSV", typeAdapter.irTransceiver)))
+      // $COVERAGE-ON$
     }
   }
 

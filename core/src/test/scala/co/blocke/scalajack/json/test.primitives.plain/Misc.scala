@@ -23,5 +23,8 @@ class Misc() extends FunSpec with Matchers {
       assertResult(null) { sj.read[PlayerMix]("null") }
       assertResult("null") { sj.render[PlayerMix](null) }
     }
+    it("Detect Scala getters in a plain class") {
+
+    }
   }
 }

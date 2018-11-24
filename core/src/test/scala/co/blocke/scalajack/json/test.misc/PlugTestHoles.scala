@@ -73,6 +73,10 @@ class PlugTestHoles extends FunSpec {
       the[ArithmeticException] thrownBy 12345678901234L.toShortExact should have message "12345678901234 (Long) cannot be exactly converted to Short (12274)"
     }
     it("Ops") {
+      val arr = IRArray(List(IRString("a"), IRString("b"), IRString("c")))
+      ops.getArrayElement(arr.asInstanceOf[ops.ArrayType], 2) should be(Some(IRString("c")))
+      ops.getArrayElement(arr.asInstanceOf[ops.ArrayType], 3) should be(None)
+
       val ir = IRString("wow")
       the[IllegalArgumentException] thrownBy ops.partitionObject(ir, (a: String, i: org.json4s.JValue) => true) should have message "partitionObject() requires IRObject as input"
       implicit val ops2 = Json4sOps
@@ -360,6 +364,7 @@ class PlugTestHoles extends FunSpec {
         sj.materialize[Number](ir2).toString should be("ReadSuccess(12.34 as java.lang.Double)")
         val ir3 = IRString("123.45")
         val ta = sj.context.typeAdapterOf[Number].resolved
+        println(sj.context.typeAdapterOf[java.lang.Number].resolved.irTransceiver.getClass.getName)
         ta.irTransceiver.read(Path.Root, ir3)(ops, guidance.withMapKey()).toString should be("ReadSuccess(123.45 as java.lang.Double)")
         ta.irTransceiver.read(Path.Root, IRBoolean(true)).toString should be("ReadFailure(Vector(($,Expected a JSON number (reported by: co.blocke.scalajack.typeadapter.javaprimitives.JavaNumberTypeAdapter$$anon$1))))")
         ta.irTransceiver.read(Path.Root, IRNull())(ops, guidance.withMapKey()).toString should be("ReadSuccess(null as java.lang.Number)")
