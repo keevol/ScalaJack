@@ -53,7 +53,7 @@ object ClassLikeTypeAdapter {
           case None =>
             // $COVERAGE-OFF$Not sure how to trigger this! Here for extra safety, really.
             TypeTagged(value.asInstanceOf[Value], valueType)
-            // $COVERAGE-ON$
+          // $COVERAGE-ON$
         }
       }
     }

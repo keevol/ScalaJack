@@ -38,8 +38,7 @@ trait BsonDeserializer[IR] extends WireDeserializer[IR, BsonValue] {
       case b: BsonBoolean => DeserializationSuccess(IRBoolean(b.getValue()))
       case b: BsonDateTime =>
         DeserializationSuccess(
-          IRCustom(ZonedDateTimeTypeAdapter.CUSTOM_LABEL, IRString(ZonedDateTime.ofInstant(Instant.ofEpochMilli(b.getValue), ZoneId.of("UTC")).format(DateTimeFormatter.ISO_ZONED_DATE_TIME)))
-        )
+          IRCustom(ZonedDateTimeTypeAdapter.CUSTOM_LABEL, IRString(ZonedDateTime.ofInstant(Instant.ofEpochMilli(b.getValue), ZoneId.of("UTC")).format(DateTimeFormatter.ISO_ZONED_DATE_TIME))))
 
       case b: BsonDocument =>
         val entries = b.entrySet().asScala.map(entry => (entry.getKey, deserialize(path \ entry.getKey, entry.getValue)))

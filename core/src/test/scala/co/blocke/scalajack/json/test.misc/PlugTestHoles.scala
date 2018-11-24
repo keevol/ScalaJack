@@ -91,6 +91,11 @@ class PlugTestHoles extends FunSpec {
         IRString("wow")(ops2))
       val result = ops2.become[JValue](ops2.applyArray(jsonStuff))(csv.CSVOps)
       result.toString() should be("""JArray(List(JArray(List(JInt(1), JInt(2), JInt(3))), JBool(true), JDecimal(123.45), JDouble(12.34), JInt(5), JLong(5), JNull, JObject(List((a,JInt(5)), (b,JInt(6)))), JString(wow)))""")
+
+      val fn = (ir: JValue, idx: Int) => true
+      the[IllegalArgumentException] thrownBy ops.mapArrayElements(IRString("fred")(Json4sOps), fn) should have message ("mapArrayElements() requires IRArray as input")
+      val fn2 = (s: String, ir: JValue) => true
+      the[IllegalArgumentException] thrownBy ops.mapObjectFields(IRString("fred")(Json4sOps), fn2) should have message ("mapObjectFields() requires IRObject as input")
     }
     it("Path") {
       Path.Unknown.toString should be("???")
@@ -290,7 +295,6 @@ class PlugTestHoles extends FunSpec {
         val m = Map("a" -> 1, "b" -> 2)
         val ir3 = sj.dematerialize(m).get
         ta.irTransceiver.read(Path.Root, ir3).toString should be("""ReadSuccess(Map(b -> 2, a -> 1) as scala.collection.mutable.Map[Any,Any])""")
-        val ir4 = IRCustom("Bogus", IRString("foo"))
       }
       it("BigDecimalTypeAdapter") {
         val ir = IRDouble(123.45)

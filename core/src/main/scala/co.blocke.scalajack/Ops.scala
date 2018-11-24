@@ -51,14 +51,14 @@ trait OpsBase[IR] {
     case _ => throw new IllegalArgumentException("partitionObject() requires IRObject as input")
   }
 
-  def mapArrayElements[A](ir: IR, f: ((IR, Int)) => A): List[A] = ir match {
-    case IRArray(elements) => elements.zipWithIndex.map(a => f(a)).toList
+  def mapArrayElements[A](ir: IR, f: (IR, Int) => A): List[A] = ir match {
+    case IRArray(elements) => elements.zipWithIndex.map(a => f(a._1, a._2)).toList
     case _                 => throw new IllegalArgumentException("mapArrayElements() requires IRArray as input")
   }
 
   def mapObjectFields[A](ir: IR, f: (String, IR) => A): List[A] = ir match {
     case IRObject(fields) => fields.map { case (k, v) => f(k, v) }.toList
-    case _                => throw new IllegalArgumentException("mapArrayElements() requires IRObject as input")
+    case _                => throw new IllegalArgumentException("mapObjectFields() requires IRObject as input")
   }
 
   def become[IRB](source: IR)(implicit targetOps: OpsBase[IRB]): IRB =

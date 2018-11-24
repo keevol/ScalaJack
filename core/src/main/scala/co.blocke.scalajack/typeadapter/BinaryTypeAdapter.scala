@@ -2,7 +2,6 @@ package co.blocke.scalajack
 package typeadapter
 
 import org.apache.commons.codec.binary.Hex
-import scala.collection.JavaConverters._
 
 object BinaryTypeAdapter extends TypeAdapter.=:=[Array[Byte]] {
 

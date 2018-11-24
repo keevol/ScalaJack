@@ -56,10 +56,7 @@ trait BsonSerializer[IR] extends WireSerializer[IR, BsonValue] {
           case LocalDateTimeTypeAdapter.CUSTOM_LABEL =>
             val IRString(dateTimeString) = ir
             val normalized = LocalDateTime.parse(dateTimeString, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-            println("Normal: " + normalized)
-            val z = BsonDateTime(normalized.atZone(ZoneId.of("UTC")).toInstant.toEpochMilli)
-            println("z: " + z)
-            z
+            BsonDateTime(normalized.atZone(ZoneId.of("UTC")).toInstant.toEpochMilli)
           case LocalDateTypeAdapter.CUSTOM_LABEL =>
             val IRString(dateTimeString) = ir
             val normalized = LocalDate.parse(dateTimeString, DateTimeFormatter.ISO_LOCAL_DATE)
@@ -71,7 +68,7 @@ trait BsonSerializer[IR] extends WireSerializer[IR, BsonValue] {
         }
 
       case IRArray(_) =>
-        val bsonVals = mapArrayElements[BsonValue](ir, elementPair => serialize(elementPair._1, sj))
+        val bsonVals = mapArrayElements[BsonValue](ir, (element, _) => serialize(element, sj))
         new BsonArray(bsonVals.asJava)
       case IRBoolean(a) => new BsonBoolean(a)
       case IRDecimal(a) => new BsonDouble(a.doubleValue())

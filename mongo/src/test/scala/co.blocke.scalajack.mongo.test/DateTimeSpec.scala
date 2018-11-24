@@ -14,7 +14,6 @@ case class When3(d: LocalTime)
 case class When4(d: OffsetDateTime)
 case class When5(d: OffsetTime)
 case class When6(d: ZonedDateTime)
-//BsonDateTime(1540922698874L)
 
 class DateTimeSpec extends FunSpec {
 
@@ -36,7 +35,7 @@ class DateTimeSpec extends FunSpec {
     it("LocalTime") {
       val w = When3(LocalTime.parse("10:15:30"))
       val dbo = sj.render(w).asInstanceOf[BsonDocument]
-      dbo.toJson should be("""{ "d" : { "$date" : 1542968130000 } }""")
+      dbo.toJson should be("""{ "d" : { "$date" : 1543054530000 } }""")
       sj.read[When3](dbo) should be(w)
     }
     it("OffsetDateTime") {
@@ -48,7 +47,7 @@ class DateTimeSpec extends FunSpec {
     it("OffsetTime") {
       val w = When5(OffsetTime.parse("10:15:30+01:00"))
       val dbo = sj.render(w).asInstanceOf[BsonDocument]
-      dbo.toJson should be("""{ "d" : { "$date" : 1542964530000 } }""")
+      dbo.toJson should be("""{ "d" : { "$date" : 1543050930000 } }""")
       sj.read[When5](dbo).d.isEqual(w.d) should be(true)
     }
     it("ZonedDateTime") {
