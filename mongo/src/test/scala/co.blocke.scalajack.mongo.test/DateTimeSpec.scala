@@ -35,7 +35,8 @@ class DateTimeSpec extends FunSpec {
     it("LocalTime") {
       val w = When3(LocalTime.parse("10:15:30"))
       val dbo = sj.render(w).asInstanceOf[BsonDocument]
-      dbo.toJson should be("""{ "d" : { "$date" : 1543054530000 } }""")
+      val timeLong = LocalTime.parse("10:15:30").atDate(LocalDate.now()).atZone(ZoneId.of("UTC")).toInstant.toEpochMilli
+      dbo.toJson should be(s"""{ "d" : { "$$date" : $timeLong } }""")
       sj.read[When3](dbo) should be(w)
     }
     it("OffsetDateTime") {
@@ -47,7 +48,8 @@ class DateTimeSpec extends FunSpec {
     it("OffsetTime") {
       val w = When5(OffsetTime.parse("10:15:30+01:00"))
       val dbo = sj.render(w).asInstanceOf[BsonDocument]
-      dbo.toJson should be("""{ "d" : { "$date" : 1543050930000 } }""")
+      val timeLong = OffsetTime.parse("10:15:30+01:00").atDate(LocalDate.now()).toZonedDateTime.withZoneSameInstant(ZoneId.of("UTC")).toInstant.toEpochMilli
+      dbo.toJson should be(s"""{ "d" : { "$$date" : $timeLong } }""")
       sj.read[When5](dbo).d.isEqual(w.d) should be(true)
     }
     it("ZonedDateTime") {
