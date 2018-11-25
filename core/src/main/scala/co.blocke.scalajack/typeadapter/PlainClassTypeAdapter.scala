@@ -113,8 +113,6 @@ object PlainClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
           // Scala case
           case p if (dontIgnore(p) && tpe.member(TermName(p.name.toString + "_$eq")) != NoSymbol && p.owner != typeOf[SJCapture].typeSymbol) =>
             bakeScalaPlainFieldMember(p)
-          // Scala getter/setter style for private var
-          case ScalaSetter(p) => bakeScalaPlainFieldMember(p, true)
         }.toList
 
       def bakeScalaPlainFieldMember(p: Symbol, isGetterSetter: Boolean = false): PlainFieldMember[T] = {
@@ -167,23 +165,6 @@ object PlainClassTypeAdapter extends TypeAdapterFactory.FromClassSymbol {
           override val derivedValueClassConstructorMirror: Option[MethodMirror] = derivedValueClassConstructorMirror2
           override val outerClass: Option[java.lang.Class[_]] = memberClass
           override val dbKeyIndex: Option[Int] = dbkeyAnno
-        }
-      }
-
-      object ScalaSetter {
-        // Look for methats names that end with '_', canonical Scala for a setter.
-        def unapply(p: Symbol): Option[Symbol] = {
-          if (p.isMethod && p.name.toString.endsWith("_")) {
-            // Find getter and private var
-            val name = p.name.toString.reverse.tail.reverse
-            val found = tpe.members.filter(_.name.toString == name)
-            val dontIgnore = p.annotations.find(_.tree.tpe =:= typeOf[Ignore]).isEmpty && found.head.annotations.find(_.tree.tpe =:= typeOf[Ignore]).isEmpty
-            if (found.size > 0 && dontIgnore) {
-              Some(found.head) // obtain the getter method symbol
-            } else
-              None
-          } else
-            None
         }
       }
 

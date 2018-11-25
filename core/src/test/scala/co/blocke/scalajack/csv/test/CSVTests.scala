@@ -86,6 +86,11 @@ class CSVTests() extends FunSpec with Matchers {
           sj.read[Strings](csv)
         }
       }
+      it("Handles stringified non-strings") {
+        val csv = "1,true,12.34"
+        val s = sj.read[Strings](csv)
+        s should be(Strings("1", "true", "12.34"))
+      }
     }
     describe("Options and null:") {
       it("Renders Some()") {

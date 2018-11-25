@@ -29,12 +29,18 @@ class OptionIRTransceiver[T](next: IRTransceiver[T])(implicit tt: TypeTag[T]) ex
           case t if t == typeOf[String] && !guidance.isMapKey =>
             next.read(path, ir) map {
               case tagged @ TypeTagged(value) =>
+                new TaggedSome(Some(value), tagged)
+              /*
+                println("VALUE: " + value)
                 Option(value) match {
                   case None =>
+                    println("Hey!")
                     TaggedNone
                   case some @ Some(_) =>
+                    println("Some: " + some)
                     new TaggedSome(some, tagged)
                 }
+                */
             }
           case _ => ReadSuccess(TaggedNone)
         }

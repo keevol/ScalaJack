@@ -48,6 +48,7 @@ case class CSVFlavor() extends {
             val fields = ccta.members.map(member => (member.name, member.asInstanceOf[CaseClassTypeAdapter.FieldMember[_, _]].valueType))
             val objIR = IRObject(elements.zipWithIndex.map {
               case (value, pos) =>
+                // (name, value) for object creation
                 (fields(pos)._1, fixedValue(value, fields(pos)._2))
             })
             ccta.irTransceiver.read(Path.Root, objIR) match {
@@ -78,13 +79,14 @@ case class CSVFlavor() extends {
   }
 
   // Fuzzy "safe" conversions to handle the fact that CSV is pretty free-from
-  private def fixedValue(irValue: JValue, ccFieldType: Type): JValue =
+  private def fixedValue(irValue: JValue, ccFieldType: Type): JValue = {
     irValue match {
       case IRDouble(d) if typeOf[String] == ccFieldType => IRString(d.toString)
       case IRLong(n) if typeOf[String] == ccFieldType => IRString(n.toString)
       case IRBoolean(b) if typeOf[String] == ccFieldType => IRString(b.toString)
       case _ => irValue
     }
+  }
 
   def render[T](value: T)(implicit valueTypeTag: TypeTag[T]): String = {
     val typeAdapter = context.typeAdapterOf[T]
@@ -92,7 +94,9 @@ case class CSVFlavor() extends {
     serializer.write[JValue, String](TypeTagged(value, valueTypeTag.tpe)) match {
       case WriteSuccess(objectOutput) =>
         ops.serialize(objectOutput, this)
+      // $COVERAGE-OFF$Not 100% clear the original intent here... leaving for safety but doesn't appear to be called
       case WriteFailure(f) if f == Seq(WriteError.Nothing) => ""
+      // $COVERAGE-ON$
     }
   }
 

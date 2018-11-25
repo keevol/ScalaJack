@@ -364,7 +364,6 @@ class PlugTestHoles extends FunSpec {
         sj.materialize[Number](ir2).toString should be("ReadSuccess(12.34 as java.lang.Double)")
         val ir3 = IRString("123.45")
         val ta = sj.context.typeAdapterOf[Number].resolved
-        println(sj.context.typeAdapterOf[java.lang.Number].resolved.irTransceiver.getClass.getName)
         ta.irTransceiver.read(Path.Root, ir3)(ops, guidance.withMapKey()).toString should be("ReadSuccess(123.45 as java.lang.Double)")
         ta.irTransceiver.read(Path.Root, IRBoolean(true)).toString should be("ReadFailure(Vector(($,Expected a JSON number (reported by: co.blocke.scalajack.typeadapter.javaprimitives.JavaNumberTypeAdapter$$anon$1))))")
         ta.irTransceiver.read(Path.Root, IRNull())(ops, guidance.withMapKey()).toString should be("ReadSuccess(null as java.lang.Number)")
