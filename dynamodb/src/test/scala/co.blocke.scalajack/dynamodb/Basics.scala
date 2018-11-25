@@ -38,6 +38,10 @@ class Basics extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
           sj.read[Human](item)
         }
       }
+      it("Lifecycle") {
+        val inst: Person = Person("Greg", 50, List("Woodworking", "Diet Coke"), Misc(1.23, "boom"), Some(true))
+        sj.materialize[Person](sj.parse(sj.emit(sj.dematerialize(inst).get)).get).get should be(inst)
+      }
     }
 
     describe("Extended Serialization:") {
@@ -97,6 +101,9 @@ class Basics extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
       it("No isCanonical") {
         the[java.lang.UnsupportedOperationException] thrownBy
           ScalaJack(DynamoFlavor()).isCanonical(false) should have message "Not available for Dynamo formatting"
+      }
+      it("Unsupported") {
+        the[UnsupportedOperationException] thrownBy sj.withSecondLookParsing() should have message "Not available for Dynamo formatting"
       }
     }
   }

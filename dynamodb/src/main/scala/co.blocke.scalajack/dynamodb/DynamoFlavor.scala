@@ -1,8 +1,7 @@
 package co.blocke.scalajack
 package dynamodb
 
-import co.blocke.scalajack.json.Json4sOps
-import org.json4s.JsonAST.{ JNull, JValue }
+import org.json4s.JsonAST.JValue
 
 import scala.reflect.runtime.universe.Type
 import scala.collection.JavaConverters._
@@ -26,7 +25,7 @@ case class DynamoFlavor(
   def withDefaultHint(hint: String) = this.copy(defaultHint = hint)
   def withTypeModifier(tm: HintModifier) = this.copy(typeModifier = Some(tm))
   def parseOrElse(poe: (Type, Type)*) = this.copy(parseOrElseMap = this.parseOrElseMap ++ poe)
-  def withSecondLookParsing() = throw new java.lang.UnsupportedOperationException("Not available for CSV formatting")
+  def withSecondLookParsing() = throw new java.lang.UnsupportedOperationException("Not available for Dynamo formatting")
   def isCanonical(canonical: Boolean) = throw new UnsupportedOperationException("Not available for Dynamo formatting")
 
   // Embedded JSON-flavored ScalaJack, as Item can read/write JSON, so this is actually the most straightforward
