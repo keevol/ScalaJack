@@ -4,7 +4,6 @@ package test
 
 import org.scalatest.FunSpec
 import org.scalatest.Matchers._
-import org.mongodb.scala.bson.collection.immutable.Document
 import org.mongodb.scala.bson._
 
 case class TT2(name: String, rec: Map[String, List[(String, Int, Boolean)]])

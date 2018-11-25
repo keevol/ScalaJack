@@ -37,7 +37,7 @@ case class CSVFlavor() extends {
   // We need to grab the internals of the case class, specifically the fields, then (in order) create the
   // fieldname->value map required by the case class irTransceiver.  Additionally there may be some type slip 'n slide
   // as CSV is free-form, so we need to do some smart-matching on the AST types against the required field types.
-  def readSafely[T](csv: String)(implicit tt: TypeTag[T]): Either[ReadFailure, T] = {
+  override def readSafely[T](csv: String)(implicit tt: TypeTag[T]): Either[ReadFailure, T] = {
     val typeAdapter = context.typeAdapterOf[T]
 
     ops.deserialize(Path.Root, csv).get match {
@@ -99,21 +99,4 @@ case class CSVFlavor() extends {
       // $COVERAGE-ON$
     }
   }
-
-  override def parse(wire: String): DeserializationResult[JValue] = ops.deserialize(Path.Root, wire)
-  override def emit(ir: JValue): String = ops.serialize(ir, this)
-
-  override def materialize[T](ir: JValue)(implicit tt: TypeTag[T]): ReadResult[T] =
-    context.typeAdapterOf[T].irTransceiver.read(Path.Root, ir) match {
-      case res @ ReadSuccess(_) => res
-      case fail: ReadFailure    => fail
-    }
-
-  override def dematerialize[T](t: T)(implicit tt: TypeTag[T]): WriteResult[JValue] =
-    context.typeAdapterOf[T].irTransceiver.write(TypeTagged(t, typeOf[T])) match {
-      case res @ WriteSuccess(_) => res
-      // $COVERAGE-OFF$WriteFailure not fully socialized
-      case fail: WriteFailure    => fail
-      // $COVERAGE-ON$
-    }
 }

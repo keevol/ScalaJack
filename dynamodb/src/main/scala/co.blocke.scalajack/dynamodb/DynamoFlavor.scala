@@ -42,31 +42,12 @@ case class DynamoFlavor(
   }
 
   implicit val guidance: SerializationGuidance = SerializationGuidance().withMapValue()
-  implicit val ops: AstOps[JValue, Item] = DynamoOps.asInstanceOf[AstOps[JValue, Item]]
+  implicit val ops: Ops[JValue, Item] = DynamoOps.asInstanceOf[Ops[JValue, Item]]
 
-  def render[T](value: T)(implicit valueTypeTag: TypeTag[T]): Item = {
+  def render[T](value: T)(implicit valueTypeTag: TypeTag[T]): Item =
     Item.fromJSON(sj.render(value))
-  }
-  // No exceptions on failure -- Left return on Either for failures
-  def readSafely[T](src: Item)(implicit tt: TypeTag[T]): Either[DeserializationFailure, T] = {
-    val deserializationResult = try {
-      val Some(js) = ops.parser._parse(src)
-      val deserializer = context.typeAdapterOf[T].deserializer
-      deserializer.deserialize(Path.Root, js)
-    } catch {
-      case e: Exception =>
-        DeserializationFailure(Path.Unknown, ReadError.ExceptionThrown(e))
-    }
-    deserializationResult match {
-      case DeserializationSuccess(TypeTagged(result)) =>
-        Right(result)
 
-      case failure @ DeserializationFailure(_) =>
-        Left(failure)
-    }
-  }
-
-  // This is Dynamo-Only.  User will have to cast ScalaJack to DynamoFlavor to call this.
+  // This is Dynamo-Only.  User will have to cir ScalaJack to DynamoFlavor to call this.
   def createTableRequest[T](provisionedThroughput: ProvisionedThroughput)(implicit tt: TypeTag[T]): CreateTableRequest = {
     val tpe = tt.tpe
     val ta = context.typeAdapterOf[T].as[ClassLikeTypeAdapter[T]]
@@ -81,25 +62,6 @@ case class DynamoFlavor(
       case (key, idx) if (idx == 1) => (new AttributeDefinition(key.name, getAttrType(key)), new KeySchemaElement(key.name, KeyType.RANGE))
     }
     new CreateTableRequest(attrDetail.map(_._1).asJava, tableName, attrDetail.map(_._2).asJava, provisionedThroughput)
-  }
-
-  def parseToAST(item: Item): JValue =
-    ops.parser._parse(item).getOrElse(JNull)
-
-  def emitFromAST(ast: JValue): Item =
-    Item.fromJSON(Json4sOps.renderCompact(ast, this))
-
-  def materialize[T](ast: JValue)(implicit tt: TypeTag[T]): T =
-    context.typeAdapterOf[T].deserializer.deserialize(Path.Root, ast) match {
-      case DeserializationSuccess(ok)   => ok.get
-      case fail: DeserializationFailure => throw new ReadException(fail)
-    }
-
-  def dematerialize[T](t: T)(implicit tt: TypeTag[T]): JValue = {
-    context.typeAdapterOf[T].serializer.serialize(TypeTagged(t, typeOf[T])) match {
-      case SerializationSuccess(ast)     => ast
-      case fail: SerializationFailure[_] => throw new SerializationException(fail)
-    }
   }
 
   private def getAttrType(key: ClassLikeTypeAdapter.FieldMember[_]) =

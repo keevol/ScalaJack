@@ -37,21 +37,6 @@ case class JsonFlavor(
 
   implicit val ops: Ops[JValue, String] = Json4sOps
 
-  def readSafely[T](json: String)(implicit tt: TypeTag[T]): Either[ReadFailure, T] =
-    Json4sOps.deserialize(Path.Root, json) match {
-      case DeserializationFailure(dfErrors) =>
-        Left(ReadFailure(dfErrors))
-      case DeserializationSuccess(ir) =>
-        try {
-          context.typeAdapterOf[T].irTransceiver.read(Path.Root, ir) match {
-            case rf: ReadFailure    => Left(rf)
-            case ReadSuccess(scala) => Right(scala.get)
-          }
-        } catch {
-          case t: Throwable => Left(ReadFailure(Path.Root, ReadError.ExceptionThrown(t)))
-        }
-    }
-
   def render[T](value: T)(implicit valueTypeTag: TypeTag[T]): String = {
     val typeAdapter = context.typeAdapterOf[T]
     typeAdapter.irTransceiver.write(TypeTagged(value, valueTypeTag.tpe)) match {
@@ -59,9 +44,4 @@ case class JsonFlavor(
       case WriteFailure(f) if f == Seq(WriteError.Nothing) => ""
     }
   }
-
-  def parse(json: String): DeserializationResult[JValue] = Json4sOps.deserialize(Path.Root, json)
-  def emit(ir: JValue): String = Json4sOps.serialize(ir, this)
-  def materialize[T](ir: JValue)(implicit tt: TypeTag[T]): ReadResult[T] = context.typeAdapterOf[T].irTransceiver.read(Path.Root, ir)
-  def dematerialize[T](t: T)(implicit tt: TypeTag[T]): WriteResult[JValue] = context.typeAdapterOf[T].irTransceiver.write(TypeTagged(t, typeOf[T]))
 }

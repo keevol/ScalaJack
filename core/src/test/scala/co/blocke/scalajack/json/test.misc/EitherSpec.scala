@@ -64,9 +64,8 @@ class EitherSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll {
     }
     it("Same instance Left and Right") {
       val js = "\"foo\""
-      val msg = """ReadException(1 error):
-                  |  [$] Exception was thrown: java.lang.IllegalArgumentException: Types String and String are not mutually exclusive (reported by: unknown)""".stripMargin
-      the[ReadException] thrownBy sj.read[Either[String, String]](js) should have message msg
+      val msg = """Types String and String are not mutually exclusive""".stripMargin
+      the[IllegalArgumentException] thrownBy sj.read[Either[String, String]](js) should have message msg
     }
     it("Different classes with identical fields--favor Right") {
       val js = """{"numLegs":4}"""

@@ -3,7 +3,6 @@ package mongo
 package test
 
 import java.time._
-//import org.bson.types.ObjectId
 import org.mongodb.scala.bson.ObjectId
 
 object Num extends Enumeration {

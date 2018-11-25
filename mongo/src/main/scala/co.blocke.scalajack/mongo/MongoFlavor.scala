@@ -29,14 +29,6 @@ case class MongoFlavor(
   implicit val ops = BsonOps
   implicit val guidance: SerializationGuidance = SerializationGuidance()
 
-  override def readSafely[T](doc: BsonValue)(implicit tt: TypeTag[T]): Either[ReadFailure, T] = {
-    val irTransceiver = context.typeAdapterOf[T].irTransceiver
-    ops.deserialize(Path.Root, doc).mapToReadResult(Path.Root, (dsIR: JValue) => irTransceiver.read(Path.Root, dsIR)) match {
-      case rs: ReadSuccess[T] => Right(rs.get)
-      case rf: ReadFailure    => Left(rf)
-    }
-  }
-
   override def render[T](value: T)(implicit valueTypeTag: TypeTag[T]): BsonValue = {
     val irTransceiver = context.typeAdapterOf[T].irTransceiver
     irTransceiver.write[JValue, BsonValue](TypeTagged(value, valueTypeTag.tpe)) match {
@@ -47,26 +39,8 @@ case class MongoFlavor(
     }
   }
 
-  override def parse(doc: BsonValue): DeserializationResult[JValue] = ops.deserialize(Path.Root, doc)
-  override def emit(ir: JValue): BsonValue = ops.serialize(ir, this)
-
-  override def materialize[T](ir: JValue)(implicit tt: TypeTag[T]): ReadResult[T] =
-    context.typeAdapterOf[T].irTransceiver.read(Path.Root, ir) match {
-      case res: ReadSuccess[_] => res
-      case fail: ReadFailure   => fail
-    }
-
-  override def dematerialize[T](t: T)(implicit tt: TypeTag[T]): WriteResult[JValue] = {
-    context.typeAdapterOf[T].irTransceiver.write(TypeTagged(t, typeOf[T]))(BsonOps, guidance) match {
-      case res: WriteSuccess[_] => res
-      // $COVERAGE-OFF$Don't know how to trigger this
-      case fail: WriteFailure   => fail
-      // $COVERAGE-ON$
-    }
-  }
   override protected def bakeContext(): Context = {
     val ctx = super.bakeContext()
     ctx.copy(factories = MongoCaseClassTypeAdapter :: BsonObjectIdTypeAdapter :: ctx.factories)
   }
-
 }

@@ -6,7 +6,7 @@ import java.time._
 
 import org.scalatest.Matchers._
 import org.scalatest.FunSpec
-import org.mongodb.scala.bson.{ BsonDateTime, BsonDocument }
+import org.mongodb.scala.bson.BsonDocument
 
 case class When1(d: LocalDateTime)
 case class When2(d: LocalDate)

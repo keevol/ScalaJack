@@ -4,8 +4,6 @@ package test
 
 import org.scalatest.FunSpec
 import org.scalatest.Matchers._
-import org.mongodb.scala._
-import org.mongodb.scala.bson.collection.immutable.Document
 import org.mongodb.scala.bson._
 
 class LooseChange extends FunSpec {
