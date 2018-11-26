@@ -34,20 +34,17 @@ def scalacOptionsVersion(scalaVersion: String) = {
     "-Xlint", 
     "-encoding", "UTF8", 
     "-language:higherKinds",
-    // "-language:existentials",
     "-language:implicitConversions",
-    "-Ywarn-unused:-params,-implicits,_",
     "-unchecked"
-    //"-Xfatal-warnings"
   ) ++ xver
 }
 
 lazy val basicSettings = Seq(
   organization                := "co.blocke",
   startYear                   := Some(2015),
-  crossScalaVersions          := Seq("2.11.12", "2.12.3"),
+//  crossScalaVersions          := Seq("2.11.12", "2.12.7"),
   publishArtifact in (Compile, packageDoc) := false,  // disable scaladoc due to bug handling annotations
-  scalaVersion                := "2.12.3", //"2.13.0-M2",
+  scalaVersion                := "2.12.7", //"2.12.7", //"2.13.0-M2",
   coverageMinimum             := 92,  // really this should be 96% but mongo isn't quite up to that yet
   coverageFailOnMinimum       := true,
   ScalariformKeys.preferences := ScalariformKeys.preferences.value

@@ -219,7 +219,7 @@ class PlugTestHoles extends FunSpec {
       describe("javaprimitives") {
         it("JavaNumberTypeAdapter") {
           val ta = sj.context.typeAdapterOf[java.lang.Number].irTransceiver
-          ta.read(Path.Root, IRDouble(123.456)).toString should be("""ReadSuccess(123.456 as java.lang.Double)""")
+          ta.read(Path.Root, IRDouble(123.456)).toString should be("""ReadSuccess(123.456 as Double)""")
           ta.read(Path.Root, IRBoolean(true)).toString should be("""ReadFailure(Vector(($,Expected a JSON number (reported by: co.blocke.scalajack.typeadapter.javaprimitives.JavaNumberTypeAdapter$$anon$1))))""")
         }
       }
@@ -303,10 +303,10 @@ class PlugTestHoles extends FunSpec {
       it("BigDecimalTypeAdapter") {
         val ir = IRDouble(123.45)
         val x = sj.materialize[BigDecimal](ir)
-        x.toString should be("ReadSuccess(123.45 as scala.BigDecimal)")
+        x.toString should be("ReadSuccess(123.45 as BigDecimal)")
         val ir2 = IRInt(123)
         val y = sj.materialize[BigDecimal](ir2)
-        y.toString should be("ReadSuccess(123 as scala.BigDecimal)")
+        y.toString should be("ReadSuccess(123 as BigDecimal)")
         val ir3 = IRString("1.2.3")
         val z = sj.materialize[BigDecimal](ir3)
         z.toString should be("ReadFailure(Vector(($,Expected a JSON number, not JString(1.2.3) (reported by: co.blocke.scalajack.typeadapter.BigDecimalTypeAdapter$$anon$1))))")
@@ -314,7 +314,7 @@ class PlugTestHoles extends FunSpec {
       it("BigIntTypeAdapter") {
         val ir = IRDouble(123.0)
         val x = sj.materialize[BigInt](ir)
-        x.toString should be("ReadSuccess(123 as scala.BigInt)")
+        x.toString should be("ReadSuccess(123 as BigInt)")
         val ir2 = IRDouble(123.4)
         sj.materialize[BigInt](ir2).toString should be("ReadFailure(Vector(($,Can't create a BigInt from 123.4 (reported by: co.blocke.scalajack.typeadapter.BigIntTypeAdapter$$anon$1))))")
       }
@@ -326,7 +326,7 @@ class PlugTestHoles extends FunSpec {
       }
       it("DerivedValueClassTypeAdapter") {
         val ta = sj.context.typeAdapterOf[VCDouble].resolved
-        ta.toString should be("DerivedValueClassAdapter(DerivedValueClassIRTransceiver[co.blocke.scalajack.json.test.misc.VCDouble, scala.Double])")
+        ta.toString should be("DerivedValueClassAdapter(DerivedValueClassIRTransceiver[co.blocke.scalajack.json.test.misc.VCDouble, Double])")
       }
       it("DoubleTypeAdapter") {
         val ir = IRDouble(12.34)
@@ -359,14 +359,14 @@ class PlugTestHoles extends FunSpec {
       }
       it("NumberIRTransciever") {
         val ir = IRNull()
-        sj.materialize[Number](ir).toString should be("ReadSuccess(null as java.lang.Number)")
+        sj.materialize[Number](ir).toString should be("ReadSuccess(null as Number)")
         val ir2 = IRDouble(12.34)
-        sj.materialize[Number](ir2).toString should be("ReadSuccess(12.34 as java.lang.Double)")
+        sj.materialize[Number](ir2).toString should be("ReadSuccess(12.34 as Double)")
         val ir3 = IRString("123.45")
         val ta = sj.context.typeAdapterOf[Number].resolved
-        ta.irTransceiver.read(Path.Root, ir3)(ops, guidance.withMapKey()).toString should be("ReadSuccess(123.45 as java.lang.Double)")
+        ta.irTransceiver.read(Path.Root, ir3)(ops, guidance.withMapKey()).toString should be("ReadSuccess(123.45 as Double)")
         ta.irTransceiver.read(Path.Root, IRBoolean(true)).toString should be("ReadFailure(Vector(($,Expected a JSON number (reported by: co.blocke.scalajack.typeadapter.javaprimitives.JavaNumberTypeAdapter$$anon$1))))")
-        ta.irTransceiver.read(Path.Root, IRNull())(ops, guidance.withMapKey()).toString should be("ReadSuccess(null as java.lang.Number)")
+        ta.irTransceiver.read(Path.Root, IRNull())(ops, guidance.withMapKey()).toString should be("ReadSuccess(null as Number)")
         ta.irTransceiver.read(Path.Root, IRString("true"))(ops, guidance.withMapKey()).toString should be("ReadFailure(Vector(($,Expected a JSON number (reported by: co.blocke.scalajack.typeadapter.javaprimitives.JavaNumberTypeAdapter$$anon$1))))")
       }
       it("OptionTypeAdapter") {
@@ -378,8 +378,8 @@ class PlugTestHoles extends FunSpec {
         b.resolved.getClass.getName should be("co.blocke.scalajack.typeadapter.IntTypeAdapter$")
         a.resolved should be(b.resolved)
         val ir = IRString("")
-        sj.materialize[Option[String]](ir).toString should be("ReadSuccess(Some() as scala.Some[String])")
-        sj.materialize[Option[Int]](ir).toString should be("ReadSuccess(None as scala.None.type)")
+        sj.materialize[Option[String]](ir).toString should be("ReadSuccess(Some() as Some[String])")
+        sj.materialize[Option[Int]](ir).toString should be("ReadSuccess(None as None.type)")
       }
       it("ShortTypeAdapter") {
         val ir = IRInt(5)
