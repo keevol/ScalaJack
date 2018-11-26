@@ -46,8 +46,8 @@ This will given you details.  You can have more than one error during read, so e
 Maybe you don't care about the Scala classes?  Perhaps you'd like to go back 'n forth between the rendered output (e.g. JSON) and the AST, allowing you to view or manipulate the AST.  That's where these functions come in:
 
 ```scala
-val ast = sj.parseToAST(json)
-val json2 = sj.emitFromAST(ast)
+val ast = sj.parse(json)
+val json2 = sj.emit(ast)
 ```
 There's no Scala class involvement at all.  This might be just what you want in some cases, for example if you have code that acts as a filter, augmenter, or router for serialized content without the need to pull all the way back to Scala (or if you don't even have the matching Scala jar files for that content!).
 

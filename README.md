@@ -62,7 +62,6 @@ Couldn't be simpler!
 * [Try and Capture](doc/tryAndCapture.md)
 * [ParseOrElse](doc/parseOrElse.md)
 * [Null and None treatment](doc/nullAndNone.md)
-* [Non-Canonical JSON](doc/noncanonical.md)
 * [Externalized Type Hints](doc/externalTypes.md)
 * [Re-name Case Class Fields in JSON or Mongo](doc/mapname.md)
 * [View/SpliceInto](doc/viewsplice.md)
@@ -85,7 +84,7 @@ Non-JSON Formats:
 
 ## Series 6
 
-Series 5 introduced a whole new engine for ScalaJack.  For series 6 we went through and streamlined the the whole thing!  JSON is no longer assumed in the core, allowing for an easier extension to other protocols, which we tested especially for MongoDB.  Internally the code is tighter and cleaner, which always makes us feel happy.  Perhaps the biggest change is the use of an AST (abstract syntax tree) to hold knowledge about a reflected class.  Although Json4S is the default, you can even specify a different AST if you want.
+Series 5 introduced a whole new engine for ScalaJack.  For series 6 we went through and streamlined the the everything internally.  JSON is no longer assumed in the core, allowing for an easier extension to other protocols, which we tested especially for MongoDB.  Internally the code is tighter and cleaner, which always makes us feel happy.  Perhaps the biggest change is the use of an AST (abstract syntax tree) to hold knowledge about a reflected class.  Although Json4S is the default, you can even specify a different AST if you want.
 We've also exposed more flexibility and control of the serialization process.
 
 Another improvement is in error reporting.  Backward compatibility is preserved with read()/write(), but if you'd like more details about read failures you can use the readSavely() function, which returns Either[DeserializationFailure,T], so you can see what actually broke.

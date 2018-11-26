@@ -1,4 +1,7 @@
 ## Non-Canonical JSON Support
+
+# THIS MODULE IS DEPRECATED.  Still in the code.  Still works.  Will be removed in the future.
+
 ScalaJack supports a form of "non-canonical" (non-standard) JSON.  In fact, because it doesn't follow the JSON spec, it isn't really JSON at all, but rather a JSON-like format.
 
 **WARNING:** Use of non-canonical JSON will not likely even work outside a ScalaJack-to-ScalaJack enivonrment!  You have been warned.

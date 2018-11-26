@@ -29,15 +29,26 @@ ScalaJack can be configured using "chain" methods, i.e. you chain them together,
 
 ```scala
 val sj = ScalaJack()
-  .isCannoical(false)
   .parseOrElse((typeOf[Person],typeOf[DefaultPerson]))
   .withDefaultHint("kind")
+```
+Most of these configurations are JSON-only, as they don't make sense for the other formats.  An exception will be thrown if a configuration method is used that isn't supported for a particular ScalaJack flavor.
+
+#### parseOrElse(poe: (Type, Type)*)
+Configures a default object to be returned if any object of the given type can't be parsed successfully.  This is a mapping, so multiple specifications are possible.
+
+```scala
+val sj = ScalaJack()
+  .parseOrElse( (typeOf[Address], typeof[UnknownAddress), (typeOf[Command], typeOf[DoNothingCmd]) )
 ```
 
 #### withAdapters(ta: TypeAdapterFactory*)
 Register a list of custom TypeAdapters with ScalaJack.  This is to allow you to offer custom serialization handling of your own types.
 
 [See an example.](custom.md)
+
+#### withDefaultHint(hint: String)
+This simply changes (globally) all the default type hint key strings.  This can be mixed with withHints().  Any type not specified in withHints will pick up your re-set default hint.
 
 #### withHints(h: (Type, String)*)
 Specify per-type hints to override the default type hint of "_hint".
@@ -53,28 +64,12 @@ Where withHints modifies the key String for a type hint, withHintModifiers modif
 
 [See an example.](typeHint.md)
 
-#### withDefaultHint(hint: String)
-This simply changes (globally) all the default type hint key strings.  This can be mixed with withHints().  Any type not specified in withHints will pick up your re-set default hint.
-
 #### withTypeModifier(tm: HintModifier)
 This is used to modify the string identifying the externalized type hint (type member) of a class.  This is global, I'm afraid, so anything you specifiy here will apply to all type members serialized with this instance of ScalaJack.
 
 [See an example.](externalTypes.md)
 
-#### parseOrElse(poe: (Type, Type)*)
-Configures a default object to be returned if any object of the given type can't be parsed successfully.  This is a mapping, so multiple specifications are possible.
-
-```scala
-val sj = ScalaJack()
-  .parseOrElse( (typeOf[Address], typeof[UnknownAddress), (typeOf[Command], typeOf[DoNothingCmd]) )
-```
-
-### isCanonical(canonical: Boolean)
-Set true by default, set this to false if you want the non-canonical parsing for JSON that eliminates all the extra escape characters.
-
-[See an example.](noncanonical.md)
-
-### withSecondLookParsing()  *(JSON only)*
+### withSecondLookParsing()
 Some 3rd party JSON can be messy!  They may make booleans and numbers into strings.  withSecondLookParsing() allows ScalaJack to be a little less strict and try to accept "true" as true, for example.
 
 ```scala
