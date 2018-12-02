@@ -1,7 +1,7 @@
-package co.blocke.scalajack.benchmarks
+package co.blocke.series5
+package json
 
-import co.blocke.series5.TokenType
-import co.blocke.series5.TokenType.TokenType
+import TokenType.TokenType
 
 class Tokenizer(val isCanonical: Boolean = true) {
   // RawContext == 0
@@ -61,11 +61,11 @@ class Tokenizer(val isCanonical: Boolean = true) {
     @inline def unsetValidBit(bit: Int) = validate(validPos) &= ~bit
     @inline def isValidClear = validate(validPos) == 0
     @inline def isValidSet(bit: Int) = (validate(validPos) | bit) == validate(validPos)
-    @inline def pushValid() {
+    @inline def pushValid(): Unit = {
       validPos += 1
       validate(validPos) = 0
     }
-    @inline def popValid() {
+    @inline def popValid(): Unit = {
       // $COVERAGE-OFF$Can Never Happen (so can't be specifically tested) but a nice safety check.
       if (validate(validPos) != 0) throw new IllegalArgumentException("Unfinished business: " + validate(validPos))
       // $COVERAGE-ON$

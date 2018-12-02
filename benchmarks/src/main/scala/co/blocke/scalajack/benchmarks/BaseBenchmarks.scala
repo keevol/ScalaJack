@@ -63,7 +63,8 @@ class BaseBenchmarksState {
 
   val jsonCharArray = jsonString.toCharArray
 
-  val humanHintMod = new HintModifier {
+  //--------------- Series 6 ScalaJack Setup
+  val humanHintMod = new co.blocke.scalajack.HintModifier {
     def apply(rawHint: String) = rawHint match {
       case "Male"   => typeOf[Male]
       case "Female" => typeOf[Female]
@@ -74,18 +75,35 @@ class BaseBenchmarksState {
     }
   }
 
-  val scalaJack = ScalaJack()
-    // .withAdapters(PersonTypeAdapter)
+  val series6ScalaJack = co.blocke.scalajack.ScalaJack()
+    //    .withAdapters(PersonTypeAdapter_Series5)  // TODO ... write series-6 compatible TypeAdapter
     .withHints((typeOf[Human] -> "gender"))
     .withHintModifiers((typeOf[Human] -> humanHintMod))
+
+  //--------------- Series 5 ScalaJack Setup
+  val humanHintModSeries5 = new co.blocke.series5.HintModifier {
+    def apply(rawHint: String) = rawHint match {
+      case "Male"   => typeOf[Male]
+      case "Female" => typeOf[Female]
+    }
+    def unapply(hintFieldType: Type) = hintFieldType match {
+      case t if (t == typeOf[Male])   => "Male"
+      case t if (t == typeOf[Female]) => "Female"
+    }
+  }
 
   implicit val personFormat = {
     import spray.json._
     import DefaultJsonProtocol._
-
     jsonFormat6(Person)
   }
 
+  val series5ScalaJack = co.blocke.series5.ScalaJack()
+    //    .withAdapters(PersonTypeAdapter_Series5)
+    .withHints((typeOf[Human] -> "gender"))
+    .withHintModifiers((typeOf[Human] -> humanHintModSeries5))
+
+  //--------------- Series 4 ScalaJack Setup
   val series4vc = co.blocke.series4.VisitorContext(
     hintMap         = Map("co.blocke.scalajack.benchmarks.Human" -> "gender"),
     hintValueRead   = Map("co.blocke.scalajack.benchmarks.Human" -> {
@@ -99,24 +117,22 @@ class BaseBenchmarksState {
   )
   val series4ScalaJack = co.blocke.series4.ScalaJack[String]()
 
-  val listOfPersons = scalaJack.read[List[Person]](jsonString)
+  val listOfPersons = series4ScalaJack.read[List[Person]](jsonString)
 }
 
 @State(Scope.Thread)
 class BaseBenchmarks {
 
+  //  import play.api.libs.json._
   //  @Benchmark
-  def writePlayJson(state: BaseBenchmarksState): Unit = {
-    println(Try { play.libs.Json.stringify(play.libs.Json.toJson(state.listOfPersons)) })
-  }
+  //  def writePlayJson(state: BaseBenchmarksState): Unit = {
+  //    println(Try { Json.stringify(Json.toJson(state.listOfPersons)) })
+  //  }
 
   @Benchmark
   def readHandwritten(state: BaseBenchmarksState): List[Person] = {
-
     val charArray: Array[Char] = state.jsonCharArray
-
     val reader = new Tokenizer().tokenize(charArray, 0, charArray.length)
-
     val listBuilder = List.canBuildFrom[Person]()
 
     reader.beginArray()
@@ -141,14 +157,11 @@ class BaseBenchmarks {
           case "ip_address" => ipAddress = reader.readString
         }
       }
-
       listBuilder += Person(id, firstName, lastName, email, gender, ipAddress)
-
       reader.endObject()
     }
 
     reader.endArray()
-
     listBuilder.result()
   }
 
@@ -158,11 +171,8 @@ class BaseBenchmarks {
     import org.json4s.native.Serialization
     import org.json4s.native.Serialization.{ read, write }
     implicit val formats = org.json4s.DefaultFormats
-
     //    implicit val formats = Serialization.formats(NoTypeHints)
-
     //    println(write(state.listOfPersons))
-
     read[List[Person]](state.jsonString)
   }
 
@@ -185,8 +195,14 @@ class BaseBenchmarks {
   }
 
   @Benchmark
-  def readScalaJack(state: BaseBenchmarksState): List[Person] = {
-    state.scalaJack.read[List[Person]](state.jsonString)
+  def readSeries6ScalaJack(state: BaseBenchmarksState): List[Person] = {
+    state.series6ScalaJack.read[List[Person]](state.jsonString)
+    // state.scalaJack.read[List[Person]](state.jsonString)
+  }
+
+  @Benchmark
+  def readSeries5ScalaJack(state: BaseBenchmarksState): List[Person] = {
+    state.series5ScalaJack.read[List[Person]](state.jsonString)
     // state.scalaJack.read[List[Person]](state.jsonString)
   }
 

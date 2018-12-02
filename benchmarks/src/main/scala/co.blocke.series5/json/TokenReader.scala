@@ -1,7 +1,7 @@
-package co.blocke.scalajack.benchmarks
+package co.blocke.series5
+package json
 
-import co.blocke.series5.TokenType.TokenType
-import co.blocke.series5.{ Reader, TokenType }
+import TokenType.TokenType
 
 class TokenReader(
     override val source: Array[Char],
@@ -20,7 +20,7 @@ class TokenReader(
     tokenLengths(nextPosition) = newTokenLength(tokenLengths(nextPosition))
   }
 
-  private[scalajack] def getTokens() = tokenTypes.take(numberOfTokens).toList
+  private[series5] def getTokens() = tokenTypes.take(numberOfTokens).toList
 
   override def showError(): String = {
     val charPos = tokenOffsets(position)

@@ -44,7 +44,7 @@ lazy val basicSettings = Seq(
   startYear                   := Some(2015),
 //  crossScalaVersions          := Seq("2.11.12", "2.12.7"),
   publishArtifact in (Compile, packageDoc) := false,  // disable scaladoc due to bug handling annotations
-  scalaVersion                := "2.12.7", //"2.12.7", //"2.13.0-M2",
+  scalaVersion                := "2.12.7",
   coverageMinimum             := 92,  // really this should be 96% but mongo isn't quite up to that yet
   coverageFailOnMinimum       := true,
   ScalariformKeys.preferences := ScalariformKeys.preferences.value
@@ -63,7 +63,7 @@ lazy val root = (project in file("."))
   .settings(basicSettings: _*)
   .settings(publishArtifact := false)
   .settings(publish := { })
-  .aggregate(scalajack, scalajack_mongo, scalajack_dynamodb)
+  .aggregate(scalajack, scalajack_mongo, scalajack_dynamodb, scalajack_benchmarks)
 
 // For gpg might need this too:
 //publishTo := Some(Resolver.file("Unused transient repository", file("target/unusedrepo")))
@@ -85,7 +85,7 @@ lazy val scalajack = project.in(file("core"))
     Seq("org.scala-lang" % "scala-compiler" % scalaVersion.value) ++
     Seq("org.apache.commons" % "commons-text" % "1.6") ++
     Seq("commons-codec" % "commons-codec" % "1.11") ++
-    Seq("org.json4s" %% "json4s-core" % "3.6.2") ++ // "3.6.0-M2"
+    Seq("org.json4s" %% "json4s-core" % "3.6.2") ++ // "3.6.0-M2"p
     Seq("org.json4s" %% "json4s-native" % "3.6.2" % Test) ++
       test(scalatest)
   )
@@ -107,17 +107,17 @@ lazy val scalajack_mongo = project.in(file("mongo"))
   ).dependsOn( scalajack )
 
 
-//lazy val scalajack_benchmarks = project.in(file("benchmarks"))
-//  .enablePlugins(JmhPlugin)
-//  .settings(basicSettings: _*)
-//  .settings(pubSettings: _*)
-//  .settings(libraryDependencies ++=
-//    compile( mongo_scala ) ++
-//      test( scalatest, slf4j_simple ) ++
-//      List(
-//        "com.typesafe.play" %% "play-json" % "2.6.7",
-//        "org.json4s" %% "json4s-native" % "3.5.4",
-//        "net.liftweb" %% "lift-json" % "3.3.0",
-//        "io.spray" %% "spray-json" % "1.3.2"
-//      )
-//  ).dependsOn( scalajack )
+lazy val scalajack_benchmarks = project.in(file("benchmarks"))
+  .enablePlugins(JmhPlugin)
+  .settings(basicSettings: _*)
+  .settings(pubSettings: _*)
+  .settings(libraryDependencies ++=
+    compile( mongo_scala ) ++
+      test( scalatest, slf4j_simple ) ++
+      List(
+        "com.typesafe.play" %% "play-json" % "2.6.7",
+        "org.json4s" %% "json4s-native" % "3.6.2",
+        "net.liftweb" %% "lift-json" % "3.3.0",
+        "io.spray" %% "spray-json" % "1.3.2"
+      )
+  ).dependsOn( scalajack )
