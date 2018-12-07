@@ -3,6 +3,7 @@ package co.blocke.scalajack.benchmarks
 import co.blocke.scalajack.{ ScalaJack, HintModifier }
 import org.openjdk.jmh.annotations.{ Benchmark, Scope, State }
 import scala.reflect.runtime.universe.{ Type, typeOf }
+import co.blocke.x._
 
 import scala.util.Try
 
@@ -62,6 +63,11 @@ class BaseBenchmarksState {
                      {"id":50,"first_name":"Alice","last_name":"Davis","email":"adavis1d@ow.ly","gender":"Female","ip_address":"4.124.35.181"}]""".stripMargin
 
   val jsonCharArray = jsonString.toCharArray
+
+  //--------------- Series X ScalaJack Setup
+  val h_intTypeAdapter = IntTypeAdapter(IntJsonSerializer())
+  val h_arrayTypeAdapter = ListTypeAdapter[Int](ArrayJsonSerializer(h_intTypeAdapter))
+  val h_arrayTypeAdapter2 = ListTypeAdapter[List[Int]](ArrayJsonSerializer(h_arrayTypeAdapter))
 
   //--------------- Series 6 ScalaJack Setup
   val humanHintMod = new co.blocke.scalajack.HintModifier {
@@ -192,6 +198,19 @@ class BaseBenchmarks {
     import state.personFormat
 
     state.jsonString.parseJson.convertTo[List[Person]]
+  }
+
+  @Benchmark
+  def readArraySeriesX(state: BaseBenchmarksState): List[List[Int]] = {
+    val ps = JsonParserState("[[1,2,3,4,5],[1,2,3,4,5],[1,2,3,4,5]]")
+    val prim = state.h_arrayTypeAdapter2.serializer.toPrimitives(state.h_arrayTypeAdapter2.serializer.parse(ps))
+    state.h_arrayTypeAdapter2.materialize(prim)
+  }
+
+  @Benchmark
+  def readArraySeries6ScalaJack(state: BaseBenchmarksState): List[List[Int]] = {
+    state.series6ScalaJack.read[List[List[Int]]]("[[1,2,3,4,5],[1,2,3,4,5],[1,2,3,4,5]]")
+    // state.scalaJack.read[List[Person]](state.jsonString)
   }
 
   @Benchmark
